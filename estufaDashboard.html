@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Estufa 01 — Monitor</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+<div class="page">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">🌿</div>
+      <div class="brand-text">
+        <h1>Estufa 01</h1>
+        <span>Monitor Agrícola · ThingSpeak</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill loading" id="statusPill">
+        <div class="s-dot"></div>
+        <span id="statusText">Carregando…</span>
+      </div>
+      <div class="refresh-info" id="refreshInfo">—</div>
+    </div>
+    <div class="countdown-wrap" style="width:100%;order:99">
+      <div class="countdown-fill" id="countdownBar" style="width:100%"></div>
+    </div>
+  </header>
+  <!-- SENSORES -->
+  <div class="section-label">🌡 Sensores</div>
+  <div class="sensor-grid">
+    <div class="sensor-card card-temp">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 40 40" width="40" height="40">
+          <circle class="ring-bg" cx="20" cy="20" r="17"/>
+          <circle class="ring-fill" id="ringTemp" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
+        </svg>
+      </div>
+      <div class="sensor-label">Temperatura</div>
+      <div class="sensor-value shimmer" id="valTemp">--<span class="sensor-unit"> °C</span></div>
+      <div class="sensor-bar"><div class="sensor-bar-fill" id="barTemp" style="width:0%"></div></div>
+      <div class="sensor-sublabel" id="subTemp">Faixa ideal: 26 – 30 °C</div>
+      <div class="wm">🌡️</div>
+    </div>
+    <div class="sensor-card card-solo">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 40 40" width="40" height="40">
+          <circle class="ring-bg" cx="20" cy="20" r="17"/>
+          <circle class="ring-fill" id="ringSolo" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
+        </svg>
+      </div>
+      <div class="sensor-label">Umidade Solo</div>
+      <div class="sensor-value shimmer" id="valSolo">--<span class="sensor-unit"> %</span></div>
+      <div class="sensor-bar"><div class="sensor-bar-fill" id="barSolo" style="width:0%"></div></div>
+      <div class="sensor-sublabel" id="subSolo">Faixa ideal: 40 – 70 %</div>
+      <div class="wm">🌱</div>
+    </div>
+    <div class="sensor-card card-lux">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 40 40" width="40" height="40">
+          <circle class="ring-bg" cx="20" cy="20" r="17"/>
+          <circle class="ring-fill" id="ringLux" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
+        </svg>
+      </div>
+      <div class="sensor-label">Luminosidade</div>
+      <div class="sensor-value shimmer" id="valLux">--<span class="sensor-unit"> lux</span></div>
+      <div class="sensor-bar"><div class="sensor-bar-fill" id="barLux" style="width:0%"></div></div>
+      <div class="sensor-sublabel" id="subLux">PWM ativo: 100 – 600 lux</div>
+      <div class="wm">☀️</div>
+    </div>
+    <div class="sensor-card card-umid-ar">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 40 40" width="40" height="40">
+          <circle class="ring-bg" cx="20" cy="20" r="17"/>
+          <circle class="ring-fill" id="ringAr" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
+        </svg>
+      </div>
+      <div class="sensor-label">Umidade do Ar</div>
+      <div class="sensor-value shimmer" id="valAr">--<span class="sensor-unit"> %</span></div>
+      <div class="sensor-bar"><div class="sensor-bar-fill" id="barAr" style="width:0%"></div></div>
+      <div class="sensor-sublabel" id="subAr">Crítico: abaixo de 30 %</div>
+      <div class="wm">💧</div>
+    </div>
+  </div>
+  <!-- ATUADORES -->
+  <div class="section-label">⚡ Atuadores</div>
+  <div class="actuator-grid">
+    <div class="actuator-card act-vent" id="cardVent">
+      <div class="act-glow"></div>
+      <div class="act-icon-ring"><span>🌀</span></div>
+      <div class="act-name">Ventilador</div>
+      <div class="act-chip chip-off" id="chipVent">
+        <span class="chip-dot"></span><span id="lblVent">Desligado</span>
+      </div>
+      <div style="font-size:0.66rem;color:var(--muted);margin-top:8px;font-family:var(--mono)">Liga ≥ 30°C · Desliga ≤ 26°C</div>
+    </div>
+    <div class="actuator-card act-valve" id="cardValve">
+      <div class="act-glow"></div>
+      <div class="act-icon-ring"><span>💧</span></div>
+      <div class="act-name">Válvula de Irrigação</div>
+      <div class="act-chip chip-off" id="chipValve">
+        <span class="chip-dot"></span><span id="lblValve">Fechada</span>
+      </div>
+      <div style="font-size:0.66rem;color:var(--muted);margin-top:8px;font-family:var(--mono)">Abre ≤ 40% · Fecha ≥ 70%</div>
+    </div>
+    <div class="actuator-card act-light" id="cardLight">
+      <div class="act-glow"></div>
+      <div class="act-icon-ring"><span>💡</span></div>
+      <div class="act-name">Iluminação</div>
+      <div class="act-chip chip-off" id="chipLight">
+        <span class="chip-dot"></span><span id="lblLight">Apagada</span>
+      </div>
+      <div class="duty-wrap">
+        <div class="duty-label">PWM: <span id="dutyPct">0</span>%</div>
+        <div class="duty-track"><div class="duty-fill" id="dutyBar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+  <!-- GRÁFICO -->
+  <div class="section-label">📈 Histórico</div>
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">Leituras dos Sensores</div>
+      <div class="legend-list">
+        <div class="legend-item"><div class="legend-dot" style="background:#fca5a5"></div>Temp °C</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Solo %</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fde047"></div>Lux ÷10</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#67e8f9"></div>Umid Ar %</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+    <div class="period-row">
+      <button class="period-btn" data-n="20">Últimas 20</button>
+      <button class="period-btn active" data-n="60">Últimas 60</button>
+      <button class="period-btn" data-n="120">Últimas 120</button>
+      <button class="period-btn" data-n="360">Últimas 360</button>
+      <button class="period-btn" data-n="800">Max</button>
+    </div>
+  </div>
+  <!-- ALERTAS -->
+  <div class="section-label">🚨 Alertas</div>
+  <div class="alerts-card">
+    <div class="alerts-head">
+      <div class="alerts-title">
+        Log de eventos
+        <span class="badge-count hidden" id="badgeCount">0</span>
+      </div>
+      <button class="clear-btn" onclick="limparAlertas()">Limpar</button>
+    </div>
+    <div class="alerts-log" id="alertsLog">
+      <div class="no-alerts" id="noAlerts">Nenhum alerta — sistema saudável 🌿</div>
+    </div>
+  </div>
+  <!-- SISTEMA -->
+  <div class="section-label">⚙ Sistema</div>
+  <div class="sys-grid">
+    <div class="sys-card">
+      <div class="sys-label">Última leitura</div>
+      <div class="sys-value" id="sysUltima">--</div>
+    </div>
+    <div class="sys-card">
+      <div class="sys-label">RSSI Master</div>
+      <div class="sys-value" id="sysRssi">--</div>
+    </div>
+    <div class="sys-card">
+      <div class="sys-label">Total de registros</div>
+      <div class="sys-value ok" id="sysEntradas">--</div>
+    </div>
+    <div class="sys-card">
+      <div class="sys-label">Próxima atualização</div>
+      <div class="sys-value" id="sysProxima" style="font-size:0.9rem">--</div>
+    </div>
+  </div>
+  <div class="footer">
+    Estufa 01 · ThingSpeak Channel 3361741 · Atualiza a cada 16 s
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
