@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estufa 01 — Painel de Acesso</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08120a; --bg2: #0d1f10; --glass: rgba(15,35,18,0.8);
+  --border: rgba(74,222,128,0.12); --border2: rgba(74,222,128,0.25);
+  --green: #4ade80; --green2: #22c55e; --green3: #16a34a;
+  --amber: #fbbf24; --red: #f87171; --blue: #67e8f9;
+  --text: #e8f5e9; --text2: #86efac; --muted: #4d7355; --muted2: #2d4a32;
+  --mono: 'DM Mono', monospace; --serif: 'Lora', serif; --sans: 'Nunito', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  min-height: 100vh; overflow-x: hidden; position: relative;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(34,197,94,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 100%, rgba(74,222,128,0.05) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(74,222,128,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,0.015) 1px, transparent 1px);
+  background-size: 40px 40px; pointer-events: none; z-index: 0;
+}
+.page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* Header */
+.header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  padding: 18px 24px; background: var(--glass); backdrop-filter: blur(20px);
+  border: 1px solid var(--border2); border-radius: 20px; margin-bottom: 22px; position: relative; overflow: hidden;
+}
+.header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green), #a3e635, var(--green), transparent);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon {
+  width: 44px; height: 44px; background: linear-gradient(135deg, var(--green3), var(--green));
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; box-shadow: 0 0 20px rgba(74,222,128,0.3);
+}
+.brand-text h1 { font-family: var(--serif); font-size: 1.3rem; font-weight: 700; line-height: 1; }
+.brand-text span { font-size: 0.68rem; color: var(--muted); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.btn-sm {
+  padding: 7px 14px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;
+  font-family: var(--sans); cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase;
+  border: 1px solid var(--border2); background: transparent; color: var(--text2);
+  transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-sm:hover { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.4); }
+.btn-sm.danger { border-color: rgba(248,113,113,0.3); color: var(--red); }
+.btn-sm.danger:hover { background: rgba(248,113,113,0.08); }
+
+/* Section label */
+.section-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); margin: 22px 0 10px 4px; display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 18px;
+}
+.stat-label { font-size: 0.67rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.stat-value { font-family: var(--mono); font-size: 1.6rem; font-weight: 500; color: var(--text2); }
+.stat-value.green { color: var(--green); }
+.stat-value.amber { color: var(--amber); }
+.stat-value.red   { color: var(--red); }
+
+/* Table card */
+.table-card {
+  background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden; margin-bottom: 14px;
+}
+.table-head-bar {
+  display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+  border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
+}
+.table-title { font-family: var(--serif); font-size: 0.95rem; font-weight: 600; }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 4px 12px; border-radius: 99px; font-size: 0.7rem; font-weight: 700;
+  font-family: var(--sans); cursor: pointer; letter-spacing: 0.04em;
+  border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.2s;
+}
+.filter-btn:hover { border-color: var(--border2); color: var(--text2); }
+.filter-btn.active { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: var(--green); }
+
+.table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; }
+.table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 16px; background: rgba(0,0,0,0.2); font-size: 0.67rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  text-align: left; white-space: nowrap; position: sticky; top: 0;
+}
+tbody tr { border-bottom: 1px solid rgba(74,222,128,0.05); transition: background 0.15s; }
+tbody tr:hover { background: rgba(74,222,128,0.03); }
+tbody td { padding: 10px 16px; font-size: 0.8rem; font-family: var(--mono); color: var(--text2); white-space: nowrap; }
+
+/* Event badges */
+.ev-badge {
+  display: inline-block; padding: 2px 9px; border-radius: 99px;
+  font-size: 0.67rem; font-weight: 700; letter-spacing: 0.05em;
+}
+.ev-login        { background: rgba(74,222,128,0.1);  color: var(--green);  border: 1px solid rgba(74,222,128,0.25); }
+.ev-register     { background: rgba(103,232,249,0.1); color: var(--blue);   border: 1px solid rgba(103,232,249,0.25); }
+.ev-logout       { background: rgba(251,191,36,0.1);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.25); }
+.ev-failed_login { background: rgba(248,113,113,0.1); color: var(--red);    border: 1px solid rgba(248,113,113,0.25); }
+
+/* User row status */
+.u-active   { color: var(--green); }
+.u-inactive { color: var(--red); }
+
+.no-data { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 32px; font-family: var(--mono); }
+
+/* Loading */
+.loading-row td { text-align: center; color: var(--muted); animation: blink 1.2s ease infinite; }
+@keyframes blink { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+@media (max-width: 600px) { .page { padding: 12px 10px 40px; } .header { padding: 14px 16px; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">🔐</div>
+      <div class="brand-text">
+        <h1>Painel de Acesso</h1>
+        <span>Logs & Usuários · Estufa 01</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="/" class="btn-sm">← Dashboard</a>
+      <button class="btn-sm" onclick="loadAll()">↻ Atualizar</button>
+      <button class="btn-sm danger" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="section-label">📊 Resumo</div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Usuários cadastrados</div>
+      <div class="stat-value green" id="statUsers">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total de acessos</div>
+      <div class="stat-value" id="statLogins">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tentativas falhas</div>
+      <div class="stat-value red" id="statFailed">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Último acesso</div>
+      <div class="stat-value" id="statLast" style="font-size:0.85rem">—</div>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="section-label">📋 Log de Eventos</div>
+  <div class="table-card">
+    <div class="table-head-bar">
+      <div class="table-title">Histórico de Acessos</div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all" onclick="filterLogs('all',this)">Todos</button>
+        <button class="filter-btn" data-filter="login"        onclick="filterLogs('login',this)">Login</button>
+        <button class="filter-btn" data-filter="register"     onclick="filterLogs('register',this)">Registro</button>
+        <button class="filter-btn" data-filter="failed_login" onclick="filterLogs('failed_login',this)">Falhas</button>
+        <button class="filter-btn" data-filter="logout"       onclick="filterLogs('logout',this)">Logout</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Usuário</th>
+            <th>Evento</th>
+            <th>IP</th>
+            <th>Detalhes</th>
+            <th>User-Agent</th>
+          </tr>
+        </thead>
+        <tbody id="logsTbody">
+          <tr class="loading-row"><td colspan="6">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="section-label">👥 Usuários</div>
+  <div class="table-card">
+    <div class="table-head-bar">
+      <div class="table-title">Contas Cadastradas</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Usuário</th>
+            <th>E-mail</th>
+            <th>Status</th>
+            <th>Cadastro</th>
+            <th>Último Login</th>
+          </tr>
+        </thead>
+        <tbody id="usersTbody">
+          <tr class="loading-row"><td colspan="6">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let allLogs = [];
+const evLabels = { login:'Login', register:'Registro', logout:'Logout', failed_login:'Falha' };
+
+function fmt(dt) {
+  if (!dt) return '—';
+  return new Date(dt).toLocaleString('pt-BR');
+}
+function shortUA(ua) {
+  if (!ua || ua === 'unknown') return '—';
+  const m = ua.match(/(Chrome|Firefox|Safari|Edge|OPR|Opera|Brave)\/[\d.]+/i);
+  return m ? m[0] : ua.substring(0,30) + '…';
+}
+
+async function loadLogs() {
+  try {
+    const r = await fetch('/api/admin/logs?limit=200');
+    if (r.status === 401) { window.location.href = '/login'; return; }
+    allLogs = await r.json();
+    renderLogs(allLogs);
+    computeStats(allLogs);
+  } catch { logsTbody.innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>'; }
+}
+
+async function loadUsers() {
+  try {
+    const r = await fetch('/api/admin/users');
+    if (r.status === 401) { window.location.href = '/login'; return; }
+    const users = await r.json();
+    document.getElementById('statUsers').textContent = users.length;
+    const tb = document.getElementById('usersTbody');
+    if (!users.length) { tb.innerHTML = '<tr><td colspan="6" class="no-data">Nenhum usuário</td></tr>'; return; }
+    tb.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${u.username}</td>
+        <td>${u.email}</td>
+        <td class="${u.is_active ? 'u-active' : 'u-inactive'}">${u.is_active ? '● Ativo' : '○ Inativo'}</td>
+        <td>${fmt(u.created_at)}</td>
+        <td>${fmt(u.last_login)}</td>
+      </tr>
+    `).join('');
+  } catch { document.getElementById('usersTbody').innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>'; }
+}
+
+function renderLogs(logs) {
+  const tb = document.getElementById('logsTbody');
+  if (!logs.length) { tb.innerHTML = '<tr><td colspan="6" class="no-data">Nenhum registro</td></tr>'; return; }
+  tb.innerHTML = logs.map(l => {
+    const evClass = `ev-${l.event}`;
+    const evTxt   = evLabels[l.event] || l.event;
+    const details = l.details ? JSON.parse(l.details) : null;
+    const detTxt  = details?.reason ? `(${details.reason})` : '—';
+    return `
+      <tr>
+        <td>${fmt(l.created_at)}</td>
+        <td>${l.username || '—'}</td>
+        <td><span class="ev-badge ${evClass}">${evTxt}</span></td>
+        <td>${l.ip_address || '—'}</td>
+        <td>${detTxt}</td>
+        <td title="${l.user_agent || ''}">${shortUA(l.user_agent)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function computeStats(logs) {
+  const logins  = logs.filter(l => l.event === 'login').length;
+  const failed  = logs.filter(l => l.event === 'failed_login').length;
+  const lastLogin = logs.find(l => l.event === 'login');
+  document.getElementById('statLogins').textContent = logins;
+  document.getElementById('statFailed').textContent = failed;
+  document.getElementById('statLast').textContent   = lastLogin ? fmt(lastLogin.created_at) : '—';
+}
+
+function filterLogs(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLogs(filter === 'all' ? allLogs : allLogs.filter(l => l.event === filter));
+}
+
+async function doLogout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+
+function loadAll() { loadLogs(); loadUsers(); }
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>

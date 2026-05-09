@@ -5,12 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Estufa 01 — Monitor</title>
 <link rel="stylesheet" href="style.css">
+<style>
+.auth-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.auth-user { font-family:var(--mono); font-size:0.75rem; color:var(--text2); }
+.auth-btn {
+  padding:5px 12px; border-radius:8px; font-size:0.72rem; font-weight:700;
+  font-family:var(--sans); cursor:pointer; letter-spacing:0.04em;
+  border:1px solid var(--border2); background:transparent; color:var(--text2);
+  transition:all 0.2s; text-decoration:none; display:inline-flex; align-items:center; gap:5px;
+}
+.auth-btn:hover { background:rgba(74,222,128,0.08); }
+.auth-btn-danger { border-color:rgba(248,113,113,0.3); color:var(--red); }
+.auth-btn-danger:hover { background:rgba(248,113,113,0.07); }
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
 <div class="page">
+
   <!-- HEADER -->
   <header class="header">
     <div class="brand">
@@ -26,14 +40,21 @@
         <span id="statusText">Carregando…</span>
       </div>
       <div class="refresh-info" id="refreshInfo">—</div>
+      <div class="auth-actions">
+        <span class="auth-user" id="authUser"></span>
+        <a href="/admin" class="auth-btn">🔐 Logs</a>
+        <button class="auth-btn auth-btn-danger" onclick="doLogout()">Sair</button>
+      </div>
     </div>
     <div class="countdown-wrap" style="width:100%;order:99">
       <div class="countdown-fill" id="countdownBar" style="width:100%"></div>
     </div>
   </header>
+
   <!-- SENSORES -->
   <div class="section-label">🌡 Sensores</div>
   <div class="sensor-grid">
+
     <div class="sensor-card card-temp">
       <div class="ring-wrap">
         <svg viewBox="0 0 40 40" width="40" height="40">
@@ -47,6 +68,7 @@
       <div class="sensor-sublabel" id="subTemp">Faixa ideal: 26 – 30 °C</div>
       <div class="wm">🌡️</div>
     </div>
+
     <div class="sensor-card card-solo">
       <div class="ring-wrap">
         <svg viewBox="0 0 40 40" width="40" height="40">
@@ -60,6 +82,7 @@
       <div class="sensor-sublabel" id="subSolo">Faixa ideal: 40 – 70 %</div>
       <div class="wm">🌱</div>
     </div>
+
     <div class="sensor-card card-lux">
       <div class="ring-wrap">
         <svg viewBox="0 0 40 40" width="40" height="40">
@@ -73,6 +96,7 @@
       <div class="sensor-sublabel" id="subLux">PWM ativo: 100 – 600 lux</div>
       <div class="wm">☀️</div>
     </div>
+
     <div class="sensor-card card-umid-ar">
       <div class="ring-wrap">
         <svg viewBox="0 0 40 40" width="40" height="40">
@@ -86,10 +110,13 @@
       <div class="sensor-sublabel" id="subAr">Crítico: abaixo de 30 %</div>
       <div class="wm">💧</div>
     </div>
+
   </div>
+
   <!-- ATUADORES -->
   <div class="section-label">⚡ Atuadores</div>
   <div class="actuator-grid">
+
     <div class="actuator-card act-vent" id="cardVent">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>🌀</span></div>
@@ -99,6 +126,7 @@
       </div>
       <div style="font-size:0.66rem;color:var(--muted);margin-top:8px;font-family:var(--mono)">Liga ≥ 30°C · Desliga ≤ 26°C</div>
     </div>
+
     <div class="actuator-card act-valve" id="cardValve">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>💧</span></div>
@@ -108,6 +136,7 @@
       </div>
       <div style="font-size:0.66rem;color:var(--muted);margin-top:8px;font-family:var(--mono)">Abre ≤ 40% · Fecha ≥ 70%</div>
     </div>
+
     <div class="actuator-card act-light" id="cardLight">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>💡</span></div>
@@ -120,7 +149,9 @@
         <div class="duty-track"><div class="duty-fill" id="dutyBar" style="width:0%"></div></div>
       </div>
     </div>
+
   </div>
+
   <!-- GRÁFICO -->
   <div class="section-label">📈 Histórico</div>
   <div class="chart-card">
@@ -144,6 +175,7 @@
       <button class="period-btn" data-n="800">Max</button>
     </div>
   </div>
+
   <!-- ALERTAS -->
   <div class="section-label">🚨 Alertas</div>
   <div class="alerts-card">
@@ -158,6 +190,7 @@
       <div class="no-alerts" id="noAlerts">Nenhum alerta — sistema saudável 🌿</div>
     </div>
   </div>
+
   <!-- SISTEMA -->
   <div class="section-label">⚙ Sistema</div>
   <div class="sys-grid">
@@ -178,10 +211,13 @@
       <div class="sys-value" id="sysProxima" style="font-size:0.9rem">--</div>
     </div>
   </div>
+
   <div class="footer">
     Estufa 01 · ThingSpeak · Atualiza a cada 16 s
   </div>
+
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>

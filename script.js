@@ -1,10 +1,12 @@
 /* ══════════════════════════════════════════
    CONFIGURAÇÃO
 ══════════════════════════════════════════ */
+const CH_ID   = 3361741;
+const API_KEY = 'REDACTED_API_KEY';
 const INTERVALO_S = 16;
 
-const URL_LAST  = `/api/ultimo`;
-const URL_FEEDS = (n) => `/api/historico?n=${n}`;
+const URL_LAST  = `https://api.thingspeak.com/channels/${CH_ID}/feeds/last.json?api_key=${API_KEY}`;
+const URL_FEEDS = (n) => `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${API_KEY}&results=${n}`;
 
 /* thresholds do master (sketch_apr13a.ino) */
 const TH = {
@@ -56,9 +58,9 @@ function processarUltimo(d) {
   atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Aberta',  'Fechada');
   atualizarAtuador('cardLight', 'chipLight', 'lblLight', duty > 0,  'Ligada',  'Apagada');
 
-  const dutyEl  = document.getElementById('dutyPct');
+  const dutyEl = document.getElementById('dutyPct');
   const dutyBar = document.getElementById('dutyBar');
-  if(dutyEl)  dutyEl.textContent  = isNaN(duty) ? 0 : duty;
+  if(dutyEl) dutyEl.textContent = isNaN(duty) ? 0 : duty;
   if(dutyBar) dutyBar.style.width = (isNaN(duty) ? 0 : duty) + '%';
 
   /* Sistema */
@@ -67,7 +69,7 @@ function processarUltimo(d) {
   const rssiEl = document.getElementById('sysRssi');
   if(rssiEl) {
     rssiEl.textContent = isNaN(rssi) ? '--' : rssi + ' dBm';
-    rssiEl.className   = 'sys-value ' + (rssi > -70 ? 'ok' : rssi > -85 ? 'warn' : 'danger');
+    rssiEl.className = 'sys-value ' + (rssi > -70 ? 'ok' : rssi > -85 ? 'warn' : 'danger');
   }
 
   /* Alertas automáticos por threshold */
@@ -79,16 +81,18 @@ function processarUltimo(d) {
 ══════════════════════════════════════════ */
 async function buscarHistorico() {
   try {
-    const res   = await fetch(URL_FEEDS(qtdPontos));
-    const data  = await res.json();
+    const res  = await fetch(URL_FEEDS(qtdPontos));
+    const data = await res.json();
     const feeds = data.feeds || [];
 
     setText('sysEntradas', feeds.length + ' pts');
 
-    const pts = { temp: [], solo: [], lux: [], ar: [] };
+    const pts = {
+      temp:    [], solo:    [], lux:     [], ar: []
+    };
 
     feeds.forEach(f => {
-      const t  = new Date(f.created_at).getTime();
+      const t = new Date(f.created_at).getTime();
       const v1 = parseFloat(f.field1);
       const v2 = parseFloat(f.field2);
       const v3 = parseFloat(f.field3);
@@ -118,10 +122,10 @@ const alertasJaDisparados = new Set();
 
 function verificarAlertas(temp, solo, lux, umidAr) {
   const checks = [
-    { key:'temp-alta',  cond: temp > TH.tempSup,               tipo:'danger', msg:`🌡️ Temperatura alta: ${temp?.toFixed(1)}°C (limite ${TH.tempSup}°C)` },
-    { key:'temp-baixa', cond: temp < TH.tempInf && temp > 0,   tipo:'warn',   msg:`🌡️ Temperatura baixa: ${temp?.toFixed(1)}°C (mínimo ${TH.tempInf}°C)` },
-    { key:'solo-baixo', cond: solo < TH.soloInf,               tipo:'warn',   msg:`🌱 Solo seco: ${solo?.toFixed(0)}% — válvula deve estar aberta` },
-    { key:'solo-alto',  cond: solo > TH.soloSup,               tipo:'info',   msg:`🌱 Solo saturado: ${solo?.toFixed(0)}% — válvula deve estar fechada` },
+    { key:'temp-alta',  cond: temp > TH.tempSup,        tipo:'danger', msg:`🌡️ Temperatura alta: ${temp?.toFixed(1)}°C (limite ${TH.tempSup}°C)` },
+    { key:'temp-baixa', cond: temp < TH.tempInf && temp > 0, tipo:'warn', msg:`🌡️ Temperatura baixa: ${temp?.toFixed(1)}°C (mínimo ${TH.tempInf}°C)` },
+    { key:'solo-baixo', cond: solo < TH.soloInf,        tipo:'warn',   msg:`🌱 Solo seco: ${solo?.toFixed(0)}% — válvula deve estar aberta` },
+    { key:'solo-alto',  cond: solo > TH.soloSup,        tipo:'info',   msg:`🌱 Solo saturado: ${solo?.toFixed(0)}% — válvula deve estar fechada` },
     { key:'umid-crit',  cond: umidAr < TH.umidArCrit && umidAr > 0, tipo:'danger', msg:`💧 Umidade do ar crítica: ${umidAr?.toFixed(1)}%` },
   ];
 
@@ -136,7 +140,7 @@ function verificarAlertas(temp, solo, lux, umidAr) {
 }
 
 function registrarAlerta(tipo, msg) {
-  const log  = document.getElementById('alertsLog');
+  const log = document.getElementById('alertsLog');
   const noAl = document.getElementById('noAlerts');
   if(noAl) noAl.remove();
 
@@ -180,8 +184,8 @@ function atualizarSensor(idVal, idBar, idRing, valor, max, casas) {
   elVal.innerHTML = disp;
   if(unit) elVal.appendChild(unit);
 
-  const pct = Math.min(valor / max, 1);
-  if(elBar)  elBar.style.width          = (pct * 100) + '%';
+  const pct  = Math.min(valor / max, 1);
+  if(elBar)  elBar.style.width = (pct * 100) + '%';
   if(elRing) elRing.style.strokeDashoffset = CIRC * (1 - pct);
 }
 
@@ -192,15 +196,15 @@ function atualizarAtuador(cardId, chipId, lblId, ligado, txtOn, txtOff) {
   if(!card) return;
 
   card.classList.toggle('is-on', ligado);
-  if(chip) chip.className  = 'act-chip ' + (ligado ? 'chip-on' : 'chip-off');
+  if(chip) chip.className = 'act-chip ' + (ligado ? 'chip-on' : 'chip-off');
   if(lbl)  lbl.textContent = ligado ? txtOn : txtOff;
 }
 
 function setStatus(cls, txt) {
   const pill = document.getElementById('statusPill');
   const text = document.getElementById('statusText');
-  if(pill) pill.className    = 'status-pill ' + cls;
-  if(text) text.textContent  = txt;
+  if(pill) pill.className = 'status-pill ' + cls;
+  if(text) text.textContent = txt;
 }
 
 function setText(id, v) {
@@ -217,11 +221,11 @@ function iniciarContagem() {
 
   countdownTimer = setInterval(() => {
     segundosRestantes--;
-    const pct  = (segundosRestantes / INTERVALO_S) * 100;
-    const bar  = document.getElementById('countdownBar');
+    const pct = (segundosRestantes / INTERVALO_S) * 100;
+    const bar = document.getElementById('countdownBar');
     const prox = document.getElementById('sysProxima');
-    if(bar)  bar.style.width   = pct + '%';
-    if(prox) prox.textContent  = `em ${segundosRestantes}s`;
+    if(bar) bar.style.width = pct + '%';
+    if(prox) prox.textContent = `em ${segundosRestantes}s`;
 
     if(segundosRestantes <= 0) {
       clearInterval(countdownTimer);
@@ -240,10 +244,10 @@ function initChart() {
     type: 'line',
     data: {
       datasets: [
-        { label:'Temp °C',     borderColor:'#fca5a5', backgroundColor:'rgba(252,165,165,0.05)', borderWidth:2,   pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
-        { label:'Umid Solo %', borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.05)',   borderWidth:2,   pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Temp °C',     borderColor:'#fca5a5', backgroundColor:'rgba(252,165,165,0.05)', borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Umid Solo %', borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.05)',   borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
         { label:'Lux ÷10',     borderColor:'#fde047', backgroundColor:'rgba(253,224,71,0.04)',   borderWidth:1.5, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
-        { label:'Umid Ar %',   borderColor:'#67e8f9', backgroundColor:'rgba(103,232,249,0.05)', borderWidth:2,   pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Umid Ar %',   borderColor:'#67e8f9', backgroundColor:'rgba(103,232,249,0.05)', borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
       ]
     },
     options: {
@@ -264,18 +268,28 @@ function initChart() {
         x: {
           type:'time',
           time: { displayFormats: { minute:'HH:mm', hour:'dd/MM HH:mm' } },
-          grid:  { color:'rgba(255,255,255,0.03)' },
+          grid: { color:'rgba(255,255,255,0.03)' },
           ticks: { color:'#4d7355', maxTicksLimit:7 }
         },
         y: {
           min:0, max:110,
-          grid:  { color:'rgba(255,255,255,0.03)' },
+          grid: { color:'rgba(255,255,255,0.03)' },
           ticks: { color:'#4d7355' }
         }
       }
     }
   });
 }
+
+/* period buttons */
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    qtdPontos = parseInt(btn.dataset.n);
+    buscarHistorico();
+  });
+});
 
 /* ══════════════════════════════════════════
    CICLO PRINCIPAL
@@ -291,19 +305,28 @@ async function cicloAtualizar() {
 }
 
 /* ══════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════ */
+async function verificarAuth() {
+  try {
+    const r = await fetch('/api/auth/me');
+    if (r.status === 401) { window.location.href = '/login'; return; }
+    const u = await r.json();
+    const el = document.getElementById('authUser');
+    if (el) el.textContent = '🌿 ' + u.username;
+  } catch { window.location.href = '/login'; }
+}
+
+async function doLogout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+
+/* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  /* period buttons */
-  document.querySelectorAll('.period-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      qtdPontos = parseInt(btn.dataset.n);
-      buscarHistorico();
-    });
-  });
-
+document.addEventListener('DOMContentLoaded', async () => {
+  await verificarAuth();
   initChart();
   cicloAtualizar();
 });
