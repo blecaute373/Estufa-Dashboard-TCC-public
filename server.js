@@ -122,9 +122,9 @@ const authLimiter = rateLimit({
 
 function requireAuth(req, res, next) {
   const token = req.cookies?.[COOKIE_NAME] || req.headers['authorization']?.replace('Bearer ','');
-  if (!token) return res.redirect('/login');
+  if (!token) return res.redirect('/index.html');
   try { req.user = jwt.verify(token, JWT_SECRET); next(); }
-  catch { res.clearCookie(COOKIE_NAME); res.redirect('/login'); }
+  catch { res.clearCookie(COOKIE_NAME); res.redirect('/index.html'); }
 }
 
 function requireAuthApi(req, res, next) {
@@ -198,17 +198,18 @@ app.get('/api/admin/logs',  requireAuthApi, (req, res) => res.json(q.listLogs(Ma
 app.get('/api/admin/users', requireAuthApi, (req, res) => res.json(q.listUsers()));
 
 /* ── PAGES ── */
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/',      requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
-app.get('/admin', requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/admin.html', requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ── START ── */
 initDb().then(() => {
   app.listen(PORT, () => {
     console.log(`\n🌿 Estufa 01 rodando em http://localhost:${PORT}`);
-    console.log(`   Dashboard  → http://localhost:${PORT}/`);
-    console.log(`   Login      → http://localhost:${PORT}/login`);
-    console.log(`   Admin/Logs → http://localhost:${PORT}/admin\n`);
+    console.log(`   Dashboard  → http://localhost:${PORT}/dashboard.html`);
+    console.log(`   Login      → http://localhost:${PORT}/index.html`);
+    console.log(`   Admin/Logs → http://localhost:${PORT}/admin.html\n`);
   });
 }).catch(err => { console.error('Erro ao inicializar DB:', err); process.exit(1); });

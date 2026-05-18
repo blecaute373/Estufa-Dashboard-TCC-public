@@ -254,7 +254,7 @@ function shortUA(ua) {
 async function loadLogs() {
   try {
     const r = await fetch('/api/admin/logs?limit=200');
-    if (r.status === 401) { window.location.href = '/login'; return; }
+    if (r.status === 401) { window.location.href = '/index.html'; return; }
     allLogs = await r.json();
     renderLogs(allLogs);
     computeStats(allLogs);
@@ -264,7 +264,7 @@ async function loadLogs() {
 async function loadUsers() {
   try {
     const r = await fetch('/api/admin/users');
-    if (r.status === 401) { window.location.href = '/login'; return; }
+    if (r.status === 401) { window.location.href = '/index.html'; return; }
     const users = await r.json();
     document.getElementById('statUsers').textContent = users.length;
     const tb = document.getElementById('usersTbody');
