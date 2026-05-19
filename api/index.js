@@ -31,16 +31,32 @@ function requireAuth(req, res, next) {
   }
 }
 
+// Middleware que só admin passa — outros voltam pro dashboard
+function requireAdminPage(req, res, next) {
+  const token = req.cookies?.[COOKIE_NAME] || req.headers['authorization']?.replace('Bearer ', '');
+  if (!token) return res.redirect('/index.html');
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    if (!req.user.is_admin) {
+      return res.redirect('/dashboard.html?error=restrito');
+    }
+    next();
+  } catch {
+    res.clearCookie(COOKIE_NAME);
+    res.redirect('/index.html');
+  }
+}
+
 // Rotas das APIs (montadas primeiro, sem auth)
 app.use(authApp);
 app.use(thingspeakApp);
 app.use(adminApp);
 
-// Páginas protegidas (antes do static!)
+// Páginas protegidas
 app.get('/dashboard.html', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
 });
-app.get('/admin.html', requireAuth, (req, res) => {
+app.get('/admin.html', requireAdminPage, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 app.get('/', requireAuth, (req, res) => {

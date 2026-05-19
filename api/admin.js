@@ -2,31 +2,17 @@
  * Serverless: /api/admin/*
  */
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./db');
 const User = require('../models/User');
 const AccessLog = require('../models/AccessLog');
+const { requireAdminApi } = require('./auth');
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'REDACTED_JWT_SECRET==';
-const COOKIE_NAME = 'estufa_tok';
-
-function requireAuthApi(req, res, next) {
-  const token = req.cookies?.[COOKIE_NAME] || req.headers['authorization']?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Não autenticado' });
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Sessão expirada' });
-  }
-}
-
-app.get('/api/admin/logs', requireAuthApi, async (req, res) => {
+app.get('/api/admin/logs', requireAdminApi, async (req, res) => {
   try {
     await connectDB();
     const limit = Math.min(parseInt(req.query.limit) || 100, 500);
@@ -53,11 +39,11 @@ app.get('/api/admin/logs', requireAuthApi, async (req, res) => {
   }
 });
 
-app.get('/api/admin/users', requireAuthApi, async (req, res) => {
+app.get('/api/admin/users', requireAdminApi, async (req, res) => {
   try {
     await connectDB();
     const users = await User.find()
-      .select('username email is_active created_at last_login')
+      .select('username email is_active is_admin created_at last_login')
       .sort({ created_at: -1 })
       .lean();
     res.json(users);

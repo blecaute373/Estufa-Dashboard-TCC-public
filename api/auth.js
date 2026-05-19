@@ -19,7 +19,11 @@ const JWT_EXPIRES = '8h';
 const COOKIE_NAME = 'estufa_tok';
 
 function signToken(user) {
-  return jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  return jwt.sign(
+    { id: user._id, username: user.username, is_admin: user.is_admin },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
+  );
 }
 
 function setCookie(res, token) {
@@ -52,8 +56,21 @@ async function requireAuthApi(req, res, next) {
   }
 }
 
+async function requireAdminApi(req, res, next) {
+  const token = req.cookies?.[COOKIE_NAME] || req.headers['authorization']?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Não autenticado' });
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Acesso restrito. Apenas administradores.' });
+    }
+    next();
+  } catch {
+    res.status(401).json({ error: 'Sessão expirada' });
+  }
+}
+
 /* ── Routes ── */
-// Sem rate-limit (não funciona em serverless). No Vercel, usar Vercel Firewall ou headers.
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body || {};
@@ -65,20 +82,30 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'E-mail inválido.' });
     if (password.length < 8)
       return res.status(400).json({ error: 'Senha mínima: 8 caracteres.' });
-    
+
     await connectDB();
-    
+
     if (await User.findOne({ username: username.toLowerCase() }))
       return res.status(409).json({ error: 'Nome de usuário já em uso.' });
     if (await User.findOne({ email: email.toLowerCase() }))
       return res.status(409).json({ error: 'E-mail já cadastrado.' });
 
+    // Primeiro usuário sempre vira admin
+    const userCount = await User.countDocuments();
+    const isAdmin = userCount === 0;
+
     const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = await User.create({ username, email: email.toLowerCase(), password_hash: hash });
-    await log(user._id, user.username, 'register', req);
+    const user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      password_hash: hash,
+      is_admin: isAdmin,
+    });
+
+    await log(user._id, user.username, 'register', req, isAdmin ? { role: 'admin' } : { role: 'user' });
     const token = signToken(user);
     setCookie(res, token);
-    return res.json({ ok: true, username: user.username });
+    return res.json({ ok: true, username: user.username, is_admin: isAdmin });
   } catch (err) {
     console.error('[Auth] Register error:', err.message);
     console.error(err.stack);
@@ -91,9 +118,8 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body || {};
     if (!username || !password)
       return res.status(400).json({ error: 'Preencha usuário e senha.' });
-    
+
     await connectDB();
-    
 
     const user = await User.findOne({
       $or: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }]
@@ -111,11 +137,20 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     user.last_login = new Date();
+
+    // Auto-promover primeiro usuário a admin (caso conta exista antes dessa feature)
+    if (!user.is_admin) {
+      const totalUsers = await User.countDocuments();
+      if (totalUsers === 1) {
+        user.is_admin = true;
+      }
+    }
+
     await user.save();
     await log(user._id, user.username, 'login', req);
     const token = signToken(user);
     setCookie(res, token);
-    res.json({ ok: true, username: user.username });
+    res.json({ ok: true, username: user.username, is_admin: user.is_admin });
   } catch (err) {
     console.error('[Auth] Login error:', err);
     res.status(500).json({ error: 'Erro interno.' });
@@ -129,7 +164,7 @@ app.post('/api/auth/logout', requireAuthApi, async (req, res) => {
 
 app.get('/api/auth/me', requireAuthApi, async (req, res) => {
   await connectDB();
-  const user = await User.findById(req.user.id).select('username email is_active created_at last_login');
+  const user = await User.findById(req.user.id).select('username email is_active is_admin created_at last_login');
   if (!user) return res.status(404).json({ error: 'Não encontrado' });
   res.json(user);
 });
@@ -144,5 +179,7 @@ app.get('/api/auth/status', async (req, res) => {
   }
 });
 
-/* ── Export for Vercel serverless ── */
+/* ── Export ── */
 module.exports = app;
+module.exports.requireAdminApi = requireAdminApi;
+module.exports.requireAuthApi = requireAuthApi;
