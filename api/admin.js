@@ -53,4 +53,35 @@ app.get('/api/admin/users', requireAdminApi, async (req, res) => {
   }
 });
 
+// Rota de emergência: promove o primeiro usuário a admin
+// Funciona apenas se não existir nenhum admin no banco
+// GET para poder acessar direto pelo navegador
+app.get('/api/admin/promote-first', async (req, res) => {
+  try {
+    await connectDB();
+    const adminCount = await User.countDocuments({ is_admin: true });
+    if (adminCount > 0) {
+      return res.status(400).json({ error: 'Já existe um administrador no sistema.' });
+    }
+
+    const firstUser = await User.findOne().sort({ created_at: 1 });
+    if (!firstUser) {
+      return res.status(400).json({ error: 'Nenhum usuário encontrado.' });
+    }
+
+    firstUser.is_admin = true;
+    await firstUser.save();
+
+    console.log(`[Admin] Usuário "${firstUser.username}" promovido a admin via rota de emergência.`);
+    res.json({
+      ok: true,
+      message: `Usuário "${firstUser.username}" agora é administrador. Faça logout e login novamente.`,
+      username: firstUser.username,
+    });
+  } catch (err) {
+    console.error('[Admin] Promote error:', err);
+    res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
 module.exports = app;
