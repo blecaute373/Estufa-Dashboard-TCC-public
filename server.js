@@ -1,8 +1,10 @@
 /**
- * Estufa 01 — Servidor de Autenticação
+ * Estufa 01 — Servidor de Autenticação + Proxy ThingSpeak
  * Stack: Express · sql.js · bcryptjs · JWT
  */
 'use strict';
+
+require('dotenv').config();
 
 const express      = require('express');
 const initSqlJs    = require('sql.js');
@@ -13,12 +15,17 @@ const rateLimit    = require('express-rate-limit');
 const path         = require('path');
 const fs           = require('fs');
 const crypto       = require('crypto');
+const https        = require('https');
 
 const PORT          = process.env.PORT || 3000;
 const BCRYPT_ROUNDS = 12;
 const JWT_EXPIRES   = '8h';
 const COOKIE_NAME   = 'estufa_tok';
 const DB_FILE       = path.join(__dirname, 'estufa.db');
+
+// Config ThingSpeak (via .env para não vazar no git)
+const TS_CHANNEL = parseInt(process.env.TS_CHANNEL);
+const TS_API_KEY = process.env.TS_API_KEY || '';
 
 // Segredo JWT persistente
 const SECRET_FILE = path.join(__dirname, '.jwt_secret');
@@ -29,6 +36,23 @@ try {
   JWT_SECRET = crypto.randomBytes(64).toString('hex');
   fs.writeFileSync(SECRET_FILE, JWT_SECRET, { mode: 0o600 });
   console.log('[Auth] Novo segredo JWT gerado e salvo em .jwt_secret');
+}
+
+/* ── Helper HTTPS ── */
+function fetchThingSpeak(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch {
+          reject(new Error('Resposta inválida do ThingSpeak'));
+        }
+      });
+    }).on('error', reject);
+  });
 }
 
 /* ── DB ── */
@@ -193,6 +217,31 @@ app.post('/api/auth/logout', requireAuthApi, (req, res) => {
 app.get('/api/auth/me',     requireAuthApi, (req, res) => res.json(q.findById(req.user.id) || { error: 'Não encontrado' }));
 app.get('/api/auth/status', (req, res) => res.json({ registeredUsers: q.countUsers() }));
 
+/* ── THINGSPEAK PROXY ── */
+// Proxy para evitar CORS e melhorar confiabilidade
+app.get('/api/thingspeak/last', async (req, res) => {
+  try {
+    const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds/last.json?api_key=${TS_API_KEY}`;
+    const data = await fetchThingSpeak(url);
+    res.json(data);
+  } catch (err) {
+    console.error('[TS Proxy] Erro ao buscar último:', err.message);
+    res.status(502).json({ error: 'Falha ao conectar com ThingSpeak', details: err.message });
+  }
+});
+
+app.get('/api/thingspeak/history', async (req, res) => {
+  const results = Math.min(parseInt(req.query.results) || 60, 800);
+  try {
+    const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds.json?api_key=${TS_API_KEY}&results=${results}`;
+    const data = await fetchThingSpeak(url);
+    res.json(data);
+  } catch (err) {
+    console.error('[TS Proxy] Erro ao buscar histórico:', err.message);
+    res.status(502).json({ error: 'Falha ao conectar com ThingSpeak', details: err.message });
+  }
+});
+
 /* ── ADMIN ── */
 app.get('/api/admin/logs',  requireAuthApi, (req, res) => res.json(q.listLogs(Math.min(parseInt(req.query.limit)||100,500))));
 app.get('/api/admin/users', requireAuthApi, (req, res) => res.json(q.listUsers()));
@@ -201,7 +250,6 @@ app.get('/api/admin/users', requireAuthApi, (req, res) => res.json(q.listUsers()
 app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/',      requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/admin.html', requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ── START ── */
@@ -210,6 +258,7 @@ initDb().then(() => {
     console.log(`\n🌿 Estufa 01 rodando em http://localhost:${PORT}`);
     console.log(`   Dashboard  → http://localhost:${PORT}/dashboard.html`);
     console.log(`   Login      → http://localhost:${PORT}/index.html`);
-    console.log(`   Admin/Logs → http://localhost:${PORT}/admin.html\n`);
+    console.log(`   Admin/Logs → http://localhost:${PORT}/admin.html`);
+    console.log(`   ThingSpeak proxy ativo (canal ${TS_CHANNEL})\n`);
   });
 }).catch(err => { console.error('Erro ao inicializar DB:', err); process.exit(1); });
