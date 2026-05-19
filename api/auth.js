@@ -5,7 +5,6 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
 const connectDB = require('./db');
 const User = require('../models/User');
 const AccessLog = require('../models/AccessLog');
@@ -18,12 +17,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'REDACTED_JWT_SECRET==';
 const BCRYPT_ROUNDS = 12;
 const JWT_EXPIRES = '8h';
 const COOKIE_NAME = 'estufa_tok';
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 20,
-  message: { error: 'Muitas tentativas. Aguarde 15 minutos.' },
-  standardHeaders: true, legacyHeaders: false,
-});
 
 function signToken(user) {
   return jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
@@ -60,9 +53,9 @@ async function requireAuthApi(req, res, next) {
 }
 
 /* ── Routes ── */
-app.post('/api/auth/register', authLimiter, async (req, res) => {
+// Sem rate-limit (não funciona em serverless). No Vercel, usar Vercel Firewall ou headers.
+app.post('/api/auth/register', async (req, res) => {
   try {
-    await connectDB();
     const { username, email, password } = req.body || {};
     if (!username || !email || !password)
       return res.status(400).json({ error: 'Preencha todos os campos.' });
@@ -72,7 +65,9 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
       return res.status(400).json({ error: 'E-mail inválido.' });
     if (password.length < 8)
       return res.status(400).json({ error: 'Senha mínima: 8 caracteres.' });
-
+    
+    await connectDB();
+    
     if (await User.findOne({ username: username.toLowerCase() }))
       return res.status(409).json({ error: 'Nome de usuário já em uso.' });
     if (await User.findOne({ email: email.toLowerCase() }))
@@ -83,19 +78,22 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
     await log(user._id, user.username, 'register', req);
     const token = signToken(user);
     setCookie(res, token);
-    res.json({ ok: true, username: user.username });
+    return res.json({ ok: true, username: user.username });
   } catch (err) {
-    console.error('[Auth] Register error:', err);
-    res.status(500).json({ error: 'Erro interno.' });
+    console.error('[Auth] Register error:', err.message);
+    console.error(err.stack);
+    return res.status(500).json({ error: 'Erro interno: ' + err.message });
   }
 });
 
-app.post('/api/auth/login', authLimiter, async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
-    await connectDB();
     const { username, password } = req.body || {};
     if (!username || !password)
       return res.status(400).json({ error: 'Preencha usuário e senha.' });
+    
+    await connectDB();
+    
 
     const user = await User.findOne({
       $or: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }]
