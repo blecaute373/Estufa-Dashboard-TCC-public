@@ -239,7 +239,15 @@ function iniciarContagem() {
    GRÁFICO
 ══════════════════════════════════════════ */
 function initChart() {
-  const ctx = document.getElementById('mainChart').getContext('2d');
+  // Se Chart.js não carregou (CDN falhou), não trava o resto
+  if (typeof Chart === 'undefined') {
+    console.warn('[Chart] Chart.js não carregou. Gráfico desabilitado.');
+    document.getElementById('mainChart')?.parentElement?.remove();
+    return;
+  }
+
+  const ctx = document.getElementById('mainChart')?.getContext('2d');
+  if (!ctx) return;
 
   mainChart = new Chart(ctx, {
     type: 'line',
@@ -328,6 +336,6 @@ async function doLogout() {
 ══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   await verificarAuth();
-  initChart();
+  try { initChart(); } catch(e) { console.warn('[Chart] Erro ao iniciar gráfico:', e); }
   cicloAtualizar();
 });

@@ -156,9 +156,8 @@ tbody td { padding: 10px 16px; font-size: 0.8rem; font-family: var(--mono); colo
       </div>
     </div>
     <div class="header-actions">
-      <a href="/dashboard.html" class="btn-sm">← Dashboard</a>
       <button class="btn-sm" onclick="loadAll()">↻ Atualizar</button>
-      <a class="btn-sm danger" href="index.html" onclick="doLogout()">Sair</a>
+      <a class="btn-sm danger" href="login-admin.html" onclick="doLogout()">Sair</a>
     </div>
   </header>
 
@@ -325,7 +324,7 @@ function filterLogs(filter, btn) {
 
 async function doLogout() {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-  window.location.href = '/index.html';
+  window.location.href = '/login-admin.html';
 }
 
 function loadAll() { loadLogs(); loadUsers(); }
