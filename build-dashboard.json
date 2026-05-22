@@ -1,0 +1,24 @@
+{
+  "appId": "com.estufa.dashboard",
+  "productName": "Estufa 01 - Dashboard",
+  "directories": {
+    "output": "release/dashboard"
+  },
+  "files": [
+    "electron-dashboard.js",
+    "public/**/*"
+  ],
+  "extraMetadata": {
+    "main": "electron-dashboard.js"
+  },
+  "win": {
+    "target": "nsis",
+    "artifactName": "Estufa-Dashboard-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true
+  },
+  "extraResources": []
+}

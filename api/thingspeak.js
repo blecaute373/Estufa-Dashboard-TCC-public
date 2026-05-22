@@ -7,7 +7,7 @@ const https = require('https');
 
 const app = express();
 
-const TS_CHANNEL = parseInt(process.env.TS_CHANNEL);
+const TS_CHANNEL = parseInt(process.env.TS_CHANNEL) || 3361741;
 const TS_API_KEY = process.env.TS_API_KEY || '';
 
 function fetchThingSpeak(url) {

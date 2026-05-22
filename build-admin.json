@@ -1,0 +1,24 @@
+{
+  "appId": "com.estufa.admin",
+  "productName": "Estufa 01 - Admin",
+  "directories": {
+    "output": "release/admin"
+  },
+  "files": [
+    "electron-admin.js",
+    "public/**/*"
+  ],
+  "extraMetadata": {
+    "main": "electron-admin.js"
+  },
+  "win": {
+    "target": "nsis",
+    "artifactName": "Estufa-Admin-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true
+  },
+  "extraResources": []
+}

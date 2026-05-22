@@ -12,11 +12,13 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/login-dashboard.html", "dest": "/api/index.js" },
+    { "src": "/login-admin.html", "dest": "/api/index.js" },
     { "src": "/dashboard.html", "dest": "/api/index.js" },
     { "src": "/admin.html", "dest": "/api/index.js" },
     { "src": "/index.html", "dest": "/api/index.js" },
     { "src": "/", "dest": "/api/index.js" },
-    { "src": "/(.*\\.(css|js|png|jpg|ico|svg|woff2?|ttf|eot))", "dest": "/public/$1" },
+    { "src": "/(.*\\.(css|js|json|png|jpg|ico|svg|woff2?|ttf|eot))", "dest": "/public/$1" },
     { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }

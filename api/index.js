@@ -52,6 +52,14 @@ app.use(authApp);
 app.use(thingspeakApp);
 app.use(adminApp);
 
+// Páginas públicas (login — sem auth)
+app.get('/login-dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'login-dashboard.html'));
+});
+app.get('/login-admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'login-admin.html'));
+});
+
 // Páginas protegidas
 app.get('/dashboard.html', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));

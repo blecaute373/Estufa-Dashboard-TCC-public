@@ -1,0 +1,10 @@
+{
+  "appId": "com.estufa.monitor",
+  "appName": "Estufa 01",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://seu-site.vercel.app",
+    "cleartext": false
+  }
+}

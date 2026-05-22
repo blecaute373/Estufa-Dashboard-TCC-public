@@ -310,7 +310,7 @@ async function cicloAtualizar() {
 ══════════════════════════════════════════ */
 async function verificarAuth() {
   try {
-    const r = await fetch('/api/auth/me');
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
     if (r.status === 401) { window.location.href = '/index.html'; return; }
     const u = await r.json();
     const el = document.getElementById('authUser');
@@ -319,7 +319,7 @@ async function verificarAuth() {
 }
 
 async function doLogout() {
-  await fetch('/api/auth/logout', { method: 'POST' });
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
   window.location.href = '/index.html';
 }
 
