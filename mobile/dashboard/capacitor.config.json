@@ -1,0 +1,11 @@
+{
+  "appId": "com.estufa.dashboard",
+  "appName": "Estufa Dashboard",
+  "webDir": "../../public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://dashboardestufaiot.vercel.app",
+    "cleartext": false,
+    "hostname": "dashboardestufaiot.vercel.app"
+  }
+}

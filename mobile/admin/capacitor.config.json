@@ -1,0 +1,11 @@
+{
+  "appId": "com.estufa.admin",
+  "appName": "Estufa Admin",
+  "webDir": "../../public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://dashboardestufaiot.vercel.app",
+    "cleartext": false,
+    "hostname": "dashboardestufaiot.vercel.app"
+  }
+}
