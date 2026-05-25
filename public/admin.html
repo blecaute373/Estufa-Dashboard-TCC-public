@@ -323,7 +323,11 @@ function filterLogs(filter, btn) {
 }
 
 async function doLogout() {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  const savedToken = localStorage.getItem('estufa_token');
+  const opts = { method: 'POST', credentials: 'same-origin' };
+  if (savedToken) opts.headers = { 'Authorization': 'Bearer ' + savedToken };
+  await fetch('/api/auth/logout', opts);
+  localStorage.removeItem('estufa_token');
   window.location.href = '/login-admin.html';
 }
 

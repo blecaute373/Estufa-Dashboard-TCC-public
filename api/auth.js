@@ -90,7 +90,6 @@ app.post('/api/auth/register', async (req, res) => {
     if (await User.findOne({ email: email.toLowerCase() }))
       return res.status(409).json({ error: 'E-mail já cadastrado.' });
 
-    // Primeiro usuário sempre vira admin
     const userCount = await User.countDocuments();
     const isAdmin = userCount === 0;
 
@@ -105,7 +104,7 @@ app.post('/api/auth/register', async (req, res) => {
     await log(user._id, user.username, 'register', req, isAdmin ? { role: 'admin' } : { role: 'user' });
     const token = signToken(user);
     setCookie(res, token);
-    return res.json({ ok: true, username: user.username, is_admin: isAdmin });
+    return res.json({ ok: true, username: user.username, is_admin: isAdmin, token: token });
   } catch (err) {
     console.error('[Auth] Register error:', err.message);
     console.error(err.stack);
@@ -138,7 +137,6 @@ app.post('/api/auth/login', async (req, res) => {
 
     user.last_login = new Date();
 
-    // Auto-promover primeiro usuário a admin (caso conta exista antes dessa feature)
     if (!user.is_admin) {
       const totalUsers = await User.countDocuments();
       if (totalUsers === 1) {
@@ -150,7 +148,7 @@ app.post('/api/auth/login', async (req, res) => {
     await log(user._id, user.username, 'login', req);
     const token = signToken(user);
     setCookie(res, token);
-    res.json({ ok: true, username: user.username, is_admin: user.is_admin });
+    res.json({ ok: true, username: user.username, is_admin: user.is_admin, token: token });
   } catch (err) {
     console.error('[Auth] Login error:', err);
     res.status(500).json({ error: 'Erro interno.' });

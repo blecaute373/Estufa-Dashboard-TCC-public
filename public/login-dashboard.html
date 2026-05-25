@@ -288,8 +288,11 @@ async function doLogin() {
   try {
     const r = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:user,password:pass}) });
     const d = await r.json();
-    if (r.ok) { showMsg(msg,'success',`✓ Bem-vindo, ${d.username}!`); setTimeout(()=>window.location.href='/dashboard.html',900); }
-    else { showMsg(msg,'error',d.error||'Erro ao entrar.'); }
+    if (r.ok) {
+      if (d.token) localStorage.setItem('estufa_token', d.token);
+      showMsg(msg,'success',`✓ Bem-vindo, ${d.username}!`);
+      setTimeout(()=>window.location.href='/dashboard.html',900);
+    } else { showMsg(msg,'error',d.error||'Erro ao entrar.'); }
   } catch { showMsg(msg,'error','Sem conexão com o servidor.'); }
   finally { setLoading(btn,false); }
 }
@@ -307,6 +310,7 @@ async function doRegister() {
     const r = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,email,password:pass})});
     const d = await r.json();
     if (r.ok) {
+      if (d.token) localStorage.setItem('estufa_token', d.token);
       document.getElementById('welcomeText').textContent = `🌿 Bem-vindo, ${d.username}! Conta criada!`;
       document.getElementById('welcomeBadge').classList.add('show');
       document.getElementById('registerForm').style.display='none';

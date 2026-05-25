@@ -318,17 +318,33 @@ async function cicloAtualizar() {
 ══════════════════════════════════════════ */
 async function verificarAuth() {
   try {
-    const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
-    if (r.status === 401) { window.location.href = '/index.html'; return; }
+    const headers = { credentials: 'same-origin' };
+    // Fallback para PWA: enviar token salvo no localStorage como Authorization header
+    const savedToken = localStorage.getItem('estufa_token');
+    if (savedToken) {
+      headers.headers = { 'Authorization': 'Bearer ' + savedToken };
+    }
+    const r = await fetch('/api/auth/me', headers);
+    if (r.status === 401) {
+      localStorage.removeItem('estufa_token');
+      window.location.href = '/login-dashboard.html';
+      return;
+    }
     const u = await r.json();
     const el = document.getElementById('authUser');
     if (el) el.textContent = '🌿 ' + u.username;
-  } catch { window.location.href = '/index.html'; }
+  } catch { window.location.href = '/login-dashboard.html'; }
 }
 
 async function doLogout() {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-  window.location.href = '/index.html';
+  const savedToken = localStorage.getItem('estufa_token');
+  const opts = { method: 'POST', credentials: 'same-origin' };
+  if (savedToken) {
+    opts.headers = { 'Authorization': 'Bearer ' + savedToken };
+  }
+  await fetch('/api/auth/logout', opts);
+  localStorage.removeItem('estufa_token');
+  window.location.href = '/login-dashboard.html';
 }
 
 /* ══════════════════════════════════════════

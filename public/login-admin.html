@@ -157,6 +157,7 @@ async function doLogin() {
     const d = await r.json();
     if (r.ok) {
       if (!d.is_admin) { showMsg(msg,'error','Acesso negado. Esta conta não é administradora.'); return; }
+      if (d.token) localStorage.setItem('estufa_token', d.token);
       showMsg(msg,'success',`✓ Bem-vindo, ${d.username}!`);
       setTimeout(()=>window.location.href='/admin.html',900);
     } else { showMsg(msg,'error',d.error||'Erro ao entrar.'); }
