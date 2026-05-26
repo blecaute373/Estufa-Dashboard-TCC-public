@@ -2,7 +2,7 @@
   "name": "Estufa 01 — Monitor",
   "short_name": "Estufa",
   "description": "Monitor agrícola inteligente com ThingSpeak",
-  "start_url": "/login-dashboard.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
