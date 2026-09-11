@@ -1,5 +1,7 @@
 # 📱 Estufa 01 — Aplicativos Mobile e Desktop
 
+Documentação para build e distribuição dos aplicativos mobile (Android) e desktop (Windows) do Estufa 01.
+
 ## 📱 APK Android (Mobile)
 
 ### Método 1 — Via PWABuilder (recomendado, mais fácil)
@@ -52,10 +54,48 @@ Gera: `release/admin/Estufa-Admin-Setup.exe`
 
 ---
 
-## 🌐 URLs dos apps (não muda)
+## 🌐 URLs dos apps
 
 | App | URL |
 |-----|-----|
-| Dashboard (login + registro) | `/login-dashboard.html` |
-| Admin (só login) | `/login-admin.html` |
+| Dashboard (login + registro) | `https://dashboardestufaiot.vercel.app/login-dashboard.html` |
+| Admin (só login) | `https://dashboardestufaiot.vercel.app/login-admin.html` |
 | Site principal | `https://dashboardestufaiot.vercel.app` |
+
+---
+
+## 📦 Estrutura de Build
+
+```
+mobile/
+├── dashboard/          # App dashboard (Capacitor)
+│   ├── capacitor.config.json
+│   ├── capacitor.config.ts
+│   ├── package.json
+│   └── android/        # Projeto Android gerado
+└── admin/              # App admin (Capacitor)
+    ├── capacitor.config.json
+    ├── capacitor.config.ts
+    ├── package.json
+    └── android/        # Projeto Android gerado
+```
+
+---
+
+## 🚀 Build Android Nativo (Capacitor)
+
+Para gerar projetos Android completos via linha de comando:
+
+```bash
+# Inicializar e buildar dashboard
+npm run mobile-dashboard
+
+# Inicializar e buildar admin
+npm run mobile-admin
+
+# Abrir no Android Studio
+npm run mobile-open-dashboard
+npm run mobile-open-admin
+```
+
+**Nota:** Após alterações no frontend, execute `npx cap sync` para sincronizar as mudanças com o projeto Android.
