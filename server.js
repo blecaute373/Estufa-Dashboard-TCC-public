@@ -24,8 +24,12 @@ const JWT_EXPIRES   = '8h';
 const COOKIE_NAME   = 'estufa_tok';
 const JWT_SECRET    = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
-const TS_CHANNEL = parseInt(process.env.TS_CHANNEL) || 3361741;
+const TS_CHANNEL = parseInt(process.env.TS_CHANNEL);
 const TS_API_KEY = process.env.TS_API_KEY || '';
+
+if (!TS_CHANNEL) {
+  console.error('[ERRO] TS_CHANNEL não definida nas variáveis de ambiente');
+}
 
 const User       = require('./models/User');
 const AccessLog  = require('./models/AccessLog');

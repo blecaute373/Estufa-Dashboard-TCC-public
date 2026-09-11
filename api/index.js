@@ -15,7 +15,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'REDACTED_JWT_SECRET==';
+const crypto = require('crypto');
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const COOKIE_NAME = 'estufa_tok';
 
 // Middleware de auth para páginas protegidas

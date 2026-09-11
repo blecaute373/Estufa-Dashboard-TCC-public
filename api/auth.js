@@ -13,7 +13,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'REDACTED_JWT_SECRET==';
+const crypto = require('crypto');
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const BCRYPT_ROUNDS = 12;
 const JWT_EXPIRES = '8h';
 const COOKIE_NAME = 'estufa_tok';

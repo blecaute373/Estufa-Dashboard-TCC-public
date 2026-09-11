@@ -9,18 +9,20 @@
 const { execSync } = require('child_process');
 const path = require('path');
 
+const BASE_URL = process.env.APP_URL || 'https://seu-dominio-aqui.vercel.app';
+
 const APPS = {
   dashboard: {
-    url: 'https://dashboardestufaiot.vercel.app/login-dashboard.html',
-    manifest: 'https://dashboardestufaiot.vercel.app/manifest-dashboard.json',
+    url: `${BASE_URL}/login-dashboard.html`,
+    manifest: `${BASE_URL}/manifest-dashboard.json`,
     name: 'Estufa Dashboard',
-    pwabuilderUrl: 'https://pwabuilder.com?url=https://dashboardestufaiot.vercel.app/login-dashboard.html',
+    pwabuilderUrl: `https://pwabuilder.com?url=${BASE_URL}/login-dashboard.html`,
   },
   admin: {
-    url: 'https://dashboardestufaiot.vercel.app/login-admin.html',
-    manifest: 'https://dashboardestufaiot.vercel.app/manifest-admin.json',
+    url: `${BASE_URL}/login-admin.html`,
+    manifest: `${BASE_URL}/manifest-admin.json`,
     name: 'Estufa Admin',
-    pwabuilderUrl: 'https://pwabuilder.com?url=https://dashboardestufaiot.vercel.app/login-admin.html',
+    pwabuilderUrl: `https://pwabuilder.com?url=${BASE_URL}/login-admin.html`,
   }
 };
 
@@ -70,7 +72,7 @@ console.log('Use o PWABuilder diretamente:');
 console.log('  https://pwabuilder.com');
 console.log('');
 console.log('Cole a URL:');
-console.log('  https://dashboardestufaiot.vercel.app/login-dashboard.html');
+console.log(`  ${BASE_URL}/login-dashboard.html`);
 console.log('');
 
 // Tenta abrir o navegador automaticamente

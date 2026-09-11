@@ -4,7 +4,7 @@
  */
 const { app, BrowserWindow } = require('electron');
 
-const SERVER_URL = (process.env.APP_URL || 'https://dashboardestufaiot.vercel.app').replace(/\/+$/, '');
+const SERVER_URL = process.env.APP_URL.replace(/\/+$/, '');
 
 function createWindow() {
   const win = new BrowserWindow({

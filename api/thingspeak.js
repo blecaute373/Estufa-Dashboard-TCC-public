@@ -7,8 +7,12 @@ const https = require('https');
 
 const app = express();
 
-const TS_CHANNEL = parseInt(process.env.TS_CHANNEL) || 3361741;
+const TS_CHANNEL = parseInt(process.env.TS_CHANNEL);
 const TS_API_KEY = process.env.TS_API_KEY || '';
+
+if (!TS_CHANNEL) {
+  console.error('[ERRO] TS_CHANNEL não definida nas variáveis de ambiente');
+}
 
 function fetchThingSpeak(url) {
   return new Promise((resolve, reject) => {

@@ -4,8 +4,8 @@
   "webDir": "../../public",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://dashboardestufaiot.vercel.app",
+    "url": "https://seu-dominio-aqui.vercel.app",
     "cleartext": false,
-    "hostname": "dashboardestufaiot.vercel.app"
+    "hostname": "seu-dominio-aqui.vercel.app"
   }
 }
