@@ -6,8 +6,8 @@
 
 1. Acesse https://pwabuilder.com
 2. Cole a URL do app:
-   - **Dashboard:** `https://SEU_DOMINIO.vercel.app/login-dashboard.html`
-   - **Admin:** `https://SEU_DOMINIO.vercel.app/login-admin.html`
+   - **Dashboard:** `https://dashboardestufaiot.vercel.app/login-dashboard.html`
+   - **Admin:** `https://dashboardestufaiot.vercel.app/login-admin.html`
 3. Clique em **"Package for Android"**
 4. Baixe o APK gerado e instale no celular
 
@@ -58,4 +58,4 @@ Gera: `release/admin/Estufa-Admin-Setup.exe`
 |-----|-----|
 | Dashboard (login + registro) | `/login-dashboard.html` |
 | Admin (só login) | `/login-admin.html` |
-| Site principal | `https://SEU_DOMINIO.vercel.app` |
+| Site principal | `https://dashboardestufaiot.vercel.app` |

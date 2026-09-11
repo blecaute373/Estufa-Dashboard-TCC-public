@@ -9,7 +9,7 @@
 const { execSync } = require('child_process');
 const path = require('path');
 
-const BASE_URL = process.env.APP_URL || 'https://seu-dominio-aqui.vercel.app';
+const BASE_URL = process.env.APP_URL || 'https://dashboardestufaiot.vercel.app';
 
 const APPS = {
   dashboard: {

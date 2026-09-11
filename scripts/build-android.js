@@ -13,7 +13,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = process.env.APP_URL || 'https://seu-dominio-aqui.vercel.app';
+const BASE_URL = process.env.APP_URL || 'https://dashboardestufaiot.vercel.app';
 
 const APPS = {
   dashboard: {
@@ -66,7 +66,7 @@ const config: CapacitorConfig = {
   server: {
     url: '${app.entryUrl}',
     cleartext: false,
-    allowNavigation: [new URL(BASE_URL).hostname],
+    allowNavigation: ['dashboardestufaiot.vercel.app'],
   },
   android: {
     allowMixedContent: false,
