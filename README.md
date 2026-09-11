@@ -1,37 +1,58 @@
-# 🌿 Estufa 01 — Sistema de Autenticação
+# 🌿 Estufa 01 — Sistema de Monitoramento de Estufa
 
-## Estrutura
-```
-estufa/
-├── server.js          ← Servidor Express (auth + API)
-├── package.json
-├── estufa.db          ← Banco SQLite (criado automaticamente)
-├── .jwt_secret        ← Chave JWT (criada automaticamente, NÃO commite)
-└── public/
-    ├── login.html     ← Tela de login/registro
-    ├── dashboard.html ← Dashboard protegido
-    ├── admin.html     ← Painel de logs de acesso
-    └── style.css      ← CSS do dashboard
-```
+Sistema de monitoramento de estufa agrícola baseado em IoT com dashboard web, PWA, apps mobile e desktop.
 
-## Instalação
+## 🚀 Início Rápido
 
 ```bash
+# Instalar dependências
 npm install
-node server.js
+
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Edite .env com suas credenciais
+
+# Iniciar servidor local
+npm start
 ```
 
 Acesse http://localhost:3000
 
-## Fluxo de Acesso
+## 📁 Estrutura do Projeto
 
-1. **Primeiro acesso** → `/login` detecta que não há usuários e abre aba "Registrar"
-2. **Registro** → usuário cria conta com nome, e-mail e senha
-3. **Login** → usuário entra com nome ou e-mail + senha
-4. **Dashboard** → protegido por JWT (cookie httpOnly)
-5. **Qualquer pessoa** pode se registrar (registro aberto)
+```
+estufa-dashboard-tcc/
+├── api/                     # Backend (Vercel serverless functions)
+├── public/                  # Frontend (HTML/CSS/JS)
+├── mobile/                  # Apps mobile (Capacitor)
+├── models/                  # Schemas MongoDB (Mongoose)
+├── scripts/                 # Scripts de build
+├── electron-dashboard.js    # App desktop Dashboard
+├── electron-admin.js        # App desktop Admin
+├── server.js                # Servidor local (dev)
+└── vercel.json              # Config deploy Vercel
+```
 
-## Segurança
+## 🔐 Variáveis de Ambiente
+
+Copie `.env.example` para `.env` e configure:
+
+```env
+# MongoDB (obrigatório)
+MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/estufa
+
+# ThingSpeak (obrigatório)
+TS_CHANNEL=SEU_CHANNEL_ID
+TS_API_KEY=SUA_API_KEY
+
+# JWT (opcional - gerado automaticamente)
+JWT_SECRET=
+
+# Servidor
+PORT=3000
+```
+
+## 🛡️ Segurança
 
 | Camada | Implementação |
 |--------|--------------|
@@ -39,20 +60,24 @@ Acesse http://localhost:3000
 | Sessão | JWT httpOnly cookie (8h) |
 | Brute-force | Rate limit: 20 req / 15 min por IP |
 | Erros | Mensagem genérica (não revela se usuário existe) |
-| Segredo JWT | 64 bytes aleatórios, gerado uma vez, salvo em `.jwt_secret` |
+| Segredo JWT | Gerado dinamicamente (64 bytes aleatórios) |
+| Variáveis | Gerenciadas via dotenv |
 
-## Em Produção (HTTPS)
+## 📱 Apps
 
-Descomente no `server.js`:
-```js
-// secure: true   // ← linha nas opções de cookie
-```
+- **Web:** Dashboard responsivo com gráficos Chart.js
+- **PWA:** Instalável com Service Worker v2
+- **Mobile:** APK Android via Capacitor
+- **Desktop:** Instalador Windows via Electron
 
-E rode atrás de NGINX/Caddy com certificado SSL.
+Veja [README-APPS.md](README-APPS.md) para detalhes.
 
-## Painel Admin
+## 🌐 URLs de Produção
 
-`/admin` → Logs de acesso em tempo real:
-- Data/hora, usuário, evento, IP, User-Agent
-- Filtros por tipo de evento
-- Lista de usuários cadastrados
+- **Dashboard:** https://dashboardestufaiot.vercel.app/login-dashboard.html
+- **Admin:** https://dashboardestufaiot.vercel.app/login-admin.html
+- **Site principal:** https://dashboardestufaiot.vercel.app
+
+## 📄 Licença
+
+Projeto acadêmico - TCC

@@ -110,15 +110,19 @@ a874402 | 09/05/2026 | Initial commit
   - Apps desktop Windows via Electron
   - Sistema de alertas por threshold (temperatura, umidade, etc.)
   - Graficos interativos (linha, gauge, barras) com Chart.js
+  - Rate limiting para protecao contra brute-force (express-rate-limit)
 
 - **Validacao:** Projeto funcional em producao, todas as funcionalidades principais implementadas.
 
 - **Seguranca (v1.1.0):**
   - Segredos removidos do historico de commits (MongoDB, JWT, API keys)
   - .gitignore atualizado com regras completas de exclusao
-  - Fallback inseguro de JWT_SECRET removido
-  - Channel ID hardcoded removido do codigo
+  - Fallback inseguro de JWT_SECRET removido (agora gerado dinamicamente)
+  - Channel ID hardcoded removido do codigo (usa variavel de ambiente)
   - .env.example transformado em template seguro
+  - Rate limiting implementado (20 req/15 min por IP)
+  - Cookie parser para gerenciamento seguro de cookies
+  - Dotenv para gerenciamento de variaveis de ambiente
 
 - **Pendencias conhecidas:**
   - Rate limiting no Vercel (serverless timeout de 10s no plano Hobby)
@@ -290,59 +294,84 @@ O sistema e composto por:
 | Camada | Escolha | Motivo |
 | ------ | ------- | ------ |
 | Runtime | **Node.js** | Universal, serverless-friendly, grande ecossistema |
-| Backend | **Express** | Leve, rapido, middleware ecosystem |
-| Banco | **MongoDB Atlas** | NoSQL, serverless-friendly, gratuito |
+| Backend | **Express 4.22** | Leve, rapido, middleware ecosystem |
+| Banco | **MongoDB Atlas + Mongoose 9.6** | NoSQL, serverless-friendly, gratuito |
 | Frontend | **HTML/CSS/JS vanilla** | Simples, sem build step, PWA-ready |
 | Graficos | **Chart.js** | Leve, interativo, canvas rendering (60k+ GitHub stars) |
-| Auth | **JWT + bcrypt** | Stateless, seguro, httpOnly cookie |
+| Auth | **JWT 9.0 + bcryptjs 3.0** | Stateless, seguro, httpOnly cookie |
 | PWA | **Service Worker v2** | Offline, instalavel, network-first |
-| Mobile | **Capacitor** | Cross-platform, WebView-based, OutSystems |
-| Desktop | **Electron** | Cross-platform, Node.js integration |
+| Mobile | **Capacitor 8.3** | Cross-platform, WebView-based, facil integracao |
+| Desktop | **Electron 42.2** | Cross-platform, Node.js integration |
 | Deploy | **Vercel** | Serverless, CI/CD integrado, gratuito |
 | Icons | **SVG/PNG** | PWA icons, manifest |
+| Security | **express-rate-limit 7.5** | Protecao contra brute-force (20 req/15 min) |
+| Config | **dotenv 17.4** | Gerenciamento de variaveis de ambiente |
+| Cookies | **cookie-parser 1.4** | Gerenciamento seguro de cookies |
 
 ### 2.5 Estrutura de Pastas
 
 `
 estufa-dashboard-tcc/
-|-- api/                    # Backend (Vercel serverless functions)
-|   |-- index.js           # Rotas principais (auth proxy, thingspeak)
-|   |-- auth.js            # Login, registro, logout, validacao JWT
-|   |-- admin.js           # CRUD admin (logs, usuarios)
-|   |-- db.js              # Conexao MongoDB
-|   |-- thingspeak.js      # Proxy + parsing dados ThingSpeak
+|-- api/                        # Backend (Vercel serverless functions)
+|   |-- index.js               # Rotas principais (auth proxy, thingspeak)
+|   |-- auth.js                # Login, registro, logout, validacao JWT
+|   |-- admin.js               # CRUD admin (logs, usuarios)
+|   |-- db.js                  # Conexao MongoDB (Mongoose)
+|   |-- thingspeak.js          # Proxy + parsing dados ThingSpeak
 |
-|-- public/                # Frontend estatico
-|   |-- index.html         # Landing page
-|   |-- login-dashboard.html  # Login usuario
-|   |-- login-admin.html   # Login admin
-|   |-- dashboard.html     # Dashboard principal (graficos)
-|   |-- admin.html         # Painel administrativo
-|   |-- style.css          # Estilos globais
-|   |-- script.js          # Logica dashboard (graficos, alertas)
-|   |-- pwa.js             # Registro Service Worker
-|   |-- sw.js              # Service Worker v2
-|   |-- manifest-*.json    # PWA manifests (dashboard + admin)
+|-- public/                    # Frontend estatico
+|   |-- index.html             # Landing page
+|   |-- login-dashboard.html   # Login usuario
+|   |-- login-admin.html       # Login admin
+|   |-- dashboard.html         # Dashboard principal (graficos)
+|   |-- admin.html             # Painel administrativo
+|   |-- style.css              # Estilos globais
+|   |-- script.js              # Logica dashboard (graficos, alertas)
+|   |-- pwa.js                 # Registro Service Worker
+|   |-- sw.js                  # Service Worker v2 (cache limpo + network-first)
+|   |-- manifest-dashboard.json # PWA manifest do dashboard
+|   |-- manifest-admin.json     # PWA manifest do admin
+|   |-- icons/                  # Icones SVG/PNG para PWA
 |
-|-- mobile/                # Apps mobile (Android)
-|   |-- dashboard/         # App dashboard (Capacitor)
-|   |-- admin/             # App admin (Capacitor)
+|-- mobile/                    # Apps mobile (Android)
+|   |-- dashboard/             # App dashboard (Capacitor)
+|   |   |-- capacitor.config.json
+|   |   |-- capacitor.config.ts
+|   |   |-- package.json
+|   |   |-- index.html
+|   |   |-- node_modules/      # Dependencias do app mobile
+|   |
+|   |-- admin/                 # App admin (Capacitor)
+|       |-- capacitor.config.json
+|       |-- capacitor.config.ts
+|       |-- package.json
+|       |-- index.html
+|       |-- node_modules/      # Dependencias do app mobile
 |
-|-- scripts/               # Scripts de build/utilidade
-|   |-- make-admin.js      # Criar usuario admin
-|   |-- build-mobile.js    # Build mobile via PWABuilder
-|   |-- build-android.js   # Build Android via Capacitor
+|-- scripts/                   # Scripts de build/utilidade
+|   |-- make-admin.js          # Criar usuario admin
+|   |-- build-mobile.js        # Build mobile via PWABuilder
+|   |-- build-android.js       # Build Android via Capacitor
 |
-|-- models/                # Modelos Mongoose
-|   |-- User.js            # Schema usuario
-|   |-- AccessLog.js       # Schema log de acesso
+|-- models/                    # Modelos Mongoose
+|   |-- User.js                # Schema usuario
+|   |-- AccessLog.js           # Schema log de acesso
 |
-|-- electron-*.js          # Apps desktop (Electron)
-|-- build-*.json           # Config electron-builder
-|-- server.js              # Servidor local (dev)
-|-- vercel.json            # Config deploy Vercel
-|-- package.json           # Dependencias
-|-- .env.example           # Variaveis de ambiente
+|-- electron-dashboard.js      # App desktop Dashboard (Electron)
+|-- electron-admin.js          # App desktop Admin (Electron)
+|-- build-dashboard.json       # Config electron-builder (dashboard)
+|-- build-admin.json           # Config electron-builder (admin)
+|-- server.js                  # Servidor local (dev)
+|-- vercel.json                # Config deploy Vercel
+|-- package.json               # Dependencias
+|-- package-lock.json          # Lockfile de dependencias
+|-- .env                       # Variaveis de ambiente (NAO commitado)
+|-- .env.example               # Template de variaveis de ambiente
+|-- .gitignore                 # Regras de exclusao do git
+|-- cookies.txt                # Cookies para testes (se aplicavel)
+|-- BLUEPRINT.md               # Este documento
+|-- README.md                  # Documentacao basica
+|-- README-APPS.md             # Documentacao de apps mobile/desktop
 `
 
 ---
@@ -397,10 +426,12 @@ Signature: HMACSHA256(base64(header) + . + base64(payload), secret)
 `
 
 **Caracteristicas:**
-- **JWT** com expiracao de 7 dias
+- **JWT** com expiracao de 8 horas
 - **Cookie httpOnly** (padrao) + **localStorage** fallback (PWA mobile)
-- **bcrypt** para hash de senhas (salt rounds: 10)
-- **Middleware** uthenticateToken protege rotas sensiveis
+- **bcryptjs** para hash de senhas (salt rounds: 12)
+- **JWT_SECRET** gerado dinamicamente (64 bytes aleatorios) se nao definido
+- **Middleware** authenticateToken protege rotas sensiveis
+- **express-rate-limit** para protecao contra brute-force (20 req/15 min por IP)
 
 ### 4.2 Fluxo de Registro
 
@@ -624,13 +655,17 @@ app.whenReady().then(createWindow);
 
 ### 11.2 Variaveis de Ambiente
 
-| Variavel | Descricao |
-| -------- | --------- |
-| MONGODB_URI | URI de conexao MongoDB Atlas |
-| JWT_SECRET | Chave secreta JWT |
-| THINGSPEAK_API_KEY | API key do ThingSpeak |
-| THINGSPEAK_CHANNEL_ID | ID do canal ThingSpeak |
-| NODE_ENV | production/development |
+| Variavel | Descricao | Obrigatoria |
+| -------- | --------- | ----------- |
+| MONGODB_URI | URI de conexao MongoDB Atlas | Sim |
+| JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao |
+| TS_API_KEY | API key do ThingSpeak (escrita) | Recomendado |
+| TS_CHANNEL | ID do canal ThingSpeak | Sim |
+| APP_URL | URL base para apps Electron/Mobile | Nao (default: localhost) |
+| PORT | Porta do servidor local | Nao (default: 3000) |
+| NODE_ENV | production/development | Nao |
+
+**Nota:** As variaveis `TS_API_KEY` e `TS_CHANNEL` sao usadas pelo backend para comunicacao com a API do ThingSpeak. O `JWT_SECRET` e gerado dinamicamente usando `crypto.randomBytes(64)` se nao definido.
 
 ### 11.3 CI/CD
 
@@ -644,21 +679,27 @@ app.whenReady().then(createWindow);
 
 ### 12.1 make-admin.js
 
-- Promove primeiro usuario a admin
-- Uso: node scripts/make-admin.js
-- Verifica se ja existe admin antes de criar
+- Promove um usuario existente a administrador
+- **Uso:** `node scripts/make-admin.js <username>`
+- Verifica se o usuario existe antes de promover
+- Conecta ao MongoDB usando as variaveis de ambiente
 
 ### 12.2 build-mobile.js
 
-- Build mobile via PWABuilder
-- Requer manifest + icons PNG validos
-- Gera APK via Bubblewrap
+- Gera links para build mobile via PWABuilder
+- **Uso:** `node scripts/build-mobile.js <dashboard|admin|both>`
+- Suporta variavel de ambiente `APP_URL` para base URL
+- Gera links diretos para PWABuilder com URLs configuradas
+- Pode abrir o navegador automaticamente
 
 ### 12.3 build-android.js
 
-- Build Android via Capacitor
-- Sincroniza web assets para projeto Android
-- Abre Android Studio para build final
+- Gera projetos Android nativos via Capacitor
+- **Uso:** `node scripts/build-android.js`
+- Cria estrutura completa para Dashboard e Admin
+- Configura Capacitor com server URL apontando para producao
+- Suporta variavel de ambiente `APP_URL` para base URL
+- Dependencias: Java 17+, Android SDK, Android Studio
 
 ---
 
@@ -714,20 +755,29 @@ app.whenReady().then(createWindow);
 ### 14.2 Recomendacoes Express.js Security
 
 Baseado no Express.js Security Best Practices:
-- Usar Helmet para headers de seguranca
-- Usar rate-limiter-flexible para brute-force protection
-- Validar e sanitizar toda entrada de usuario
-- Usar cookies com flags httpOnly, secure, sameSite
-- Manter dependencias atualizadas (npm audit)
-- Usar HTTPS em producao (TLS)
+- [x] Usar **express-rate-limit** para brute-force protection (implementado: 20 req/15 min)
+- [x] Usar cookies com flags **httpOnly, sameSite** (implementado)
+- [ ] Usar **Helmet** para headers de seguranca (pendente)
+- [ ] Validar e sanitizar toda entrada de usuario (pendente)
+- [ ] Manter dependencias atualizadas (npm audit) (pendente)
+- [x] Usar HTTPS em producao (implementado via Vercel)
+- [x] Gerenciamento de variaveis de ambiente com **dotenv** (implementado)
+- [x] Cookie parser para gerenciamento seguro (implementado)
 
 ### 14.3 Gestao de Segredos
 
-| Segredo | Onde vive |
-| ------- | --------- |
-| MONGODB_URI | Vercel env vars |
-| JWT_SECRET | Vercel env vars |
-| THINGSPEAK_API_KEY | Vercel env vars |
+| Segredo | Onde vive | Status |
+| ------- | --------- | ------ |
+| MONGODB_URI | Vercel env vars | ✅ Seguro |
+| JWT_SECRET | Vercel env vars / gerado dinamicamente | ✅ Seguro |
+| THINGSPEAK_API_KEY | Vercel env vars | ✅ Seguro |
+| TS_CHANNEL | Vercel env vars | ✅ Seguro |
+
+**Regras de Seguranca:**
+- Nunca commitar arquivos `.env` ou `.jwt_secret`
+- `.env.example` deve conter apenas placeholders, nunca valores reais
+- JWT_SECRET e gerado dinamicamente se nao definido (64 bytes aleatorios)
+- Channel ID e API Key devem ser definidos via variaveis de ambiente
 
 ---
 
@@ -874,17 +924,26 @@ feeds: [{ created_at, field1-8, entry_id }]
 
 `
 estufa-dashboard-tcc/
-|-- api/                 # Backend (5 arquivos)
-|-- public/              # Frontend (10 arquivos)
-|-- mobile/              # Apps mobile (2 apps)
-|-- models/              # Schemas (2 arquivos)
-|-- scripts/             # Build scripts (3 arquivos)
-|-- electron-*.js        # Desktop apps (2 arquivos)
-|-- build-*.json         # Electron config (2 arquivos)
-|-- server.js            # Dev server
-|-- vercel.json          # Deploy config
-|-- package.json         # Dependencias
-|-- BLUEPRINT.md         # Este documento
+|-- api/                     # Backend - 5 arquivos (index, auth, admin, db, thingspeak)
+|-- public/                  # Frontend - 12 arquivos HTML/CSS/JS + manifests + icons
+|-- mobile/                  # Apps mobile - 2 apps (dashboard, admin)
+|   |-- dashboard/           # App dashboard com Capacitor
+|   |-- admin/               # App admin com Capacitor
+|-- models/                  # Schemas Mongoose - 2 arquivos (User, AccessLog)
+|-- scripts/                 # Build scripts - 3 arquivos
+|-- electron-dashboard.js    # App desktop Dashboard
+|-- electron-admin.js        # App desktop Admin
+|-- build-dashboard.json     # Config electron-builder (dashboard)
+|-- build-admin.json         # Config electron-builder (admin)
+|-- server.js                # Servidor local (dev)
+|-- vercel.json              # Config deploy Vercel
+|-- package.json             # Dependencias do projeto
+|-- .env                     # Variaveis de ambiente (NAO commitado)
+|-- .env.example             # Template seguro de variaveis
+|-- .gitignore               # Regras de exclusao do git
+|-- BLUEPRINT.md             # Este documento
+|-- README.md                # Documentacao basica
+|-- README-APPS.md           # Documentacao de apps mobile/desktop
 `
 
 ---
