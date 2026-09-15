@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # Dependência desatualizada é a fonte mais comum de vuln real em produção
+  # (ENGENHARIA §8.3 / §16.3) — atualização contínua via PR semanal + CI.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

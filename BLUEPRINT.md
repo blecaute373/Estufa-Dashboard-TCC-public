@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.1.0 · **Data:** 11/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.2.0 · **Data:** 15/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,17 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.2.0 (15/09/2026) - Conformidade ENGENHARIA.md (P0+P1+P2+P3)
+
+`lib/` partilhada dev/prod (config fail-fast, auth, validators, errors RFC 9457,
+middleware requestId+rate-limit, logger estruturado, thingspeak timeout+retry);
+corrige bypass de admin em dev (`requireAdminApi` + `is_admin` no JWT),
+`ReferenceError crypto` em `server.js`, JWT volátil em serverless,
+vazamento `details: err.message` (A10), `promote-first` GET→POST+rate-limit;
+`/api/health`, paginação real em `/admin/logs`, testes `node:test` (15),
+CI + Dependabot, ADRs 0001–0005, `docs/openapi.yaml`, README 15min.
+Erros herdados: `npm audit fix` aplicado; restam 3 moderate transitivos.
 
 ### v1.1.0 (11/09/2026) - Seguranca e Limpeza de Segredos
 

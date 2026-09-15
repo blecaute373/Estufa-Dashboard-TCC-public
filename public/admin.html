@@ -255,11 +255,26 @@ function shortUA(ua) {
   return m ? m[0] : ua.substring(0,30) + '…';
 }
 
+function unwrapList(payload) {
+  // Backend responde { data, pagination } (v1.2+); mantém compat com array puro legado.
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  return [];
+}
+
+function apiErrorMessage(payload, fallback) {
+  // Erro padronizado RFC 9457: { title, detail }. Legado: { error }.
+  if (!payload) return fallback;
+  return payload.detail || payload.title || payload.error || fallback;
+}
+
 async function loadLogs() {
   try {
     const r = await fetch('/api/admin/logs?limit=200', { credentials: 'same-origin' });
     if (r.status === 401) { window.location.href = '/index.html'; return; }
-    allLogs = await r.json();
+    const payload = await r.json();
+    if (!r.ok) { logsTbody.innerHTML = `<tr><td colspan="6" class="no-data">${apiErrorMessage(payload, 'Erro ao carregar')}</td></tr>`; return; }
+    allLogs = unwrapList(payload);
     renderLogs(allLogs);
     computeStats(allLogs);
   } catch { logsTbody.innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>'; }
@@ -269,7 +284,8 @@ async function loadUsers() {
   try {
     const r = await fetch('/api/admin/users', { credentials: 'same-origin' });
     if (r.status === 401) { window.location.href = '/index.html'; return; }
-    const users = await r.json();
+    const payload = await r.json();
+    const users = unwrapList(payload);
     document.getElementById('statUsers').textContent = users.length;
     const tb = document.getElementById('usersTbody');
     if (!users.length) { tb.innerHTML = '<tr><td colspan="6" class="no-data">Nenhum usuário</td></tr>'; return; }

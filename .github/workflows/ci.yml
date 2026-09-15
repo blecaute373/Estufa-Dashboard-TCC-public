@@ -1,0 +1,32 @@
+name: CI — Lint/Check/Teste/Audit
+
+# Pipeline mínimo sério (ENGENHARIA §7.1): check → testes → audit.
+# Falha rápido e bloqueia o merge.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar (build reprodutível via lockfile)
+        run: npm ci
+
+      - name: Syntax check (fail-fast)
+        run: npm run check
+
+      - name: Testes (pirâmide Small + Medium)
+        run: npm test
+
+      - name: Audit de dependências (high+)
+        run: npm run audit

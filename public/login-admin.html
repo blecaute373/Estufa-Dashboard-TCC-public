@@ -160,7 +160,7 @@ async function doLogin() {
       if (d.token) localStorage.setItem('estufa_token', d.token);
       showMsg(msg,'success',`✓ Bem-vindo, ${d.username}!`);
       setTimeout(()=>window.location.href='/admin.html',900);
-    } else { showMsg(msg,'error',d.error||'Erro ao entrar.'); }
+    } else { showMsg(msg,'error',d.detail||d.title||d.error||'Erro ao entrar.'); }
   } catch { showMsg(msg,'error','Sem conexão com o servidor.'); }
   finally { setLoading(btn,false); }
 }

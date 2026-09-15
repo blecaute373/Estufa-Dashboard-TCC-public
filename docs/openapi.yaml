@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Estufa 01 — API
+  version: 1.2.0
+  description: >
+    Contrato da API (ENGENHARIA §15.4). Erros seguem RFC 9457 Problem Details
+    (`type`, `title`, `status`, `detail`, `requestId`).
+servers:
+  - url: https://dashboardestufaiot.vercel.app
+  - url: http://localhost:3000
+paths:
+  /api/health:
+    get:
+      summary: Saúde do serviço
+      responses:
+        '200':
+          description: OK
+  /api/auth/register:
+    post:
+      summary: Registar utilizador (rate-limit 20/15min)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username: { type: string, pattern: '^[a-zA-Z0-9_]{3,30}$' }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200': { description: Sessão criada (ok, username, is_admin, token) }
+        '400': { description: Validação (Problem Details) }
+        '409': { description: Conflito (Problem Details) }
+        '429': { description: Rate limit (Problem Details) }
+  /api/auth/login:
+    post:
+      summary: Login (rate-limit 20/15min)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200': { description: Sessão criada }
+        '401': { description: Credenciais inválidas (mensagem genérica) }
+  /api/auth/logout:
+    post:
+      summary: Logout (requer auth)
+      responses:
+        '200': { description: OK }
+  /api/auth/me:
+    get:
+      summary: Utilizador atual (requer auth)
+      responses:
+        '200': { description: Utilizador }
+        '401': { description: Não autenticado }
+  /api/thingspeak/last:
+    get:
+      summary: Último feed (proxy resiliente com retry)
+      responses:
+        '200': { description: Feed ThingSpeak }
+        '502': { description: Upstream indisponível (Problem Details) }
+  /api/thingspeak/history:
+    get:
+      summary: Histórico de feeds
+      parameters:
+        - in: query
+          name: results
+          schema: { type: integer, default: 60, maximum: 800 }
+      responses:
+        '200': { description: Feeds }
+  /api/admin/logs:
+    get:
+      summary: Logs de acesso (requer admin)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 100, maximum: 500 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200': { description: '{ data, pagination }' }
+        '403': { description: Apenas administradores }
+  /api/admin/users:
+    get:
+      summary: Utilizadores (requer admin)
+      responses:
+        '200': { description: '{ data }' }
+  /api/admin/promote-first:
+    post:
+      summary: Bootstrap do primeiro admin (só se não existir admin; rate-limit 5/15min)
+      responses:
+        '200': { description: Promovido }
+        '400': { description: Já existe admin / sem utilizadores }

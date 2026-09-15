@@ -1,7 +1,6 @@
 ﻿# Dependencies
 node_modules/
-package-lock.json
-yarn.lock
+# npm lockfile SEMPRE versionado (ENGENHARIA §16.2).`r`n# (linha package-lock.json removida de propósito — build reprodutível.)`r`nyarn.lock
 pnpm-lock.yaml
 bun.lock
 bun.lockb
@@ -23,6 +22,7 @@ bun.lockb
 *.pfx
 
 # Local database files
+cookies.txt  # sessão curl local — nunca versionar
 estufa.db
 *.sqlite
 *.sqlite3

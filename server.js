@@ -11,54 +11,36 @@ require('dotenv').config();
 const express      = require('express');
 const mongoose     = require('mongoose');
 const bcrypt       = require('bcryptjs');
-const jwt          = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const rateLimit    = require('express-rate-limit');
 const path         = require('path');
-const https        = require('https');
 
-const PORT          = process.env.PORT || 3000;
-const MONGODB_URI   = process.env.MONGODB_URI || 'mongodb://localhost:27017/estufa';
-const BCRYPT_ROUNDS = 12;
-const JWT_EXPIRES   = '8h';
-const COOKIE_NAME   = 'estufa_tok';
-const JWT_SECRET    = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const {
+  PORT, getMongoUri, BCRYPT_ROUNDS, TS_CHANNEL, TS_API_KEY, isThingSpeakConfigured,
+} = require('./lib/config');
+const {
+  signToken, setAuthCookie, clearAuthCookie, requireAuthApi, requireAdminApi,
+  requireAuthPage, requireAdminPage,
+} = require('./lib/auth');
+const { validateRegister, normalizeLogin, parsePagination, parseResults } = require('./lib/validators');
+const { sendProblem } = require('./lib/errors');
+const { requestId, authLimiter } = require('./lib/middleware');
+const { logger, auditLog } = require('./lib/logger');
+const {
+  fetchJsonWithRetry, buildLastUrl, buildHistoryUrl,
+} = require('./lib/thingspeak');
 
-const TS_CHANNEL = parseInt(process.env.TS_CHANNEL);
-const TS_API_KEY = process.env.TS_API_KEY || '';
+const MONGODB_URI = getMongoUri();
 
-if (!TS_CHANNEL) {
-  console.error('[ERRO] TS_CHANNEL não definida nas variáveis de ambiente');
+if (!isThingSpeakConfigured) {
+  logger.warn('thingspeak_nao_configurado', { hint: 'Defina TS_CHANNEL no .env' });
 }
 
 const User       = require('./models/User');
 const AccessLog  = require('./models/AccessLog');
 
-/* ── Helper HTTPS ── */
-function fetchThingSpeak(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try { resolve(JSON.parse(body)); }
-        catch { reject(new Error('Resposta inválida do ThingSpeak')); }
-      });
-    }).on('error', reject);
-  });
-}
-
 /* ── Helpers DB ── */
 async function log(userId, username, event, req, details = null) {
-  try {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-    const ua = req.headers['user-agent'] || 'unknown';
-    await AccessLog.create({
-      user_id: userId || null, username: username || null, event,
-      ip_address: ip, user_agent: ua,
-      details: details ? JSON.stringify(details) : null,
-    });
-  } catch { /* silent */ }
+  await auditLog(AccessLog, { userId, username, event, req, details });
 }
 
 /* ── APP ── */
@@ -66,93 +48,85 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
 app.use(cookieParser());
+app.use(requestId);
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 20,
-  message: { error: 'Muitas tentativas. Aguarde 15 minutos.' },
-  standardHeaders: true, legacyHeaders: false,
-});
-
-function requireAuth(req, res, next) {
-  const token = req.cookies?.[COOKIE_NAME] || req.headers['authorization']?.replace('Bearer ', '');
-  if (!token) return res.redirect('/index.html');
-  try { req.user = jwt.verify(token, JWT_SECRET); next(); }
-  catch { res.clearCookie(COOKIE_NAME); res.redirect('/index.html'); }
-}
-
-function requireAuthApi(req, res, next) {
-  const token = req.cookies?.[COOKIE_NAME] || req.headers['authorization']?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Não autenticado' });
-  try { req.user = jwt.verify(token, JWT_SECRET); next(); }
-  catch { res.status(401).json({ error: 'Sessão expirada' }); }
-}
+const requireAuth = requireAuthPage('/index.html');
+const requireAdminPageMw = requireAdminPage('/index.html', '/dashboard.html?error=restrito');
 
 /* ── AUTH ROUTES ── */
 app.post('/api/auth/register', authLimiter, async (req, res) => {
   const { username, email, password } = req.body || {};
-  if (!username || !email || !password)
-    return res.status(400).json({ error: 'Preencha todos os campos.' });
-  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username))
-    return res.status(400).json({ error: 'Usuário: 3–30 caracteres (letras, números, _).' });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    return res.status(400).json({ error: 'E-mail inválido.' });
-  if (password.length < 8)
-    return res.status(400).json({ error: 'Senha mínima: 8 caracteres.' });
+  const validationError = validateRegister({ username, email, password });
+  if (validationError) return sendProblem(req, res, 'VALIDATION', validationError);
   try {
-    if (await User.findOne({ username: username.toLowerCase() }))
-      return res.status(409).json({ error: 'Nome de usuário já em uso.' });
-    if (await User.findOne({ email: email.toLowerCase() }))
-      return res.status(409).json({ error: 'E-mail já cadastrado.' });
+    if (await User.findOne({ username: normalizeLogin(username) }))
+      return sendProblem(req, res, 'CONFLICT', 'Nome de usuário já em uso.');
+    if (await User.findOne({ email: normalizeLogin(email) }))
+      return sendProblem(req, res, 'CONFLICT', 'E-mail já cadastrado.');
+    const userCount = await User.countDocuments();
+    const isAdmin = userCount === 0;
     const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = await User.create({ username, email: email.toLowerCase(), password_hash: hash });
-    await log(user._id, user.username, 'register', req);
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-    res.cookie(COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 })
-       .json({ ok: true, username: user.username });
+    const user = await User.create({
+      username, email: normalizeLogin(email), password_hash: hash, is_admin: isAdmin,
+    });
+    await log(user._id, user.username, 'register', req, isAdmin ? { role: 'admin' } : { role: 'user' });
+    logger.info('auth_register', { requestId: req.requestId, username: user.username, isAdmin });
+    const token = signToken(user);
+    setAuthCookie(res, token);
+    return res.json({ ok: true, username: user.username, is_admin: isAdmin, token });
   } catch (err) {
-    console.error('[Auth] Register error:', err);
-    res.status(500).json({ error: 'Erro interno.' });
+    return sendProblem(req, res, 'INTERNAL', 'Erro interno. Tente novamente.', err);
   }
 });
 
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password)
-    return res.status(400).json({ error: 'Preencha usuário e senha.' });
+    return sendProblem(req, res, 'VALIDATION', 'Preencha usuário e senha.');
   try {
+    const login = normalizeLogin(username);
     const user = await User.findOne({
-      $or: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }]
+      $or: [{ username: login }, { email: login }]
     });
     if (!user || !user.is_active) {
       await log(null, username, 'failed_login', req, { reason: 'not_found' });
-      return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+      return sendProblem(req, res, 'UNAUTHENTICATED', 'Usuário ou senha incorretos.');
     }
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
       await log(user._id, user.username, 'failed_login', req, { reason: 'wrong_password' });
-      return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+      return sendProblem(req, res, 'UNAUTHENTICATED', 'Usuário ou senha incorretos.');
     }
     user.last_login = new Date();
+    if (!user.is_admin) {
+      const totalUsers = await User.countDocuments();
+      if (totalUsers === 1) user.is_admin = true;
+    }
     await user.save();
     await log(user._id, user.username, 'login', req);
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-    res.cookie(COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 })
-       .json({ ok: true, username: user.username });
+    logger.info('auth_login', { requestId: req.requestId, username: user.username });
+    const token = signToken(user);
+    setAuthCookie(res, token);
+    return res.json({ ok: true, username: user.username, is_admin: user.is_admin, token });
   } catch (err) {
-    console.error('[Auth] Login error:', err);
-    res.status(500).json({ error: 'Erro interno.' });
+    return sendProblem(req, res, 'INTERNAL', 'Erro interno. Tente novamente.', err);
   }
 });
 
 app.post('/api/auth/logout', requireAuthApi, async (req, res) => {
   await log(req.user.id, req.user.username, 'logout', req);
-  res.clearCookie(COOKIE_NAME).json({ ok: true });
+  clearAuthCookie(res);
+  return res.json({ ok: true });
 });
 
 app.get('/api/auth/me', requireAuthApi, async (req, res) => {
-  const user = await User.findById(req.user.id).select('username email is_active created_at last_login');
-  if (!user) return res.status(404).json({ error: 'Não encontrado' });
-  res.json(user);
+  try {
+    const user = await User.findById(req.user.id).select('username email is_active is_admin created_at last_login');
+    if (!user) return sendProblem(req, res, 'NOT_FOUND', 'Utilizador não encontrado.');
+    return res.json(user);
+  } catch (err) {
+    return sendProblem(req, res, 'INTERNAL', 'Erro interno. Tente novamente.', err);
+  }
 });
 
 app.get('/api/auth/status', async (req, res) => {
@@ -162,73 +136,81 @@ app.get('/api/auth/status', async (req, res) => {
   } catch { res.json({ registeredUsers: 0 }); }
 });
 
-/* ── THINGSPEAK PROXY ── */
+/* ── THINGSPEAK PROXY (resiliente: timeout + retry, §10) ── */
 app.get('/api/thingspeak/last', async (req, res) => {
+  if (!isThingSpeakConfigured)
+    return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
   try {
-    const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds/last.json?api_key=${TS_API_KEY}`;
-    const data = await fetchThingSpeak(url);
-    res.json(data);
+    const data = await fetchJsonWithRetry(buildLastUrl(TS_CHANNEL, TS_API_KEY));
+    return res.json(data);
   } catch (err) {
-    console.error('[TS Proxy] Erro ao buscar último:', err.message);
-    res.status(502).json({ error: 'Falha ao conectar com ThingSpeak', details: err.message });
+    return sendProblem(req, res, 'UPSTREAM', 'Falha ao conectar com ThingSpeak. Tente novamente.', err);
   }
 });
 
 app.get('/api/thingspeak/history', async (req, res) => {
-  const results = Math.min(parseInt(req.query.results) || 60, 800);
+  if (!isThingSpeakConfigured)
+    return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
+  const results = parseResults(req.query);
   try {
-    const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds.json?api_key=${TS_API_KEY}&results=${results}`;
-    const data = await fetchThingSpeak(url);
-    res.json(data);
+    const data = await fetchJsonWithRetry(buildHistoryUrl(TS_CHANNEL, TS_API_KEY, results));
+    return res.json(data);
   } catch (err) {
-    console.error('[TS Proxy] Erro ao buscar histórico:', err.message);
-    res.status(502).json({ error: 'Falha ao conectar com ThingSpeak', details: err.message });
+    return sendProblem(req, res, 'UPSTREAM', 'Falha ao conectar com ThingSpeak. Tente novamente.', err);
   }
 });
 
-/* ── ADMIN ── */
-app.get('/api/admin/logs', requireAuthApi, async (req, res) => {
+/* ── ADMIN (autorização antes da lógica, §8.2) ── */
+app.get('/api/admin/logs', requireAdminApi, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const { limit, offset } = parsePagination(req.query);
     const logs = await AccessLog.find()
       .populate('user_id', 'email')
       .sort({ created_at: -1 })
+      .skip(offset)
       .limit(limit)
       .lean();
-    res.json(logs.map(l => ({
-      id: l._id, user_id: l.user_id?._id || null, username: l.username,
-      event: l.event, ip_address: l.ip_address, user_agent: l.user_agent,
-      details: l.details, created_at: l.created_at, email: l.user_id?.email || null,
-    })));
+    return res.json({
+      data: logs.map(l => ({
+        id: l._id, user_id: l.user_id?._id || null, username: l.username,
+        event: l.event, ip_address: l.ip_address, user_agent: l.user_agent,
+        details: l.details, created_at: l.created_at, email: l.user_id?.email || null,
+      })),
+      pagination: { limit, offset },
+    });
   } catch (err) {
-    console.error('[Admin] Logs error:', err);
-    res.status(500).json({ error: 'Erro ao carregar logs' });
+    return sendProblem(req, res, 'INTERNAL', 'Erro ao carregar logs. Tente novamente.', err);
   }
 });
 
-app.get('/api/admin/users', requireAuthApi, async (req, res) => {
+app.get('/api/admin/users', requireAdminApi, async (req, res) => {
   try {
     const users = await User.find()
-      .select('username email is_active created_at last_login')
+      .select('username email is_active is_admin created_at last_login')
       .sort({ created_at: -1 })
       .lean();
-    res.json(users);
+    return res.json({ data: users });
   } catch (err) {
-    console.error('[Admin] Users error:', err);
-    res.status(500).json({ error: 'Erro ao carregar usuários' });
+    return sendProblem(req, res, 'INTERNAL', 'Erro ao carregar usuários. Tente novamente.', err);
   }
+});
+
+/* ── HEALTH (para CI/monitoramento, §9.2) ── */
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, uptime: process.uptime(), thingspeak: isThingSpeakConfigured });
 });
 
 /* ── PAGES ── */
 app.get('/dashboard.html', requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
-app.get('/admin.html',     requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/admin.html',     requireAdminPageMw, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/',               requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ── START ── */
+if (require.main === module) {
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('[DB] Conectado ao MongoDB');
+    logger.info('db_conectado', {});
     app.listen(PORT, () => {
       console.log(`\n🌿 Estufa 01 rodando em http://localhost:${PORT}`);
       console.log(`   Dashboard  → http://localhost:${PORT}/dashboard.html`);
@@ -238,7 +220,10 @@ mongoose.connect(MONGODB_URI)
     });
   })
   .catch(err => {
-    console.error('[DB] Erro ao conectar MongoDB:', err.message);
+    logger.error('db_erro_conexao', { message: err.message });
     console.error('Certifique-se de que o MongoDB está rodando ou ajuste MONGODB_URI no .env');
     process.exit(1);
   });
+}
+
+module.exports = app;

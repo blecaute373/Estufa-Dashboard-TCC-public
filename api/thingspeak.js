@@ -1,55 +1,41 @@
 /**
  * Serverless: /api/thingspeak/*
- * Proxy para ThingSpeak (evita CORS)
+ * Proxy para ThingSpeak (evita CORS) com timeout + retry (ENGENHARIA §10).
+ *
+ * GET é idempotente: repetir não cria efeito colateral, logo retry é seguro.
  */
+'use strict';
+
 const express = require('express');
-const https = require('https');
+const { TS_CHANNEL, TS_API_KEY, isThingSpeakConfigured } = require('../lib/config');
+const { parseResults } = require('../lib/validators');
+const { sendProblem } = require('../lib/errors');
+const { requestId } = require('../lib/middleware');
+const { fetchJsonWithRetry, buildLastUrl, buildHistoryUrl } = require('../lib/thingspeak');
 
 const app = express();
-
-const TS_CHANNEL = parseInt(process.env.TS_CHANNEL);
-const TS_API_KEY = process.env.TS_API_KEY || '';
-
-if (!TS_CHANNEL) {
-  console.error('[ERRO] TS_CHANNEL não definida nas variáveis de ambiente');
-}
-
-function fetchThingSpeak(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch {
-          reject(new Error('Resposta inválida do ThingSpeak'));
-        }
-      });
-    }).on('error', reject);
-  });
-}
+app.use(requestId);
 
 app.get('/api/thingspeak/last', async (req, res) => {
+  if (!isThingSpeakConfigured)
+    return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
   try {
-    const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds/last.json?api_key=${TS_API_KEY}`;
-    const data = await fetchThingSpeak(url);
-    res.json(data);
+    const data = await fetchJsonWithRetry(buildLastUrl(TS_CHANNEL, TS_API_KEY));
+    return res.json(data);
   } catch (err) {
-    console.error('[TS Proxy] Erro ao buscar último:', err.message);
-    res.status(502).json({ error: 'Falha ao conectar com ThingSpeak', details: err.message });
+    return sendProblem(req, res, 'UPSTREAM', 'Falha ao conectar com ThingSpeak. Tente novamente.', err);
   }
 });
 
 app.get('/api/thingspeak/history', async (req, res) => {
-  const results = Math.min(parseInt(req.query.results) || 60, 800);
+  if (!isThingSpeakConfigured)
+    return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
+  const results = parseResults(req.query);
   try {
-    const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds.json?api_key=${TS_API_KEY}&results=${results}`;
-    const data = await fetchThingSpeak(url);
-    res.json(data);
+    const data = await fetchJsonWithRetry(buildHistoryUrl(TS_CHANNEL, TS_API_KEY, results));
+    return res.json(data);
   } catch (err) {
-    console.error('[TS Proxy] Erro ao buscar histórico:', err.message);
-    res.status(502).json({ error: 'Falha ao conectar com ThingSpeak', details: err.message });
+    return sendProblem(req, res, 'UPSTREAM', 'Falha ao conectar com ThingSpeak. Tente novamente.', err);
   }
 });
 
