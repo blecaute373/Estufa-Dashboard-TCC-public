@@ -331,15 +331,26 @@ estufa-dashboard-tcc/
 |   |-- thingspeak.js          # Proxy + parsing dados ThingSpeak
 |
 |-- public/                    # Frontend estatico
-|   |-- index.html             # Landing page
-|   |-- login-dashboard.html   # Login usuario
-|   |-- login-admin.html       # Login admin
+|   |-- index.html             # Login unificado (layout dividido + registro)
+|   |-- login-dashboard.html   # Login usuario (auth-card + registro)
+|   |-- login-admin.html       # Login admin (auth-card variante admin)
 |   |-- dashboard.html         # Dashboard principal (graficos)
 |   |-- admin.html             # Painel administrativo
-|   |-- style.css              # Estilos globais
-|   |-- script.js              # Logica dashboard (graficos, alertas)
+|   |-- css/                   # CSS modular (carregado em cascata)
+|   |   |-- tokens.css         # Variaveis de design (cores, sombras, fontes)
+|   |   |-- base.css           # Reset, tipografia, botoes, topbar
+|   |   |-- base2.css          # Cards, badges, estados, utilitarios
+|   |   |-- auth.css           # Layout de autenticacao (split + card)
+|   |   |-- auth2.css          # Campos, botoes, mensagens, tabs
+|   |   |-- dashboard.css      # KPIs, sensores, skeleton
+|   |   |-- dashboard2.css     # Graficos, historico, controles
+|   |   |-- dashboard3.css     # Alertas, sistema, log
+|   |   |-- admin.css          # Estatisticas, tabelas, filtros
+|   |-- js/                    # JS modular
+|   |   |-- theme.js           # Alternancia claro/escuro persistente
+|   |-- script.js              # Logica dashboard (graficos, alertas, CSV)
 |   |-- pwa.js                 # Registro Service Worker
-|   |-- sw.js                  # Service Worker v2 (cache limpo + network-first)
+|   |-- sw.js                  # Service Worker v3 (cache modular + network-first)
 |   |-- manifest-dashboard.json # PWA manifest do dashboard
 |   |-- manifest-admin.json     # PWA manifest do admin
 |   |-- icons/                  # Icones SVG/PNG para PWA

@@ -1,63 +1,63 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d1f10">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1810" id="metaTheme">
+<meta name="description" content="Estufa 01 — consola profissional de monitorização agrícola IoT em tempo real.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest-dashboard.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230d1f10'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%234ade80'%3E🌿%3C/text%3E%3C/svg%3E">
-<title>Estufa 01 — Monitor</title>
-<link rel="stylesheet" href="style.css">
-<style>
-.auth-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.auth-user { font-family:var(--mono); font-size:0.75rem; color:var(--text2); }
-.auth-btn {
-  padding:5px 12px; border-radius:8px; font-size:0.72rem; font-weight:700;
-  font-family:var(--sans); cursor:pointer; letter-spacing:0.04em;
-  border:1px solid var(--border2); background:transparent; color:var(--text2);
-  transition:all 0.2s; text-decoration:none; display:inline-flex; align-items:center; gap:5px;
-}
-.auth-btn:hover { background:rgba(74,222,128,0.08); }
-.auth-btn-danger { border-color:rgba(248,113,113,0.3); color:var(--red); }
-.auth-btn-danger:hover { background:rgba(248,113,113,0.07); }
-</style>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230b1810'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%234ade80'%3E🌿%3C/text%3E%3C/svg%3E">
+<title>Estufa 01 · Consola</title>
+<script>(function(){try{var t=localStorage.getItem('estufa_theme');if(!t){t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/base2.css">
+<link rel="stylesheet" href="/css/dashboard.css">
+<link rel="stylesheet" href="/css/dashboard2.css">
+<link rel="stylesheet" href="/css/dashboard3.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
+<a class="skip" href="#kpiGrid">Saltar para sensores</a>
 <div class="page">
 
   <!-- HEADER -->
-  <header class="header">
+  <header class="topbar">
     <div class="brand">
-      <div class="brand-icon">🌿</div>
+      <div class="brand-mark" aria-hidden="true">🌿</div>
       <div class="brand-text">
-        <h1>Estufa 01</h1>
-        <span>Monitor Agrícola · ThingSpeak</span>
+        <div class="brand-name">Estufa 01</div>
+        <div class="brand-sub">Consola Agrícola · ThingSpeak</div>
       </div>
     </div>
-    <div class="header-right">
-      <div class="status-pill loading" id="statusPill">
-        <div class="s-dot"></div>
-        <span id="statusText">Carregando…</span>
+    <div class="topbar-right">
+      <div class="status-pill loading" id="statusPill" role="status" aria-live="polite">
+        <div class="s-dot" aria-hidden="true"></div>
+        <span id="statusText">A ligar…</span>
       </div>
       <div class="refresh-info" id="refreshInfo">—</div>
-      <div class="auth-actions">
-        <span class="auth-user" id="authUser"></span>
-        <button class="auth-btn auth-btn-danger" onclick="doLogout()" href="index.html">Sair</button>
-      </div>
+      <button class="btn-ghost icon-only theme-btn" type="button" data-theme-btn onclick="EstufaTheme.toggle()" aria-pressed="false" title="Alternar tema">
+        <span class="theme-icon" aria-hidden="true">🌙</span><span class="theme-label" hidden></span>
+      </button>
+      <button class="btn-ghost" type="button" id="installBtn" style="display:none" onclick="installApp()">⬇ Instalar</button>
+      <button class="btn-ghost" type="button" onclick="exportarCSV()">⤓ CSV</button>
+      <span class="auth-user" id="authUser"></span>
+      <button class="btn-ghost danger" type="button" onclick="doLogout()">Sair</button>
     </div>
-    <div class="countdown-wrap" style="width:100%;order:99">
+    <div class="countdown-wrap" aria-hidden="true">
       <div class="countdown-fill" id="countdownBar" style="width:100%"></div>
     </div>
   </header>
 
   <!-- SENSORES -->
-  <div class="section-label">🌡 Sensores</div>
-  <div class="sensor-grid">
+  <div class="section-label" id="sensoresLabel">🌡 Sensores <span class="count-chip" id="kpiUpdated">—</span></div>
+  <div class="kpi-grid sensor-grid" id="kpiGrid" aria-labelledby="sensoresLabel">
 
     <div class="sensor-card card-temp">
       <div class="ring-wrap">
@@ -66,8 +66,9 @@
           <circle class="ring-fill" id="ringTemp" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
         </svg>
       </div>
-      <div class="sensor-label">Temperatura</div>
-      <div class="sensor-value shimmer" id="valTemp">--<span class="sensor-unit"> °C</span></div>
+      <div class="sensor-top"><div class="sensor-label">Temperatura</div><span class="state-dot state-idle" id="stateTemp">—</span></div>
+      <div class="sensor-value" id="valTemp">--<span class="sensor-unit"> °C</span></div>
+      <div class="delta flat" id="deltaTemp">—</div>
       <div class="sensor-bar"><div class="sensor-bar-fill" id="barTemp" style="width:0%"></div></div>
       <div class="sensor-sublabel" id="subTemp">Faixa ideal: 26 – 30 °C</div>
       <div class="wm">🌡️</div>
@@ -80,8 +81,9 @@
           <circle class="ring-fill" id="ringSolo" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
         </svg>
       </div>
-      <div class="sensor-label">Umidade Solo</div>
-      <div class="sensor-value shimmer" id="valSolo">--<span class="sensor-unit"> %</span></div>
+      <div class="sensor-top"><div class="sensor-label">Umidade Solo</div><span class="state-dot state-idle" id="stateSolo">—</span></div>
+      <div class="sensor-value" id="valSolo">--<span class="sensor-unit"> %</span></div>
+      <div class="delta flat" id="deltaSolo">—</div>
       <div class="sensor-bar"><div class="sensor-bar-fill" id="barSolo" style="width:0%"></div></div>
       <div class="sensor-sublabel" id="subSolo">Faixa ideal: 40 – 70 %</div>
       <div class="wm">🌱</div>
@@ -94,8 +96,9 @@
           <circle class="ring-fill" id="ringLux" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
         </svg>
       </div>
-      <div class="sensor-label">Luminosidade</div>
-      <div class="sensor-value shimmer" id="valLux">--<span class="sensor-unit"> lux</span></div>
+      <div class="sensor-top"><div class="sensor-label">Luminosidade</div><span class="state-dot state-idle" id="stateLux">—</span></div>
+      <div class="sensor-value" id="valLux">--<span class="sensor-unit"> lux</span></div>
+      <div class="delta flat" id="deltaLux">—</div>
       <div class="sensor-bar"><div class="sensor-bar-fill" id="barLux" style="width:0%"></div></div>
       <div class="sensor-sublabel" id="subLux">PWM ativo: 100 – 600 lux</div>
       <div class="wm">☀️</div>
@@ -108,8 +111,9 @@
           <circle class="ring-fill" id="ringAr" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"/>
         </svg>
       </div>
-      <div class="sensor-label">Umidade do Ar</div>
-      <div class="sensor-value shimmer" id="valAr">--<span class="sensor-unit"> %</span></div>
+      <div class="sensor-top"><div class="sensor-label">Umidade do Ar</div><span class="state-dot state-idle" id="stateAr">—</span></div>
+      <div class="sensor-value" id="valAr">--<span class="sensor-unit"> %</span></div>
+      <div class="delta flat" id="deltaAr">—</div>
       <div class="sensor-bar"><div class="sensor-bar-fill" id="barAr" style="width:0%"></div></div>
       <div class="sensor-sublabel" id="subAr">Crítico: abaixo de 30 %</div>
       <div class="wm">💧</div>
@@ -160,23 +164,33 @@
   <div class="section-label">📈 Histórico</div>
   <div class="chart-card">
     <div class="chart-head">
-      <div class="chart-title">Leituras dos Sensores</div>
-      <div class="legend-list">
-        <div class="legend-item"><div class="legend-dot" style="background:#fca5a5"></div>Temp °C</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Solo %</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#fde047"></div>Lux ÷10</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#67e8f9"></div>Umid Ar %</div>
+      <div>
+        <div class="chart-title">Leituras dos Sensores</div>
+        <div class="chart-sub" id="chartSub">— pontos · clique na legenda para ocultar</div>
+      </div>
+      <div class="legend-list" role="group" aria-label="Séries do gráfico">
+        <button type="button" class="legend-item" data-series="0"><span class="legend-dot" style="background:#fca5a5"></span>Temp °C</button>
+        <button type="button" class="legend-item" data-series="1"><span class="legend-dot" style="background:#fbbf24"></span>Solo %</button>
+        <button type="button" class="legend-item" data-series="2"><span class="legend-dot" style="background:#fde047"></span>Lux ÷10</button>
+        <button type="button" class="legend-item" data-series="3"><span class="legend-dot" style="background:#67e8f9"></span>Umid Ar %</button>
       </div>
     </div>
     <div class="chart-wrap">
-      <canvas id="mainChart"></canvas>
+      <canvas id="mainChart" role="img" aria-label="Gráfico temporal dos sensores"></canvas>
+      <div class="chart-error" id="chartError" role="alert">
+        <div class="ce-icon">📡</div>
+        <p id="chartErrorMsg">Não foi possível carregar o histórico.</p>
+        <button class="btn-ghost" type="button" onclick="buscarHistorico()">Tentar de novo</button>
+      </div>
     </div>
-    <div class="period-row">
+    <div class="period-row" role="group" aria-label="Período do histórico">
       <button class="period-btn" data-n="20">Últimas 20</button>
-      <button class="period-btn active" data-n="60">Últimas 60</button>
+      <button class="period-btn active" data-n="60" aria-pressed="true">Últimas 60</button>
       <button class="period-btn" data-n="120">Últimas 120</button>
       <button class="period-btn" data-n="360">Últimas 360</button>
       <button class="period-btn" data-n="800">Max</button>
+      <span class="period-spacer"></span>
+      <button class="btn-ghost" type="button" onclick="exportarCSV()">⤓ Exportar CSV</button>
     </div>
   </div>
 
@@ -190,7 +204,7 @@
       </div>
       <button class="clear-btn" onclick="limparAlertas()">Limpar</button>
     </div>
-    <div class="alerts-log" id="alertsLog">
+    <div class="alerts-log" id="alertsLog" role="log" aria-live="polite" aria-label="Log de eventos">
       <div class="no-alerts" id="noAlerts">Nenhum alerta — sistema saudável 🌿</div>
     </div>
   </div>
@@ -217,12 +231,13 @@
   </div>
 
   <div class="footer">
-    Estufa 01 · ThingSpeak · Atualiza a cada 16 s
+    Estufa 01 · ThingSpeak · Atualiza a cada 16 s · <a href="/api/health" target="_blank" rel="noopener">saúde da API</a>
   </div>
 
 </div>
 
-<script src="pwa.js"></script>
-<script src="script.js"></script>
+<script src="/js/theme.js"></script>
+<script src="/pwa.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>

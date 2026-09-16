@@ -1,0 +1,28 @@
+/* ESTUFA 01 · auth.css p1 — split, hero, tabs */
+.auth-page{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:1}
+.auth-split{display:grid;grid-template-columns:1.05fr .95fr;width:min(980px,100%);overflow:hidden;
+  background:var(--surface);border:1px solid var(--border-2);border-radius:24px;box-shadow:var(--shadow-lg);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  animation:auth-in .55s cubic-bezier(.34,1.4,.64,1) both}
+@keyframes auth-in{from{opacity:0;transform:translateY(26px) scale(.98)}to{opacity:1;transform:none}}
+.auth-hero{position:relative;padding:40px 36px;color:#eafff1;overflow:hidden;
+  background:linear-gradient(150deg,#0a2e18 0%,#0f4a26 45%,#15803d 100%)}
+.auth-hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 90% 60% at 20% 0%,rgba(163,230,53,.22),transparent 60%),radial-gradient(ellipse 70% 60% at 90% 100%,rgba(103,232,249,.14),transparent 60%)}
+.auth-hero::after{content:'🌿';position:absolute;right:-30px;bottom:-60px;font-size:15rem;opacity:.08;line-height:1}
+.auth-hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;gap:18px}
+.hero-eyebrow{font-family:var(--mono);font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:#bbf7d0}
+.hero-title{font-family:var(--display);font-size:2rem;font-weight:700;line-height:1.08;letter-spacing:-.02em}
+.hero-sub{font-size:.9rem;color:#d1fae5;opacity:.85;max-width:34ch}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:auto}
+.hero-stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:12px}
+.hero-stat b{display:block;font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
+.hero-stat span{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;opacity:.75}
+.auth-form-side{padding:36px 34px 30px;display:flex;flex-direction:column}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.auth-brand h1{font-family:var(--display);font-size:1.2rem;letter-spacing:-.01em}
+.auth-brand p{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.tabs{display:flex;background:var(--inset);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:22px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:.76rem;
+  letter-spacing:.06em;text-transform:uppercase;padding:10px;border-radius:9px;cursor:pointer;transition:all .18s}
+.tabs button.active{background:rgba(74,222,128,.14);color:var(--green);box-shadow:inset 0 0 0 1px rgba(74,222,128,.3)}

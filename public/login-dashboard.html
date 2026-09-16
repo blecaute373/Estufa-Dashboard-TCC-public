@@ -1,339 +1,311 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d1f10">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1810">
+<meta name="description" content="Estufa 01 — entrada na consola de monitorização agrícola.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest-dashboard.json">
-<title>Estufa 01 — Acesso</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:      #08120a; --bg2:     #0d1f10; --bg3:     #112415;
-  --glass:   rgba(15, 35, 18, 0.85);
-  --border:  rgba(74, 222, 128, 0.12); --border2: rgba(74, 222, 128, 0.3);
-  --green:   #4ade80; --green2:  #22c55e; --green3:  #16a34a;
-  --lime:    #a3e635; --amber:   #fbbf24; --red:     #f87171;
-  --text:    #e8f5e9; --text2:   #86efac; --muted:   #4d7355; --muted2:  #2d4a32;
-  --mono:    'DM Mono', monospace; --serif:   'Lora', serif; --sans:    'Nunito', sans-serif;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
-body {
-  font-family: var(--sans); background: var(--bg); color: var(--text);
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  overflow: hidden; position: relative;
-}
-body::before {
-  content: ''; position: fixed; inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 15% 10%, rgba(34,197,94,0.1) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 80% at 85% 90%, rgba(74,222,128,0.07) 0%, transparent 60%),
-              radial-gradient(ellipse 40% 40% at 50% 50%, rgba(16,185,129,0.04) 0%, transparent 70%);
-  pointer-events: none;
-}
-body::after {
-  content: ''; position: fixed; inset: 0;
-  background-image: linear-gradient(rgba(74,222,128,0.018) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(74,222,128,0.018) 1px, transparent 1px);
-  background-size: 40px 40px; pointer-events: none;
-}
-.particles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
-.particle {
-  position: absolute; width: 2px; height: 2px; border-radius: 50%;
-  background: var(--green); opacity: 0;
-  animation: float-up linear infinite;
-}
-@keyframes float-up {
-  0%   { transform: translateY(0) translateX(0) scale(0); opacity: 0; }
-  10%  { opacity: 0.4; }
-  90%  { opacity: 0.15; }
-  100% { transform: translateY(-100vh) translateX(var(--drift)) scale(1.5); opacity: 0; }
-}
-.card {
-  position: relative; z-index: 10; width: 100%; max-width: 420px; margin: 20px;
-  background: var(--glass); backdrop-filter: blur(24px);
-  border: 1px solid var(--border2); border-radius: 24px; overflow: hidden;
-  animation: card-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-@keyframes card-in {
-  from { opacity: 0; transform: translateY(30px) scale(0.95); }
-  to   { opacity: 1; transform: none; }
-}
-.card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--green), var(--lime), var(--green), transparent);
-}
-.card-inner { padding: 36px 32px 32px; }
-.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
-.brand-icon {
-  width: 52px; height: 52px; background: linear-gradient(135deg, var(--green3), var(--green));
-  border-radius: 16px; display: flex; align-items: center; justify-content: center;
-  font-size: 24px; box-shadow: 0 0 32px rgba(74,222,128,0.35); flex-shrink: 0;
-}
-.brand-text h1 { font-family: var(--serif); font-size: 1.45rem; font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
-.brand-text p { font-size: 0.7rem; color: var(--muted); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 3px; }
-.tabs {
-  display: flex; background: rgba(0,0,0,0.25); border: 1px solid var(--border);
-  border-radius: 12px; padding: 3px; margin-bottom: 28px; position: relative;
-}
-.tab-slider {
-  position: absolute; top: 3px; bottom: 3px; width: calc(50% - 3px);
-  background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3);
-  border-radius: 10px; transition: transform 0.3s cubic-bezier(0.34,1.3,0.64,1);
-}
-.tabs.on-register .tab-slider { transform: translateX(calc(100% + 3px)); }
-.tab {
-  flex: 1; padding: 9px; background: none; border: none;
-  color: var(--muted); font-family: var(--sans); font-size: 0.82rem; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
-  position: relative; z-index: 1; transition: color 0.25s;
-}
-.tab.active { color: var(--green); }
-.welcome-badge {
-  display: none; align-items: center; gap: 8px;
-  background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2);
-  border-radius: 10px; padding: 10px 14px; margin-bottom: 20px;
-  font-size: 0.78rem; color: var(--text2); animation: slide-in 0.3s ease;
-}
-.welcome-badge.show { display: flex; }
-@keyframes slide-in { from{transform:translateY(-8px);opacity:0} to{transform:none;opacity:1} }
-.form-group { margin-bottom: 18px; }
-label {
-  display: block; font-size: 0.72rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 7px;
-}
-input {
-  width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 14px; color: var(--text);
-  font-family: var(--mono); font-size: 0.9rem; outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-input::placeholder { color: var(--muted2); }
-input:focus { border-color: rgba(74,222,128,0.4); box-shadow: 0 0 0 3px rgba(74,222,128,0.06); }
-.input-hint { font-size: 0.67rem; color: var(--muted); font-family: var(--mono); margin-top: 5px; }
-.strength-wrap { margin-top: 6px; display: none; }
-.strength-wrap.show { display: block; }
-.strength-track { height: 3px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
-.strength-fill { height: 100%; border-radius: 99px; transition: width 0.4s, background 0.4s; }
-.strength-label { font-size: 0.67rem; font-family: var(--mono); }
-.btn {
-  width: 100%; padding: 13px; background: linear-gradient(135deg, var(--green3), var(--green2));
-  border: none; border-radius: 12px; color: #fff; font-family: var(--sans);
-  font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  cursor: pointer; transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 20px rgba(34,197,94,0.25); position: relative; overflow: hidden;
-}
-.btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(34,197,94,0.35); }
-.btn:active { transform: translateY(0); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.btn-spinner {
-  width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.btn.loading .btn-spinner { display: block; }
-.btn.loading .btn-text { display: none; }
-.msg {
-  margin-top: 14px; padding: 10px 14px; border-radius: 10px;
-  font-size: 0.8rem; display: none; animation: slide-in 0.3s ease;
-}
-.msg.show { display: block; }
-.msg.error   { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #fca5a5; }
-.msg.success { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25); color: var(--green); }
-.first-user-notice {
-  background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2);
-  border-radius: 10px; padding: 12px 14px; font-size: 0.77rem;
-  color: #fcd34d; margin-bottom: 20px; display: none;
-}
-.first-user-notice.show { display: block; }
-.divider {
-  display: flex; align-items: center; gap: 12px; margin: 20px 0 0;
-  color: var(--muted); font-size: 0.7rem; font-family: var(--mono);
-}
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.card-footer {
-  background: rgba(0,0,0,0.2); border-top: 1px solid var(--border);
-  padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
-}
-.footer-info { font-size: 0.67rem; font-family: var(--mono); color: var(--muted); }
-.user-count {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 0.67rem; font-family: var(--mono); color: var(--muted);
-}
-.uc-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s infinite; }
-@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
-#registerFields { overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease; }
-@media (max-width: 480px) { .card-inner { padding: 28px 20px 24px; } .card-footer { padding: 12px 20px; } }
-</style>
+<title>Estufa 01 · Acesso</title>
+<script>(function(){try{var t=localStorage.getItem('estufa_theme');if(!t){t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/base2.css">
+<link rel="stylesheet" href="/css/auth.css">
+<link rel="stylesheet" href="/css/auth2.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div class="particles" id="particles"></div>
-<div class="card">
-  <div class="card-inner">
-    <div class="brand">
-      <div class="brand-icon">🌿</div>
-      <div class="brand-text">
-        <h1>Estufa 01</h1>
-        <p>Monitor Agrícola · Dashboard</p>
+
+<div class="particles" id="particles" aria-hidden="true"></div>
+
+<main class="auth-card-page">
+  <div class="auth-card">
+
+    <div class="auth-card-head">
+      <div class="auth-card-mark" aria-hidden="true">🌿</div>
+      <div>
+        <div class="auth-card-title">Estufa 01</div>
+        <div class="auth-card-sub">Monitor Agrícola · Dashboard</div>
       </div>
-    </div>
-    <div class="first-user-notice" id="firstUserNotice">
-      🌱 Nenhum usuário cadastrado. Você será o primeiro.
-    </div>
-    <div class="tabs" id="tabsEl">
-      <div class="tab-slider"></div>
-      <button class="tab active" id="tabLogin"    onclick="switchTab('login')">Entrar</button>
-      <button class="tab"        id="tabRegister" onclick="switchTab('register')">Registrar</button>
-    </div>
-    <div class="welcome-badge" id="welcomeBadge">
-      <span class="wb-icon">🎉</span>
-      <span id="welcomeText">Conta criada! Redirecionando…</span>
-    </div>
-    <div id="loginForm">
-      <div class="form-group">
-        <label>Usuário ou E-mail</label>
-        <input type="text" id="loginUser" placeholder="seunome ou email@exemplo.com" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>Senha</label>
-        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button class="btn" id="btnLogin" onclick="doLogin()">
-        <div class="btn-inner">
-          <div class="btn-spinner"></div>
-          <span class="btn-text">Entrar no Sistema</span>
-        </div>
+      <button class="btn-ghost icon-only theme-btn" type="button" data-theme-btn onclick="EstufaTheme.toggle()" aria-pressed="false" title="Alternar tema" style="margin-left:auto">
+        <span class="theme-icon" aria-hidden="true">🌙</span>
       </button>
-      <div class="msg" id="loginMsg"></div>
     </div>
-    <div id="registerForm" style="display:none">
-      <div class="form-group">
-        <label>Nome de Usuário</label>
-        <input type="text" id="regUser" placeholder="seunome" autocomplete="username">
-        <div class="input-hint">3–30 caracteres · letras, números e _</div>
+
+    <div class="auth-card-body">
+      <div class="auth-notice" id="firstUserNotice">
+        🌱 Nenhum usuário cadastrado. Você será o primeiro.
       </div>
-      <div class="form-group">
-        <label>E-mail</label>
-        <input type="email" id="regEmail" placeholder="email@exemplo.com" autocomplete="email">
+
+      <div class="tabs" id="tabsEl">
+        <button class="active" id="tabLogin" type="button" onclick="switchTab('login')">Entrar</button>
+        <button id="tabRegister" type="button" onclick="switchTab('register')">Registrar</button>
       </div>
-      <div class="form-group">
-        <label>Senha</label>
-        <input type="password" id="regPass" placeholder="Mínimo 8 caracteres" autocomplete="new-password" oninput="updateStrength(this.value)">
-        <div class="strength-wrap" id="strengthWrap">
-          <div class="strength-track"><div class="strength-fill" id="strengthFill"></div></div>
-          <div class="strength-label" id="strengthLabel"></div>
+
+      <div class="welcome" id="welcomeBadge">
+        <div class="w-icon" aria-hidden="true">🎉</div>
+        <div id="welcomeText">Conta criada! Redirecionando…</div>
+      </div>
+      <!-- LOGIN -->
+      <div id="loginForm">
+        <div class="field">
+          <label for="loginUser">Usuário ou E-mail</label>
+          <div class="input-wrap plain">
+            <input type="text" id="loginUser" placeholder="seunome ou email@exemplo.com" autocomplete="username">
+          </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label>Confirmar Senha</label>
-        <input type="password" id="regPass2" placeholder="Repita a senha" autocomplete="new-password">
-      </div>
-      <button class="btn" id="btnRegister" onclick="doRegister()">
-        <div class="btn-inner">
-          <div class="btn-spinner"></div>
-          <span class="btn-text">Criar Conta</span>
+        <div class="field">
+          <label for="loginPass">Senha</label>
+          <div class="input-wrap">
+            <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+            <button class="peek" type="button" aria-label="Mostrar senha" onclick="peekPass('loginPass', this)">👁</button>
+          </div>
         </div>
-      </button>
-      <div class="msg" id="registerMsg"></div>
+        <button class="btn-primary" id="btnLogin" type="button" onclick="doLogin()">
+          <span class="btn-spinner" aria-hidden="true"></span><span class="btn-text">Entrar no Dashboard</span>
+        </button>
+        <div class="msg" id="loginMsg" role="alert"></div>
+      </div>
+
+      <!-- REGISTRAR -->
+      <div id="registerForm" style="display:none">
+        <div class="field">
+          <label for="regUser">Nome de Usuário</label>
+          <div class="input-wrap plain">
+            <input type="text" id="regUser" placeholder="seunome" autocomplete="username">
+          </div>
+          <div class="input-hint">3–30 caracteres · letras, números e _</div>
+        </div>
+        <div class="field">
+          <label for="regEmail">E-mail</label>
+          <div class="input-wrap plain">
+            <input type="email" id="regEmail" placeholder="email@exemplo.com" autocomplete="email">
+          </div>
+        </div>
+        <div class="field">
+          <label for="regPass">Senha</label>
+          <div class="input-wrap">
+            <input type="password" id="regPass" placeholder="Mínimo 8 caracteres" autocomplete="new-password" oninput="updateStrength(this.value)">
+            <button class="peek" type="button" aria-label="Mostrar senha" onclick="peekPass('regPass', this)">👁</button>
+          </div>
+          <div class="strength" id="strengthWrap">
+            <div class="strength-track"><div class="strength-fill" id="strengthFill"></div></div>
+            <div class="strength-label" id="strengthLabel"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="regPass2">Confirmar Senha</label>
+          <div class="input-wrap">
+            <input type="password" id="regPass2" placeholder="Repita a senha" autocomplete="new-password">
+            <button class="peek" type="button" aria-label="Mostrar senha" onclick="peekPass('regPass2', this)">👁</button>
+          </div>
+        </div>
+        <button class="btn-primary" id="btnRegister" type="button" onclick="doRegister()">
+          <span class="btn-spinner" aria-hidden="true"></span><span class="btn-text">Criar Conta</span>
+        </button>
+        <div class="msg" id="registerMsg" role="alert"></div>
+      </div>
     </div>
-  </div>
-  <div class="card-footer">
-    <div class="footer-info">Estufa 01 · ThingSpeak</div>
-    <div class="user-count">
-      <div class="uc-dot"></div>
-      <span id="userCount">—</span> usuário(s)
+
+    <div class="auth-card-foot">
+      <span>Estufa 01 · ThingSpeak</span>
+      <span id="userCount">—</span>
+      <a href="/login-admin.html">Área administrativa →</a>
     </div>
+
   </div>
-</div>
+</main>
+
 <script>
+/* ── ESTADO ── */
 let currentTab = 'login';
-(function spawnParticles() {
-  const container = document.getElementById('particles');
+
+/* ── PARTICLES ─ */
+(function () {
+  const box = document.getElementById('particles');
+  if (!box) return;
   for (let i = 0; i < 18; i++) {
-    const p = document.createElement('div'); p.className = 'particle';
-    const left  = Math.random() * 100; const delay = Math.random() * 12;
-    const dur   = 8 + Math.random() * 10; const drift = (Math.random() - 0.5) * 120;
-    p.style.cssText = `left:${left}%;bottom:-10px;animation-duration:${dur}s;animation-delay:${delay}s;--drift:${drift}px`;
-    container.appendChild(p);
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.bottom = '-10px';
+    p.style.animationDelay = (Math.random() * 12) + 's';
+    p.style.animationDuration = (10 + Math.random() * 12) + 's';
+    box.appendChild(p);
   }
 })();
+
+/* ── TABS ── */
+function switchTab(tab) {
+  currentTab = tab;
+  const isLogin = tab === 'login';
+  document.getElementById('tabLogin').classList.toggle('active', isLogin);
+  document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+  document.getElementById('loginForm').style.display = isLogin ? '' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none' : '';
+  clearMsgs();
+}
+
+function peekPass(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+/* ── STATUS INICIAL ── */
 async function checkStatus() {
   try {
-    const r = await fetch('/api/auth/status'); const d = await r.json();
-    document.getElementById('userCount').textContent = d.registeredUsers;
-    if (d.registeredUsers === 0) {
+    const r = await fetch('/api/auth/status');
+    const d = await r.json();
+    if (d.users === 0) {
       document.getElementById('firstUserNotice').classList.add('show');
       switchTab('register');
     }
-  } catch {}
+    const uc = document.getElementById('userCount');
+    if (uc) uc.textContent = d.users ?? '—';
+  } catch { /* offline: mantém login */ }
 }
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('tabsEl').classList.toggle('on-register', tab === 'register');
-  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
-  document.getElementById('loginForm').style.display    = tab === 'login'    ? '' : 'none';
-  document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
-  clearMsgs();
-}
+/* ── LOGIN ── */
 async function doLogin() {
-  const btn = document.getElementById('btnLogin'); const msg = document.getElementById('loginMsg');
+  const btn = document.getElementById('btnLogin');
+  const msg = document.getElementById('loginMsg');
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
+
   if (!user || !pass) return showMsg(msg, 'error', 'Preencha todos os campos.');
-  setLoading(btn, true); clearMsgs();
+
+  setLoading(btn, true);
+  clearMsgs();
+
   try {
-    const r = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:user,password:pass}) });
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
     const d = await r.json();
+
     if (r.ok) {
       if (d.token) localStorage.setItem('estufa_token', d.token);
-      showMsg(msg,'success',`✓ Bem-vindo, ${d.username}!`);
-      setTimeout(()=>window.location.href='/dashboard.html',900);
-    } else { showMsg(msg,'error',d.detail||d.title||d.error||'Erro ao entrar.'); }
-  } catch { showMsg(msg,'error','Sem conexão com o servidor.'); }
-  finally { setLoading(btn,false); }
+      showMsg(msg, 'success', '✓ Bem-vindo, ' + d.username + '! Entrando…');
+      setTimeout(() => window.location.href = '/dashboard.html', 900);
+    } else {
+      showMsg(msg, 'error', d.detail || d.title || d.error || 'Erro ao entrar.');
+      document.getElementById('loginPass').classList.add('error');
+      setTimeout(() => document.getElementById('loginPass').classList.remove('error'), 2000);
+    }
+  } catch {
+    showMsg(msg, 'error', 'Sem conexão com o servidor.');
+  } finally {
+    setLoading(btn, false);
+  }
 }
+
+/* ── REGISTRO ── */
 async function doRegister() {
-  const btn = document.getElementById('btnRegister'); const msg = document.getElementById('registerMsg');
+  const btn = document.getElementById('btnRegister');
+  const msg = document.getElementById('registerMsg');
   const user = document.getElementById('regUser').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const pass = document.getElementById('regPass').value;
   const pass2 = document.getElementById('regPass2').value;
-  if (!user||!email||!pass||!pass2) return showMsg(msg,'error','Preencha todos os campos.');
-  if (pass!==pass2) return showMsg(msg,'error','As senhas não coincidem.');
-  if (pass.length<8) return showMsg(msg,'error','Senha mínima: 8 caracteres.');
-  setLoading(btn,true); clearMsgs();
+
+  if (!user || !email || !pass || !pass2)
+    return showMsg(msg, 'error', 'Preencha todos os campos.');
+
+  if (pass !== pass2)
+    return showMsg(msg, 'error', 'As senhas não coincidem.');
+
+  if (pass.length < 8)
+    return showMsg(msg, 'error', 'Senha mínima: 8 caracteres.');
+
+  setLoading(btn, true);
+  clearMsgs();
+
   try {
-    const r = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,email,password:pass})});
+    const r = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, email, password: pass }),
+    });
     const d = await r.json();
+
     if (r.ok) {
       if (d.token) localStorage.setItem('estufa_token', d.token);
-      document.getElementById('welcomeText').textContent = `🌿 Bem-vindo, ${d.username}! Conta criada!`;
+      document.getElementById('welcomeText').textContent = '🌿 Bem-vindo, ' + d.username + '! Conta criada.';
       document.getElementById('welcomeBadge').classList.add('show');
-      document.getElementById('registerForm').style.display='none';
-      document.getElementById('tabsEl').style.display='none';
-      setTimeout(()=>window.location.href='/dashboard.html',1500);
-    } else { showMsg(msg,'error',d.detail||d.title||d.error||'Erro ao registrar.'); }
-  } catch { showMsg(msg,'error','Sem conexão com o servidor.'); }
-  finally { setLoading(btn,false); }
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('tabsEl').style.display = 'none';
+      setTimeout(() => window.location.href = '/dashboard.html', 1500);
+    } else {
+      showMsg(msg, 'error', d.detail || d.title || d.error || 'Erro ao registrar.');
+    }
+  } catch {
+    showMsg(msg, 'error', 'Sem conexão com o servidor.');
+  } finally {
+    setLoading(btn, false);
+  }
 }
+/* ── FORÇA DA SENHA ─ */
 function updateStrength(val) {
-  const wrap=document.getElementById('strengthWrap'); const fill=document.getElementById('strengthFill');
-  const label=document.getElementById('strengthLabel');
-  if(!val){wrap.classList.remove('show');return;} wrap.classList.add('show');
-  let score=0; if(val.length>=8)score++; if(val.length>=12)score++; if(/[A-Z]/.test(val))score++; if(/[0-9]/.test(val))score++; if(/[^A-Za-z0-9]/.test(val))score++;
-  const levels=[{pct:20,color:'#f87171',txt:'Muito fraca'},{pct:40,color:'#f87171',txt:'Fraca'},{pct:60,color:'#fbbf24',txt:'Razoável'},{pct:80,color:'#a3e635',txt:'Boa'},{pct:100,color:'#4ade80',txt:'Excelente'}];
-  const lv=levels[Math.min(score,4)]; fill.style.width=lv.pct+'%'; fill.style.background=lv.color; label.style.color=lv.color; label.textContent=lv.txt;
+  const wrap = document.getElementById('strengthWrap');
+  const fill = document.getElementById('strengthFill');
+  const label = document.getElementById('strengthLabel');
+
+  if (!val) { wrap.classList.remove('show'); return; }
+  wrap.classList.add('show');
+
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (val.length >= 12) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+
+  const levels = [
+    { pct: 20, color: '#f87171', txt: 'Muito fraca' },
+    { pct: 40, color: '#f87171', txt: 'Fraca' },
+    { pct: 60, color: '#fbbf24', txt: 'Razoável' },
+    { pct: 80, color: '#a3e635', txt: 'Boa' },
+    { pct: 100, color: '#4ade80', txt: 'Excelente' },
+  ];
+  const lv = levels[Math.min(score, 4)];
+  fill.style.width = lv.pct + '%';
+  fill.style.background = lv.color;
+  label.style.color = lv.color;
+  label.textContent = lv.txt;
 }
-function setLoading(btn,on){btn.disabled=on;btn.classList.toggle('loading',on);}
-function showMsg(el,type,text){el.className=`msg ${type} show`;el.textContent=text;}
-function clearMsgs(){document.querySelectorAll('.msg').forEach(el=>el.classList.remove('show'));}
-document.addEventListener('keydown',e=>{if(e.key==='Enter'){if(currentTab==='login')doLogin();else doRegister();}});
+
+/* ── UTILS ─ */
+function setLoading(btn, on) {
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+}
+function showMsg(el, type, text) {
+  el.className = 'msg ' + type + ' show';
+  el.textContent = text;
+}
+function clearMsgs() {
+  document.querySelectorAll('.msg').forEach(el => el.classList.remove('show'));
+}
+
+/* Enter key */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (currentTab === 'login') doLogin();
+    else doRegister();
+  }
+});
+
+/* Init */
 checkStatus();
 </script>
-<script src="pwa.js"></script>
+<script src="/js/theme.js"></script>
+<script src="/pwa.js"></script>
 </body>
 </html>

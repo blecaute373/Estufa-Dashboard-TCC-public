@@ -1,0 +1,50 @@
+/* ESTUFA 01 · admin.css — consola administrativa pro */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .15s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card .s-label{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
+.stat-card .s-value{font-family:var(--mono);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums}
+.stat-card .s-sub{font-family:var(--mono);font-size:.64rem;color:var(--muted);margin-top:4px}
+.s-green .s-value{color:var(--green)}
+.s-amber .s-value{color:var(--amber)}
+.s-red .s-value{color:var(--red)}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;background:var(--inset);border:1px solid var(--border);border-radius:11px;
+  padding:10px 14px 10px 36px;color:var(--text);font-size:.82rem}
+.search input:focus{border-color:var(--green);box-shadow:var(--glow-soft)}
+.search::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap}
+.filter-btn{padding:7px 14px;border:1px solid var(--border);background:transparent;color:var(--muted);
+  border-radius:99px;cursor:pointer;font-size:.7rem;font-weight:700;transition:all .15s}
+.filter-btn:hover{color:var(--text-2);border-color:var(--border-2)}
+.filter-btn.active{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);color:var(--green)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:680px}
+thead th{position:sticky;top:0;background:var(--surface-solid);font-size:.62rem;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 16px;border-bottom:1px solid var(--hairline);font-family:var(--mono);font-size:.74rem;white-space:nowrap}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:rgba(74,222,128,.04)}
+tbody tr:last-child td{border-bottom:0}
+.no-data{text-align:center;color:var(--muted);padding:28px!important;font-size:.82rem}
+.ev-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.64rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:1px solid}
+.ev-login{background:rgba(74,222,128,.1);color:var(--green);border-color:rgba(74,222,128,.3)}
+.ev-failed_login{background:rgba(248,113,113,.1);color:var(--red);border-color:rgba(248,113,113,.3)}
+.ev-logout{background:rgba(103,232,249,.08);color:var(--blue);border-color:rgba(103,232,249,.28)}
+.ev-register{background:rgba(196,181,253,.1);color:var(--violet);border-color:rgba(196,181,253,.3)}
+.u-active{color:var(--green)}
+.u-inactive{color:var(--red)}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-top:1px solid var(--border);flex-wrap:wrap}
+.pager-info{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.table-title{font-family:var(--display);font-size:.92rem;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+.loading-row td{text-align:center;color:var(--muted);padding:28px!important}
+.stat-card .s-value.is-sm{font-size:.9rem;line-height:1.5}
+.search input[type=search]::-webkit-search-cancel-button{cursor:pointer}
+@media (max-width:640px){
+  .toolbar{padding:12px 14px}
+  .pager{padding:12px 14px}
+}

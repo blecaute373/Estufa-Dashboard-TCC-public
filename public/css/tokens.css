@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════
+   ESTUFA 01 · Design Tokens v2 — fonte única da verdade visual
+   Claro + escuro via [data-theme]. Sem build step (vanilla).
+   ═══════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* — Fundo — */
+  --bg:        #070e09;
+  --bg2:       #0b1810;
+  --bg3:       #102416;
+  --surface:   rgba(15, 35, 20, 0.78);
+  --surface-2: rgba(20, 46, 26, 0.62);
+  --surface-solid: #0d1f13;
+  --inset:     rgba(0, 0, 0, 0.32);
+
+  /* — Bordas — */
+  --border:  rgba(74, 222, 128, 0.12);
+  --border-2: rgba(74, 222, 128, 0.26);
+  --border-strong: rgba(74, 222, 128, 0.45);
+  --hairline: rgba(232, 245, 233, 0.07);
+
+  /* — Marca — */
+  --green:   #4ade80;
+  --green-2: #22c55e;
+  --green-3: #16a34a;
+  --lime:    #a3e635;
+
+  /* — Semântica — */
+  --amber:  #fbbf24;
+  --amber-2:#f59e0b;
+  --amber-3:#b45309;
+  --red:    #f87171;
+  --red-2:  #ef4444;
+  --blue:   #67e8f9;
+  --blue-2: #0891b2;
+  --violet: #c4b5fd;
+
+  /* — Texto — */
+  --text:   #ecf7ee;
+  --text-2: #9df0b6;
+  --text-3: #4ade80;
+  --muted:  #7ea88a;
+  --muted-2:#33523b;
+  --on-accent: #06130a;
+
+  /* — Sensores — */
+  --temp:  #fca5a5;
+  --temp-2:#dc2626;
+  --soil:  #fbbf24;
+  --soil-2:#92400e;
+  --lux:   #fde047;
+  --lux-2: #a16207;
+  --air:   #67e8f9;
+  --air-2: #0e7490;
+
+  /* — Tipo — */
+  --sans:  'Inter', 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:  'JetBrains Mono', 'DM Mono', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Sora', 'Inter', system-ui, sans-serif;
+
+  /* — Escala — */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+
+  /* — Sombras — */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 8px 28px rgba(0,0,0,.42);
+  --shadow-lg: 0 18px 60px rgba(0,0,0,.5);
+  --glow: 0 0 26px rgba(74,222,128,.28);
+  --glow-soft: 0 0 0 3px rgba(74,222,128,.10);
+  --glow-amber: 0 0 24px rgba(251,191,36,.26);
+
+  /* — Layout — */
+  --max: 1220px;
+  --topbar-h: 64px;
+
+  /* — Movimento — */
+  --ease-out: cubic-bezier(.22,.9,.28,1);
+  --ease-spring: cubic-bezier(.34,1.45,.64,1);
+  --dur-1: 140ms;
+  --dur-2: 240ms;
+  --dur-3: 420ms;
+
+  /* — Gráfico — */
+  --grid: rgba(236,247,238,.055);
+  --tick: #7ea88a;
+  --tooltip-bg: rgba(6,14,8,.96);
+}
+
+/* ── Tema claro: banca projetada, sol, impressão ── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg:        #f2f7f2;
+  --bg2:       #e9f2ea;
+  --bg3:       #dde9dd;
+  --surface:   rgba(255, 255, 255, 0.88);
+  --surface-2: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+  --inset:     rgba(16, 60, 30, 0.06);
+
+  --border:  rgba(22, 101, 52, 0.14);
+  --border-2: rgba(22, 101, 52, 0.28);
+  --border-strong: rgba(22, 101, 52, 0.5);
+  --hairline: rgba(10, 40, 22, 0.08);
+
+  --green:   #16a34a;
+  --green-2: #15803d;
+  --green-3: #166534;
+  --lime:    #65a30d;
+
+  --text:   #0c1f13;
+  --text-2: #14532d;
+  --text-3: #15803d;
+  --muted:  #4d6f58;
+  --muted-2:#b9cfbd;
+  --on-accent: #ffffff;
+
+  --temp:  #dc2626;
+  --temp-2:#b91c1c;
+  --soil:  #b45309;
+  --soil-2:#92400e;
+  --lux:   #a16207;
+  --lux-2: #854d0e;
+  --air:   #0e7490;
+  --air-2: #155e75;
+
+  --shadow-sm: 0 1px 2px rgba(16,60,30,.10);
+  --shadow-md: 0 10px 30px rgba(16,60,30,.12);
+  --shadow-lg: 0 24px 60px rgba(16,60,30,.16);
+  --glow: 0 0 0 rgba(0,0,0,0);
+  --glow-soft: 0 0 0 3px rgba(22,163,74,.14);
+  --glow-amber: 0 0 0 rgba(0,0,0,0);
+
+  --grid: rgba(12,31,19,.07);
+  --tick: #4d6f58;
+  --tooltip-bg: rgba(255,255,255,.98);
+}

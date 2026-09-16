@@ -1,0 +1,31 @@
+/* ESTUFA 01 · dashboard3.css — alertas, sistema, skeleton */
+.alerts-card,.sys-card{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:6px}
+.alerts-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.alerts-title{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.badge-count{background:rgba(248,113,113,.14);color:var(--red);border:1px solid rgba(248,113,113,.3);
+  font-size:.66rem;font-weight:800;padding:1px 8px;border-radius:99px;font-family:var(--mono)}
+.badge-count.hidden{display:none}
+.clear-btn{font-size:.7rem;color:var(--muted);background:none;border:1px solid var(--border);
+  border-radius:8px;padding:4px 12px;cursor:pointer;transition:all .15s}
+.clear-btn:hover{color:var(--text-2);border-color:var(--border-2)}
+.alerts-log{max-height:170px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.log-item{display:flex;gap:10px;padding:9px 12px;border-radius:10px;font-size:.78rem;animation:slide-in .3s ease}
+@keyframes slide-in{from{transform:translateX(-10px);opacity:0}to{transform:none;opacity:1}}
+.log-item.danger{background:rgba(248,113,113,.07);border-left:2px solid var(--red)}
+.log-item.warn{background:rgba(251,191,36,.07);border-left:2px solid var(--amber)}
+.log-item.info{background:rgba(103,232,249,.07);border-left:2px solid var(--blue)}
+.log-time{font-family:var(--mono);color:var(--muted);font-size:.66rem;white-space:nowrap}
+.log-msg{color:var(--text)}
+.shimmer{background:linear-gradient(90deg,rgba(140,180,150,.05),rgba(140,180,150,.14),rgba(140,180,150,.05));
+  background-size:200% 100%;animation:shimmer 1.6s infinite;border-radius:6px;color:transparent!important;user-select:none}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.no-alerts{text-align:center;color:var(--muted);font-size:.82rem;padding:20px 0}
+.sys-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:6px}
+.sys-label{font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.sys-value{font-family:var(--mono);font-size:1.1rem;font-weight:500;color:var(--text-2);font-variant-numeric:tabular-nums}
+.sys-value.ok{color:var(--green)}.sys-value.warn{color:var(--amber)}.sys-value.danger{color:var(--red)}
+.skel{position:relative;overflow:hidden;background:var(--inset);border-radius:8px;color:transparent!important;user-select:none;pointer-events:none;min-height:1.2em}
+.skel::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(140,180,150,.18),transparent);animation:skel 1.4s infinite}
+@keyframes skel{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+@media (max-width:640px){.sensor-value,.kpi-value{font-size:2.05rem}}

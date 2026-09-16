@@ -2,19 +2,32 @@
  * Service Worker — Estufa 01 PWA
  * Cacheia assets estáticos para funcionamento offline básico
  */
-const CACHE = 'estufa-v2';
+const CACHE = 'estufa-v3';
+/* Apenas assets públicos: páginas protegidas (/ , /dashboard.html, /admin.html)
+   ficam a cargo do network-first em tempo de execução, para não gravar
+   a página de login sob a chave de outra rota. */
 const ASSETS = [
-  '/style.css',
+  /* folhas de estilo (arquitectura modular) */
+  '/css/tokens.css',
+  '/css/base.css',
+  '/css/base2.css',
+  '/css/auth.css',
+  '/css/auth2.css',
+  '/css/dashboard.css',
+  '/css/dashboard2.css',
+  '/css/dashboard3.css',
+  '/css/admin.css',
+  /* scripts */
   '/script.js',
-  '/',
+  '/js/theme.js',
+  '/pwa.js',
+  /* páginas públicas */
+  '/index.html',
   '/login-dashboard.html',
   '/login-admin.html',
-  '/dashboard.html',
-  '/admin.html',
-  '/index.html',
+  /* PWA */
   '/manifest-dashboard.json',
-  '/manifest-admin.json',
-  '/pwa.js'
+  '/manifest-admin.json'
 ];
 
 self.addEventListener('install', (e) => {

@@ -20,6 +20,8 @@ let mainChart = null;
 let countdownTimer = null;
 let segundosRestantes = INTERVALO_S;
 let alertasCount = 0;
+let ultimoCache = { temp: NaN, solo: NaN, lux: NaN, ar: NaN };
+let ultimoHistorico = [];
 
 /* ══════════════════════════════════════════
    FETCH — ÚLTIMO DADO
@@ -42,16 +44,20 @@ function processarUltimo(d) {
   const solo   = parseFloat(d.field2);
   const lux    = parseFloat(d.field3);
   const umidAr = parseFloat(d.field4);
-  const vent   = parseInt(d.field5);
-  const valv   = parseInt(d.field6);
-  const duty   = parseInt(d.field7);
-  const rssi   = parseInt(d.field8);
+  const vent   = parseInt(d.field5, 10);
+  const valv   = parseInt(d.field6, 10);
+  const duty   = parseInt(d.field7, 10);
+  const rssi   = parseInt(d.field8, 10);
 
-  /* Sensores */
-  atualizarSensor('valTemp', 'barTemp', 'ringTemp', temp,   40,  1);
-  atualizarSensor('valSolo', 'barSolo', 'ringSolo', solo,   100, 0);
-  atualizarSensor('valLux',  'barLux',  'ringLux',  lux,    800, 0);
-  atualizarSensor('valAr',   'barAr',   'ringAr',   umidAr, 100, 1);
+  /* Sensores — valor + delta vs leitura anterior + estado */
+  atualizarSensor('valTemp', 'barTemp', 'ringTemp', 'deltaTemp', 'stateTemp', temp,   40,  1, ultimoCache.temp, estadoTemp(temp));
+  atualizarSensor('valSolo', 'barSolo', 'ringSolo', 'deltaSolo', 'stateSolo', solo,   100, 0, ultimoCache.solo, estadoSolo(solo));
+  atualizarSensor('valLux',  'barLux',  'ringLux',  'deltaLux',  'stateLux',  lux,    800, 0, ultimoCache.lux,  estadoLux(lux));
+  atualizarSensor('valAr',   'barAr',   'ringAr',   'deltaAr',   'stateAr',   umidAr, 100, 1, ultimoCache.ar,   estadoAr(umidAr));
+  ultimoCache = { temp, solo, lux, ar: umidAr };
+
+  const stamp = d.created_at ? new Date(d.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+  setText('kpiUpdated', 'atualizado ' + stamp);
 
   /* Atuadores */
   atualizarAtuador('cardVent',  'chipVent',  'lblVent',  vent === 1, 'Ligado',  'Desligado');
@@ -80,13 +86,19 @@ function processarUltimo(d) {
    FETCH — HISTÓRICO PARA GRÁFICO
 ══════════════════════════════════════════ */
 async function buscarHistorico() {
+  if (typeof Chart === 'undefined') {
+    mostrarErroGrafico('Biblioteca de gráficos indisponível (CDN). Verifique a ligação e tente de novo.');
+    return;
+  }
   try {
     const res  = await fetch(URL_FEEDS(qtdPontos));
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const feeds = data.feeds || [];
+    ultimoHistorico = feeds;
 
     setText('sysEntradas', feeds.length + ' pts');
+    setText('chartSub', feeds.length + ' pontos · clique na legenda para ocultar');
 
     const pts = {
       temp:    [], solo:    [], lux:     [], ar: []
@@ -104,7 +116,9 @@ async function buscarHistorico() {
       if(!isNaN(v4)) pts.ar.push({   x: t, y: v4 });
     });
 
+    if(!mainChart) initChart();
     if(mainChart) {
+      esconderErroGrafico();
       mainChart.data.datasets[0].data = pts.temp;
       mainChart.data.datasets[1].data = pts.solo;
       mainChart.data.datasets[2].data = pts.lux;
@@ -113,6 +127,30 @@ async function buscarHistorico() {
     }
   } catch(e) {
     console.error('[TS] Histórico erro:', e);
+    mostrarErroGrafico('Falha ao carregar o histórico do ThingSpeak. Tente de novo.');
+  }
+}
+
+function exportarCSV() {
+  try {
+    const rows = [['timestamp', 'temperatura_c', 'umidade_solo_pct', 'luminosidade_lux', 'umidade_ar_pct']];
+    (ultimoHistorico || []).forEach(f => {
+      rows.push([f.created_at || '', f.field1 ?? '', f.field2 ?? '', f.field3 ?? '', f.field4 ?? '']);
+    });
+    if (rows.length <= 1) {
+      registrarAlerta('warn', '⬇ Nenhum dado para exportar ainda. Aguarde a próxima atualização.');
+      return;
+    }
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'estufa01-historico-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  } catch (e) {
+    console.error('[CSV] Erro:', e);
   }
 }
 
@@ -170,24 +208,76 @@ function limparAlertas() {
 ══════════════════════════════════════════ */
 const CIRC = 2 * Math.PI * 17; // = 106.8
 
-function atualizarSensor(idVal, idBar, idRing, valor, max, casas) {
+function estadoTemp(v) {
+  if (isNaN(v)) return ['idle', '—'];
+  if (v > TH.tempSup) return ['danger', 'acima do ideal'];
+  if (v < TH.tempInf && v > 0) return ['warn', 'abaixo do ideal'];
+  return ['ok', 'ideal'];
+}
+function estadoSolo(v) {
+  if (isNaN(v)) return ['idle', '—'];
+  if (v < TH.soloInf) return ['warn', 'seco'];
+  if (v > TH.soloSup) return ['warn', 'saturado'];
+  return ['ok', 'ideal'];
+}
+function estadoLux(v) {
+  if (isNaN(v)) return ['idle', '—'];
+  if (v < TH.luxMin) return ['warn', 'baixa luz'];
+  if (v > TH.luxMax) return ['warn', 'luz alta'];
+  return ['ok', 'ideal'];
+}
+function estadoAr(v) {
+  if (isNaN(v)) return ['idle', '—'];
+  if (v > 0 && v < TH.umidArCrit) return ['danger', 'crítico'];
+  return ['ok', 'estável'];
+}
+
+function atualizarSensor(idVal, idBar, idRing, idDelta, idState, valor, max, casas, anterior, estado) {
   const elVal  = document.getElementById(idVal);
   const elBar  = document.getElementById(idBar);
   const elRing = document.getElementById(idRing);
   if(!elVal) return;
 
   elVal.classList.remove('shimmer');
+  elVal.classList.remove('skel');
 
-  if(isNaN(valor)) { elVal.innerHTML = '--'; return; }
+  if(isNaN(valor)) {
+    const unit0 = elVal.querySelector('.sensor-unit');
+    elVal.textContent = '--';
+    if(unit0) elVal.appendChild(unit0);
+    setDelta(idDelta, NaN, NaN);
+    setStateDot(idState, 'idle', '—');
+    return;
+  }
 
   const disp = valor.toFixed(casas);
   const unit = elVal.querySelector('.sensor-unit');
-  elVal.innerHTML = disp;
+  elVal.textContent = disp;
   if(unit) elVal.appendChild(unit);
 
-  const pct  = Math.min(valor / max, 1);
+  const pct  = Math.max(0, Math.min(valor / max, 1));
   if(elBar)  elBar.style.width = (pct * 100) + '%';
   if(elRing) elRing.style.strokeDashoffset = CIRC * (1 - pct);
+  setDelta(idDelta, valor, anterior);
+  if (estado) setStateDot(idState, estado[0], estado[1]);
+}
+
+function setDelta(id, atual, anterior) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (isNaN(atual) || isNaN(anterior)) { el.textContent = '— primeira leitura'; el.className = 'delta flat'; return; }
+  const diff = atual - anterior;
+  if (Math.abs(diff) < 1e-9) { el.textContent = '→ estável'; el.className = 'delta flat'; return; }
+  const arrow = diff > 0 ? '▲' : '▼';
+  el.textContent = arrow + ' ' + Math.abs(diff).toFixed(1) + ' vs anterior';
+  el.className = 'delta ' + (diff > 0 ? 'up' : 'down');
+}
+
+function setStateDot(id, cls, txt) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'state-dot state-' + cls;
+  el.textContent = txt;
 }
 
 function atualizarAtuador(cardId, chipId, lblId, ligado, txtOn, txtOff) {
@@ -239,37 +329,52 @@ function iniciarContagem() {
    GRÁFICO
 ══════════════════════════════════════════ */
 function initChart() {
-  // Se Chart.js não carregou (CDN falhou), não trava o resto
+  // Se Chart.js não carregou (CDN falhou), mostra erro pro com retry
   if (typeof Chart === 'undefined') {
-    console.warn('[Chart] Chart.js não carregou. Gráfico desabilitado.');
-    document.getElementById('mainChart')?.parentElement?.remove();
+    mostrarErroGrafico('Biblioteca de gráficos indisponível (CDN). Verifique a ligação e tente de novo.');
     return;
   }
 
-  const ctx = document.getElementById('mainChart')?.getContext('2d');
+  const canvas = document.getElementById('mainChart');
+  const ctx = canvas?.getContext('2d');
   if (!ctx) return;
+  esconderErroGrafico();
+
+  const dark = (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light';
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const grad = (hex, a) => {
+    try {
+      const g = ctx.createLinearGradient(0, 0, 0, 260);
+      g.addColorStop(0, hex + a);
+      g.addColorStop(1, hex + '00');
+      return g;
+    } catch (e) { return hex + '14'; }
+  };
 
   mainChart = new Chart(ctx, {
     type: 'line',
     data: {
       datasets: [
-        { label:'Temp °C',     borderColor:'#fca5a5', backgroundColor:'rgba(252,165,165,0.05)', borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
-        { label:'Umid Solo %', borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.05)',   borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
-        { label:'Lux ÷10',     borderColor:'#fde047', backgroundColor:'rgba(253,224,71,0.04)',   borderWidth:1.5, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
-        { label:'Umid Ar %',   borderColor:'#67e8f9', backgroundColor:'rgba(103,232,249,0.05)', borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Temp °C',     borderColor:'#fca5a5', backgroundColor:grad('#fca5a5','38'), borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Umid Solo %', borderColor:'#fbbf24', backgroundColor:grad('#fbbf24','30'), borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Lux ÷10',     borderColor:'#fde047', backgroundColor:grad('#fde047','26'), borderWidth:1.5, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
+        { label:'Umid Ar %',   borderColor:'#67e8f9', backgroundColor:grad('#67e8f9','30'), borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.4, fill:true, data:[] },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      animation: { duration: 300 },
+      animation: reduceMotion ? false : { duration: 350 },
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor:'rgba(8,18,10,0.95)',
-          padding:12, borderColor:'rgba(74,222,128,0.15)', borderWidth:1,
+          backgroundColor: dark ? 'rgba(6,14,8,.96)' : 'rgba(255,255,255,.98)',
+          titleColor: dark ? '#ecf7ee' : '#0c1f13',
+          bodyColor: dark ? '#9df0b6' : '#14532d',
+          padding:12, borderColor:'rgba(74,222,128,.25)', borderWidth:1,
+          titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
           callbacks: {
-            title: ctx => ctx[0]?.parsed ? new Date(ctx[0].parsed.x).toLocaleString('pt-BR') : '',
+            title: items => items[0]?.parsed ? new Date(items[0].parsed.x).toLocaleString('pt-BR') : '',
           }
         }
       },
@@ -277,26 +382,63 @@ function initChart() {
         x: {
           type:'time',
           time: { displayFormats: { minute:'HH:mm', hour:'dd/MM HH:mm' } },
-          grid: { color:'rgba(255,255,255,0.03)' },
-          ticks: { color:'#4d7355', maxTicksLimit:7 }
+          grid: { color: dark ? 'rgba(236,247,238,.055)' : 'rgba(12,31,19,.07)' },
+          ticks: { color: dark ? '#7ea88a' : '#4d6f58', maxTicksLimit:7, font: { size: 10 } }
         },
         y: {
           min:0, max:110,
-          grid: { color:'rgba(255,255,255,0.03)' },
-          ticks: { color:'#4d7355' }
+          grid: { color: dark ? 'rgba(236,247,238,.055)' : 'rgba(12,31,19,.07)' },
+          ticks: { color: dark ? '#7ea88a' : '#4d6f58', font: { size: 10 } }
         }
       }
     }
   });
+  syncLegend();
 }
 
-/* period buttons */
+function mostrarErroGrafico(msg) {
+  const box = document.getElementById('chartError');
+  const canvas = document.getElementById('mainChart');
+  if (box) box.classList.add('show');
+  if (canvas) canvas.style.display = 'none';
+  setText('chartErrorMsg', msg || 'Não foi possível carregar o histórico.');
+  setText('chartSub', 'erro — tente de novo');
+}
+
+function esconderErroGrafico() {
+  const box = document.getElementById('chartError');
+  const canvas = document.getElementById('mainChart');
+  if (box) box.classList.remove('show');
+  if (canvas) canvas.style.display = '';
+}
+
+function syncLegend() {
+  document.querySelectorAll('.legend-item[data-series]').forEach(btn => {
+    const i = parseInt(btn.dataset.series, 10);
+    const hidden = mainChart ? !mainChart.isDatasetVisible(i) : false;
+    btn.classList.toggle('off', hidden);
+    btn.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+  });
+}
+
+/* period + legend buttons */
 document.querySelectorAll('.period-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.period-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-pressed'); });
     btn.classList.add('active');
-    qtdPontos = parseInt(btn.dataset.n);
+    btn.setAttribute('aria-pressed', 'true');
+    qtdPontos = parseInt(btn.dataset.n, 10);
     buscarHistorico();
+  });
+});
+
+document.querySelectorAll('.legend-item[data-series]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!mainChart) return;
+    const i = parseInt(btn.dataset.series, 10);
+    const visible = mainChart.isDatasetVisible(i);
+    if (visible) mainChart.hide(i); else mainChart.show(i);
+    syncLegend();
   });
 });
 
@@ -352,6 +494,21 @@ async function doLogout() {
 ══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   await verificarAuth();
-  try { initChart(); } catch(e) { console.warn('[Chart] Erro ao iniciar gráfico:', e); }
+  try { initChart(); } catch(e) { mostrarErroGrafico('Não foi possível iniciar o gráfico.'); }
   cicloAtualizar();
+});
+
+window.addEventListener('theme:changed', () => {
+  if (!mainChart) return;
+  try {
+    const dark = (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light';
+    const grid = dark ? 'rgba(236,247,238,.055)' : 'rgba(12,31,19,.07)';
+    const tick = dark ? '#7ea88a' : '#4d6f58';
+    mainChart.options.scales.x.grid.color = grid;
+    mainChart.options.scales.y.grid.color = grid;
+    mainChart.options.scales.x.ticks.color = tick;
+    mainChart.options.scales.y.ticks.color = tick;
+    mainChart.options.plugins.tooltip.backgroundColor = dark ? 'rgba(6,14,8,.96)' : 'rgba(255,255,255,.98)';
+    mainChart.update('none');
+  } catch (e) {}
 });

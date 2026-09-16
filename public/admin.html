@@ -1,201 +1,84 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d1f10">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1810">
+<meta name="description" content="Estufa 01 — consola administrativa de logs e usuários.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest-admin.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230d1f10'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%23fbbf24'%3E🔐%3C/text%3E%3C/svg%3E">
-<title>Estufa 01 — Painel de Acesso</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #08120a; --bg2: #0d1f10; --glass: rgba(15,35,18,0.8);
-  --border: rgba(74,222,128,0.12); --border2: rgba(74,222,128,0.25);
-  --green: #4ade80; --green2: #22c55e; --green3: #16a34a;
-  --amber: #fbbf24; --red: #f87171; --blue: #67e8f9;
-  --text: #e8f5e9; --text2: #86efac; --muted: #4d7355; --muted2: #2d4a32;
-  --mono: 'DM Mono', monospace; --serif: 'Lora', serif; --sans: 'Nunito', sans-serif;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: var(--sans); background: var(--bg); color: var(--text);
-  min-height: 100vh; overflow-x: hidden; position: relative;
-}
-body::before {
-  content: ''; position: fixed; inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(34,197,94,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 90% 100%, rgba(74,222,128,0.05) 0%, transparent 60%);
-  pointer-events: none; z-index: 0;
-}
-body::after {
-  content: ''; position: fixed; inset: 0;
-  background-image: linear-gradient(rgba(74,222,128,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,0.015) 1px, transparent 1px);
-  background-size: 40px 40px; pointer-events: none; z-index: 0;
-}
-.page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
-
-/* Header */
-.header {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  padding: 18px 24px; background: var(--glass); backdrop-filter: blur(20px);
-  border: 1px solid var(--border2); border-radius: 20px; margin-bottom: 22px; position: relative; overflow: hidden;
-}
-.header::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--green), #a3e635, var(--green), transparent);
-}
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand-icon {
-  width: 44px; height: 44px; background: linear-gradient(135deg, var(--green3), var(--green));
-  border-radius: 12px; display: flex; align-items: center; justify-content: center;
-  font-size: 20px; box-shadow: 0 0 20px rgba(74,222,128,0.3);
-}
-.brand-text h1 { font-family: var(--serif); font-size: 1.3rem; font-weight: 700; line-height: 1; }
-.brand-text span { font-size: 0.68rem; color: var(--muted); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-.btn-sm {
-  padding: 7px 14px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;
-  font-family: var(--sans); cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase;
-  border: 1px solid var(--border2); background: transparent; color: var(--text2);
-  transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
-}
-.btn-sm:hover { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.4); }
-.btn-sm.danger { border-color: rgba(248,113,113,0.3); color: var(--red); }
-.btn-sm.danger:hover { background: rgba(248,113,113,0.08); }
-
-/* Section label */
-.section-label {
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--muted); margin: 22px 0 10px 4px; display: flex; align-items: center; gap: 8px;
-}
-.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-/* Stats row */
-.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
-.stat-card {
-  background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--border);
-  border-radius: 14px; padding: 16px 18px;
-}
-.stat-label { font-size: 0.67rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-.stat-value { font-family: var(--mono); font-size: 1.6rem; font-weight: 500; color: var(--text2); }
-.stat-value.green { color: var(--green); }
-.stat-value.amber { color: var(--amber); }
-.stat-value.red   { color: var(--red); }
-
-/* Table card */
-.table-card {
-  background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--border);
-  border-radius: 18px; overflow: hidden; margin-bottom: 14px;
-}
-.table-head-bar {
-  display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
-  border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
-}
-.table-title { font-family: var(--serif); font-size: 0.95rem; font-weight: 600; }
-.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.filter-btn {
-  padding: 4px 12px; border-radius: 99px; font-size: 0.7rem; font-weight: 700;
-  font-family: var(--sans); cursor: pointer; letter-spacing: 0.04em;
-  border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.2s;
-}
-.filter-btn:hover { border-color: var(--border2); color: var(--text2); }
-.filter-btn.active { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: var(--green); }
-
-.table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; }
-.table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
-.table-wrap::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
-
-table { width: 100%; border-collapse: collapse; }
-thead th {
-  padding: 10px 16px; background: rgba(0,0,0,0.2); font-size: 0.67rem;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
-  text-align: left; white-space: nowrap; position: sticky; top: 0;
-}
-tbody tr { border-bottom: 1px solid rgba(74,222,128,0.05); transition: background 0.15s; }
-tbody tr:hover { background: rgba(74,222,128,0.03); }
-tbody td { padding: 10px 16px; font-size: 0.8rem; font-family: var(--mono); color: var(--text2); white-space: nowrap; }
-
-/* Event badges */
-.ev-badge {
-  display: inline-block; padding: 2px 9px; border-radius: 99px;
-  font-size: 0.67rem; font-weight: 700; letter-spacing: 0.05em;
-}
-.ev-login        { background: rgba(74,222,128,0.1);  color: var(--green);  border: 1px solid rgba(74,222,128,0.25); }
-.ev-register     { background: rgba(103,232,249,0.1); color: var(--blue);   border: 1px solid rgba(103,232,249,0.25); }
-.ev-logout       { background: rgba(251,191,36,0.1);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.25); }
-.ev-failed_login { background: rgba(248,113,113,0.1); color: var(--red);    border: 1px solid rgba(248,113,113,0.25); }
-
-/* User row status */
-.u-active   { color: var(--green); }
-.u-inactive { color: var(--red); }
-
-.no-data { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 32px; font-family: var(--mono); }
-
-/* Loading */
-.loading-row td { text-align: center; color: var(--muted); animation: blink 1.2s ease infinite; }
-@keyframes blink { 0%,100%{opacity:.4} 50%{opacity:1} }
-
-@media (max-width: 600px) { .page { padding: 12px 10px 40px; } .header { padding: 14px 16px; } }
-</style>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230d1f10'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%23fbbf24'%3E%F0%9F%94%90%3C/text%3E%3C/svg%3E">
+<title>Estufa 01 · Painel de Acesso</title>
+<script>(function(){try{var t=localStorage.getItem('estufa_theme');if(!t){t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/base2.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
+
 <div class="page">
 
-  <!-- Header -->
-  <header class="header">
+  <header class="topbar">
     <div class="brand">
-      <div class="brand-icon">🔐</div>
-      <div class="brand-text">
-        <h1>Painel de Acesso</h1>
-        <span>Logs & Usuários · Estufa 01</span>
+      <div class="brand-mark" aria-hidden="true">🔐</div>
+      <div>
+        <div class="brand-name">Painel de Acesso</div>
+        <div class="brand-sub">Logs & Usuários · Estufa 01</div>
       </div>
     </div>
-    <div class="header-actions">
-      <button class="btn-sm" onclick="loadAll()">↻ Atualizar</button>
-      <a class="btn-sm danger" href="login-admin.html" onclick="doLogout()">Sair</a>
+    <div class="topbar-right">
+      <span class="status-pill online" title="Recarga automática ativa"><span class="s-dot"></span> Auto 30s</span>
+      <button class="btn-ghost" type="button" onclick="loadAll()">↻ Atualizar</button>
+      <button class="btn-ghost danger" type="button" onclick="doLogout()">Sair</button>
+      <button class="btn-ghost icon-only theme-btn" type="button" data-theme-btn onclick="EstufaTheme.toggle()" aria-pressed="false" title="Alternar tema">
+        <span class="theme-icon" aria-hidden="true">🌙</span>
+      </button>
     </div>
   </header>
-
-  <!-- Stats -->
   <div class="section-label">📊 Resumo</div>
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-label">Usuários cadastrados</div>
-      <div class="stat-value green" id="statUsers">—</div>
+  <div class="stat-grid">
+    <div class="stat-card s-green">
+      <div class="s-label">Usuários cadastrados</div>
+      <div class="s-value" id="statUsers">—</div>
+      <div class="s-sub">Contas no sistema</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Total de acessos</div>
-      <div class="stat-value" id="statLogins">—</div>
+      <div class="s-label">Total de acessos</div>
+      <div class="s-value" id="statLogins">—</div>
+      <div class="s-sub">Logins bem-sucedidos</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Tentativas falhas</div>
-      <div class="stat-value red" id="statFailed">—</div>
+    <div class="stat-card s-red">
+      <div class="s-label">Tentativas falhas</div>
+      <div class="s-value" id="statFailed">—</div>
+      <div class="s-sub">Credenciais inválidas</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Último acesso</div>
-      <div class="stat-value" id="statLast" style="font-size:0.85rem">—</div>
+    <div class="stat-card s-amber">
+      <div class="s-label">Último acesso</div>
+      <div class="s-value is-sm" id="statLast">—</div>
+      <div class="s-sub">Data e hora locais</div>
     </div>
   </div>
 
-  <!-- Logs Table -->
   <div class="section-label">📋 Log de Eventos</div>
   <div class="table-card">
-    <div class="table-head-bar">
-      <div class="table-title">Histórico de Acessos</div>
+    <div class="toolbar">
+      <div class="search">
+        <input type="search" id="logSearch" placeholder="Buscar por usuário, IP ou evento…" autocomplete="off" oninput="searchLogs(this.value)">
+      </div>
       <div class="filter-row">
-        <button class="filter-btn active" data-filter="all" onclick="filterLogs('all',this)">Todos</button>
-        <button class="filter-btn" data-filter="login"        onclick="filterLogs('login',this)">Login</button>
-        <button class="filter-btn" data-filter="register"     onclick="filterLogs('register',this)">Registro</button>
-        <button class="filter-btn" data-filter="failed_login" onclick="filterLogs('failed_login',this)">Falhas</button>
-        <button class="filter-btn" data-filter="logout"       onclick="filterLogs('logout',this)">Logout</button>
+        <button class="filter-btn active" type="button" data-filter="all" onclick="filterLogs('all',this)">Todos</button>
+        <button class="filter-btn" type="button" data-filter="login" onclick="filterLogs('login',this)">Login</button>
+        <button class="filter-btn" type="button" data-filter="register" onclick="filterLogs('register',this)">Registro</button>
+        <button class="filter-btn" type="button" data-filter="failed_login" onclick="filterLogs('failed_login',this)">Falhas</button>
+        <button class="filter-btn" type="button" data-filter="logout" onclick="filterLogs('logout',this)">Logout</button>
       </div>
     </div>
-    <div class="table-wrap">
+    <div class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -212,15 +95,21 @@ tbody td { padding: 10px 16px; font-size: 0.8rem; font-family: var(--mono); colo
         </tbody>
       </table>
     </div>
+    <div class="pager">
+      <span class="pager-info" id="logsPagerInfo">—</span>
+      <span class="pager-info">Recarga automática a cada 30 segundos</span>
+    </div>
   </div>
 
-  <!-- Users Table -->
   <div class="section-label">👥 Usuários</div>
   <div class="table-card">
-    <div class="table-head-bar">
+    <div class="toolbar">
       <div class="table-title">Contas Cadastradas</div>
+      <div class="filter-row" style="margin-left:auto">
+        <button class="btn-ghost" type="button" onclick="loadUsers()">↻ Recarregar</button>
+      </div>
     </div>
-    <div class="table-wrap">
+    <div class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -237,7 +126,13 @@ tbody td { padding: 10px 16px; font-size: 0.8rem; font-family: var(--mono); colo
         </tbody>
       </table>
     </div>
+    <div class="pager">
+      <span class="pager-info" id="usersPagerInfo">—</span>
+      <span class="pager-info">Somente leitura</span>
+    </div>
   </div>
+
+  <div class="footer">Estufa 01 · ThingSpeak · consola administrativa</div>
 
 </div>
 
@@ -351,6 +246,66 @@ function loadAll() { loadLogs(); loadUsers(); }
 loadAll();
 setInterval(loadAll, 30000);
 </script>
-<script src="pwa.js"></script>
+<script>
+/* ── Extras de UI da consola ──
+   Carregado depois da lógica principal: reaplica a busca ao trocar de filtro
+   e mantém os contadores do rodapé em sincronia com o DOM, sem alterar a
+   lógica original (que preenche as tabelas por vários caminhos). */
+(function () {
+  const _filterLogs = window.filterLogs;
+
+  const rows = sel => Array.from(document.querySelectorAll(sel))
+    .filter(r => !r.querySelector('.no-data') && !r.classList.contains('loading-row')).length;
+
+  function paintLogs() {
+    const el = document.getElementById('logsPagerInfo');
+    if (el) el.textContent = rows('#logsTbody tr') + ' evento(s) exibido(s)';
+  }
+  function paintUsers() {
+    const el = document.getElementById('usersPagerInfo');
+    if (el) el.textContent = rows('#usersTbody tr') + ' usuário(s)';
+  }
+
+  window.filterLogs = function (filter, btn) {
+    _filterLogs(filter, btn);
+    searchLogs(document.getElementById('logSearch').value);
+  };
+
+  /* As tabelas são preenchidas pela carga inicial, pelo botão Recarregar e
+     pelo intervalo de 30s: observar o DOM cobre todos os caminhos. */
+  const observe = (id, paint) => {
+    const tb = document.getElementById(id);
+    if (tb && 'MutationObserver' in window) {
+      new MutationObserver(paint).observe(tb, { childList: true, subtree: true });
+    }
+  };
+  observe('logsTbody', paintLogs);
+  observe('usersTbody', paintUsers);
+
+  paintLogs();
+  paintUsers();
+})();
+
+function activeFilter() {
+  const b = document.querySelector('.filter-btn.active');
+  return b ? b.dataset.filter : 'all';
+}
+
+function searchLogs(term) {
+  const q = (term || '').trim().toLowerCase();
+  const f = activeFilter();
+  let list = f === 'all' ? allLogs.slice() : allLogs.filter(l => l.event === f);
+  if (q) {
+    list = list.filter(l =>
+      String(l.username || '').toLowerCase().includes(q) ||
+      String(l.ip_address || '').toLowerCase().includes(q) ||
+      String(l.event || '').toLowerCase().includes(q)
+    );
+  }
+  renderLogs(list);
+}
+</script>
+<script src="/js/theme.js"></script>
+<script src="/pwa.js"></script>
 </body>
 </html>
