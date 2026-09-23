@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.3.0 · **Data:** 22/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.3.1 · **Data:** 22/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,25 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.3.1 (22/09/2026) - Controlo Movido para o Painel de Admin + Monitorizacao ao Vivo
+
+`
+refactor(security): controlo de atuadores movido do dashboard publico para o
+     painel de admin (autenticado) — o dashboard passa a ser SO-LEITURA
+refactor: logica de sensores/UI extraida de script.js para public/js/sensor.js
+     (fetch + render partilhados, carregados por dashboard.html e admin.html)
+feat: public/js/control.js — enviarComando(), mostrarMsgControlo() e listeners
+     .ctrl-btn / #sliderLight (carregado apenas pelo admin)
+feat: admin.html com faixa de monitorizacao ao vivo (4 sensores, status pill,
+     ultima leitura, RSSI) + grid de controlo (ON/OFF vent/valv, slider PWM)
+feat: public/css/control.css — estilos de comando isolados do dashboard
+fix: sw.js cache estufa-v4 (pre-cache de control.css, sensor.js, control.js)
+fix: control.js faz polling do feed (cicloMonitorizar) com guard para
+     sensor.js ausente e DOMContentLoaded-safe
+docs: BLUEPRINT 1.3.1 — 1.4, 2.5, 5.2, 6.1-6.3, 7.1-7.2, 11.1.1, 18.5
+test: 38/38 node:test a passar; pages.test.js valida refs novas (200)
+`
 
 ### v1.3.0 (22/09/2026) - Controlo Ativo de Atuadores no Dashboard
 
@@ -122,20 +141,23 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.3.0):** Dashboard web com autenticacao, graficos ThingSpeak,
-  **controlo ativo de atuadores (local)**, PWA, apps mobile (Android) e desktop (Electron/Windows).
+- **Versao atual (v1.3.1):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **controlo ativo de atuadores (local, apenas no painel de admin)**, PWA,
+  apps mobile (Android) e desktop (Electron/Windows).
 - **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
   **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
-- **Total de commits:** 46 commits (09/05/2026 - 22/09/2026).
+- **Total de commits:** 47 commits (09/05/2026 - 22/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
-  - Dashboard com graficos em tempo real (ThingSpeak API)
+  - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
   - **Controlo ativo de atuadores** (ventilador ON/OFF, valvula abrir/fechar,
-    iluminacao duty PWM 0-100%) via `/api/control` + MQTT local — apenas na
-    rede da estufa (Ver Secao 11.1.1)
+    iluminacao duty PWM 0-100%) via `/api/control` + MQTT local — **disponivel
+    apenas no painel de admin** e apenas na rede da estufa (Ver Secao 11.1.1)
+  - **Monitorizacao ao vivo no admin** (4 sensores + estado dos atuadores +
+    status/RSSI), reutilizando `/js/sensor.js`
   - Painel admin com logs de acesso e gerenciamento de usuarios
-  - PWA com Service Worker v2 (cache limpo + network-first)
+  - PWA com Service Worker v4 (cache limpo + network-first)
   - Apps mobile Android via Capacitor + PWABuilder
   - Apps desktop Windows via Electron
   - Sistema de alertas por threshold (temperatura, umidade, etc.)
@@ -173,7 +195,7 @@ a874402 | 09/05/2026 | Initial commit
 
 1. **Rate limiting no Vercel.** Funcoes serverless tem timeout de 10s (Hobby). Consultas ao MongoDB + ThingSpeak podem estourar esse limite, resultando em erro 504.
 2. **initChart silencioso.** Falha na inicializacao do grafico nao mostra erro visivel ao usuario; o canvas fica vazio sem feedback.
-3. **Service worker sem teste.** sw.js v2 nao tem teste automatizado; mudancas no cache podem quebrar o PWA silenciosamente.
+3. **Service worker sem teste.** sw.js v4 nao tem teste automatizado; mudancas no cache podem quebrar o PWA silenciosamente.
 4. **localStorage fallback.** Em modo PWA mobile, se httpOnly cookie falhar, fallback para localStorage e usado (menos seguro, vulneravel a XSS).
 5. **Chart.js CDN.** Dependencia externa sem fallback local; se CDN cair, graficos param de funcionar.
 6. **ThingSpeak rate limit.** API gratuita limitada a 3 requisicoes/segundo; polling frequente pode bloquear temporariamente.
@@ -270,13 +292,18 @@ O sistema e composto por:
 - **Nao e um sistema de controle ativo em nuvem.** O controlo manual de atuadores
   (ventilador, valvula, iluminacao) funciona **apenas via servidor local** (`server.js`,
   rede da estufa): o deploy Vercel (serverless) devolve **503** em `/api/control`
-  (ver `api/index.js`), porque nao alcanca o broker MQTT local. O dashboard trata
+  (ver `api/index.js`), porque nao alcanca o broker MQTT local. O frontend trata
   esse caso e mostra a mensagem adequada.
+- **O controlo nao esta exposto ao dashboard publico.** Por seguranca, o dashboard
+  (`dashboard.html`) e **estritamente de leitura**: mostra dados e estado dos
+  atuadores, mas nao envia comandos. Os comandos vivem apenas em `admin.html`
+  (autenticado) via `public/js/control.js`, e o endpoint exige `requireAuthApi`.
 - **Controlo ativo requer broker MQTT local.** O ESP32 subscreve os topicos
   `fazenda/<estufa>/atuador/*/comando` e so recebe comandos publicados nesse broker
   (`LOCAL_MQTT_BROKER`).
 - **Nao substitui sistemas SCADA profissionais.** E um projeto academico/monitoramento basico.
 - **Nao processa dados em edge.** Todo processamento e serverless (Vercel) ou client-side.
+
 
 ---
 
@@ -320,7 +347,7 @@ O sistema e composto por:
 | **Backend API** | REST API, autenticacao, proxy ThingSpeak, logs | Node.js + Express |
 | **MongoDB** | Persistencia de usuarios e logs de acesso | MongoDB Atlas |
 | **Frontend** | Dashboard interativo, graficos, alertas | HTML + CSS + JS + Chart.js |
-| **Service Worker** | Cache offline, PWA install | sw.js v2 |
+| **Service Worker** | Cache offline, PWA install | sw.js v4 |
 | **Mobile App** | App Android nativo | Capacitor + PWABuilder |
 | **Desktop App** | App Windows nativo | Electron |
 | **ThingSpeak** | Dados dos sensores IoT | ThingSpeak API |
@@ -348,7 +375,7 @@ O sistema e composto por:
 | Frontend | **HTML/CSS/JS vanilla** | Simples, sem build step, PWA-ready |
 | Graficos | **Chart.js** | Leve, interativo, canvas rendering (60k+ GitHub stars) |
 | Auth | **JWT 9.0 + bcryptjs 3.0** | Stateless, seguro, httpOnly cookie |
-| PWA | **Service Worker v2** | Offline, instalavel, network-first |
+| PWA | **Service Worker v4** | Offline, instalavel, network-first |
 | Mobile | **Capacitor 8.3** | Cross-platform, WebView-based, facil integracao |
 | Desktop | **Electron 42.2** | Cross-platform, Node.js integration |
 | Deploy | **Vercel** | Serverless, CI/CD integrado, gratuito |
@@ -373,8 +400,8 @@ estufa-dashboard-tcc/
 |   |-- index.html             # Login unificado (layout dividido + registro)
 |   |-- login-dashboard.html   # Login usuario (auth-card + registro)
 |   |-- login-admin.html       # Login admin (auth-card variante admin)
-|   |-- dashboard.html         # Dashboard principal (graficos)
-|   |-- admin.html             # Painel administrativo
+|   |-- dashboard.html         # Dashboard principal (graficos) — SOMENTE LEITURA
+|   |-- admin.html             # Painel administrativo (controlo + monitorizacao)
 |   |-- css/                   # CSS modular (carregado em cascata)
 |   |   |-- tokens.css         # Variaveis de design (cores, sombras, fontes)
 |   |   |-- base.css           # Reset, tipografia, botoes, topbar
@@ -382,14 +409,17 @@ estufa-dashboard-tcc/
 |   |   |-- auth.css           # Layout de autenticacao (split + card)
 |   |   |-- auth2.css          # Campos, botoes, mensagens, tabs
 |   |   |-- dashboard.css      # KPIs, sensores, skeleton
-|   |   |-- dashboard2.css     # Graficos, historico, controles
+|   |   |-- dashboard2.css     # Graficos, cards de atuadores
 |   |   |-- dashboard3.css     # Alertas, sistema, log
 |   |   |-- admin.css          # Estatisticas, tabelas, filtros
+|   |   |-- control.css        # Botoes/slider de comando + faixa ao vivo (admin)
 |   |-- js/                    # JS modular
 |   |   |-- theme.js           # Alternancia claro/escuro persistente
+|   |   |-- sensor.js          # Fetch ThingSpeak + render (partilhado)
+|   |   |-- control.js         # enviarComando() + listeners (apenas admin)
 |   |-- script.js              # Logica dashboard (graficos, alertas, CSV)
 |   |-- pwa.js                 # Registro Service Worker
-|   |-- sw.js                  # Service Worker v3 (cache modular + network-first)
+|   |-- sw.js                  # Service Worker v4 (cache modular + network-first)
 |   |-- manifest-dashboard.json # PWA manifest do dashboard
 |   |-- manifest-admin.json     # PWA manifest do admin
 |   |-- icons/                  # Icones SVG/PNG para PWA
@@ -538,7 +568,8 @@ function authenticateToken(req, res, next) {
 
 > **Nota (fonte de verdade):** este mapeamento e o que o firmware publica
 > (`publicarThingSpeak()` no `.ino`) e o que o frontend le
-> (`processarUltimo()` em `public/script.js`). Tabelas antigas que listavam
+> (`processarUltimo()` em `public/js/sensor.js`, partilhado por dashboard e admin).
+> Tabelas antigas que listavam
 > field5=temp. solo, field6=CO2, field7=pH, field8=pressao estavam **desatualizadas**.
 
 ### 5.3 Endpoints
@@ -575,8 +606,12 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | Landing | index.html | Pagina inicial com botao de login |
 | Login Dashboard | login-dashboard.html | Formulario login usuario |
 | Login Admin | login-admin.html | Formulario login admin |
-| Dashboard | dashboard.html | Graficos em tempo real + alertas + controlo ativo (vent/valv/ilum) |
-| Admin | admin.html | Logs + gerenciamento usuarios |
+| Dashboard | dashboard.html | Graficos em tempo real + alertas (somente leitura — sem comandos) |
+| Admin | admin.html | Logs + gerenciamento usuarios + monitorizacao ao vivo + controlo de atuadores |
+
+> **Separacao de privilegios:** `dashboard.html` nunca envia comandos (nao carrega
+> `js/control.js`); `admin.html` controla atuadores e mostra monitorizacao ao vivo
+> (carrega `js/sensor.js` + `js/control.js`).
 
 ### 6.2 Componentes CSS
 
@@ -587,18 +622,40 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 - **Alertas**: Badges visuais (verde/amarelo/vermelho)
 - **Botoes**: Estilos hover/active
 - **Formularios**: Inputs, labels, validacao visual
+- **control.css**: `.ctrl-btn`, `.ctrl-slider`, `.ctrl-status-msg`, `.live-strip`
+  (comando + faixa de monitorizacao) — carregado **apenas** pelo admin
 
-### 6.3 Funcoes JavaScript (script.js)
+### 6.3 Funcoes JavaScript
+
+**`public/script.js`** (dashboard — leitura + graficos):
 
 | Funcao | Descricao |
 | ------ | --------- |
 | initChart() | Inicializa graficos Chart.js |
-| loadData() | Busca dados do ThingSpeak via backend |
-| updateCharts() | Atualiza graficos com novos dados |
-| checkAlerts() | Verifica thresholds e exibe alertas |
+| buscarHistorico() | Busca historico do ThingSpeak via backend |
+| exportarCSV() | Exporta o historico carregado para CSV |
+| verificarAlertas() | Verifica thresholds e exibe alertas |
+| iniciarContagem() | Countdown ate a proxima atualizacao |
 | doLogout() | Limpa sessao e redirect |
-| enviarComando() | POST /api/control (proxy MQTT) — controla vent/valv/ilum com lock anti-duplo-clique |
-| mostrarMsgControlo() | Mensagem de feedback/erro (503, 401) abaixo da grid de atuadores |
+
+**`public/js/sensor.js`** (partilhado dashboard + admin):
+
+| Funcao | Descricao |
+| ------ | --------- |
+| buscarUltimo() | GET /api/thingspeak/last + atualiza UI |
+| processarUltimo() | Mapeia field1-8, atualiza sensores e cards de atuadores |
+| atualizarSensor() / setDelta() / setStateDot() | Render de valor, delta e estado |
+| atualizarAtuador() | Chip ON/OFF + classe `.is-on` no card |
+| setStatus() / setText() | Status pill e utilitario de texto |
+
+**`public/js/control.js`** (apenas admin):
+
+| Funcao | Descricao |
+| ------ | --------- |
+| enviarComando() | POST /api/control (proxy MQTT) — vent/valv/ilum com lock anti-duplo-clique |
+| mostrarMsgControlo() | Mensagem de feedback/erro (503, 401) sob a grid de atuadores |
+| cicloMonitorizar() | Polling do feed (INTERVALO_S) para a faixa ao vivo do admin |
+
 
 ### 6.4 Tipos de Graficos
 
@@ -617,8 +674,14 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 - **Tabela Usuarios**: username, isAdmin, ultimo login
 - **Filtros**: Por usuario, acao, periodo
 - **Paginacao**: 25 registros por pagina
+- **Monitorizacao ao Vivo**: faixa com 4 sensores (`.live-strip`), status pill,
+  ultima leitura, RSSI e estado dos atuadores (via `/js/sensor.js`)
+- **Controlo de Atuadores**: cards com botoes ON/OFF (ventilador, valvula) e
+  slider PWM 0-100 % (iluminacao), com mensagem de feedback (`.ctrl-status-msg`)
 
-### 7.2 Funcoes JavaScript (admin.html)
+### 7.2 Funcoes JavaScript
+
+**Inline em `admin.html`:**
 
 | Funcao | Descricao |
 | ------ | --------- |
@@ -629,14 +692,25 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | filterLogs() | Filtra logs por criterio |
 | doLogout() | Logout admin |
 
+**Em `js/sensor.js` + `js/control.js`** (ver Secao 6.3): `buscarUltimo()`,
+`processarUltimo()`, `atualizarAtuador()`, `enviarComando()`, `cicloMonitorizar()`.
+
+
 ---
 
 ## 8. PWA e Service Worker
 
-### 8.1 Service Worker v2 (sw.js)
+### 8.1 Service Worker v4 (sw.js)
 
-`javascript
-const CACHE_NAME = " estufa-cache-v2\;
+- **Cache:** `estufa-v4` (versionado — `activate` apaga versoes antigas)
+- **Pre-cache (ASSETS):** CSS modular (10 folhas, incl. control.css), scripts
+  (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`, `/pwa.js`),
+  paginas publicas (`index.html`, logins) e manifests PWA
+- **Nao pre-cacheia rotas protegidas** (`/`, `/dashboard.html`, `/admin.html`) —
+  ficam a cargo do network-first em runtime, para nao gravar a pagina de login
+  sob a chave de outra rota
+- **API (`/api/*`):** network-only; offline devolve 503 JSON
+
 ## 9. Apps Mobile (Android)
 
 ### 9.1 Estrutura
@@ -742,6 +816,8 @@ app.whenReady().then(createWindow);
 
 ### 11.1.1 Controlo de Atuadores (`/api/control`)
 
+- **Cliente autorizado:** apenas `public/js/control.js`, carregado **somente** por
+  `admin.html`. O dashboard publico nao tem botoes de comando nem o script.
 - **Servidor local (`server.js`):** rota real, protegida por `requireAuthApi`,
   valida `actuator` (`vent|valve|light`) e `action`, publica JSON no broker MQTT
   e regista auditoria (`control_<actuator>`) no AccessLog.
@@ -749,6 +825,9 @@ app.whenReady().then(createWindow);
   o broker da rede da estufa. O frontend trata 503 com mensagem amigavel.
 - **Topicos MQTT:** `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001/comando`
   payloads `{"command":"ON"|"OFF"}` (vent/valv) e `{"duty":0-100}` (ilum).
+- **Sem ack:** a API confirma apenas a publicacao no broker (`res.json({ok:true})`);
+  o estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos cards.
+
 
 ### 11.3 CI/CD
 
@@ -836,6 +915,8 @@ app.whenReady().then(createWindow);
 - [ ] Dependencias auditadas (npm audit)
 - [x] `/api/control` protegida por `requireAuthApi` + auditoria no AccessLog
       (sem rate-limit proprio — mitigado por auth + rede local; ver Secao 11.1.1)
+- [x] Interface de controlo carregada apenas no painel de admin
+      (`js/control.js`); o dashboard publico e somente leitura
 
 ### 14.2 Recomendacoes Express.js Security
 
@@ -907,6 +988,8 @@ Baseado no Express.js Security Best Practices:
 | Vercel | Serverless, CI/CD integrado, dominio customizado gratuito |
 | JWT + bcrypt | Stateless, seguro, amplamente adotado |
 | Capacitor | Cross-platform, WebView-based, facil integracao |
+| Controlo de atuadores so no admin | Menor superficie de ataque: o dashboard publico e somente leitura; os comandos exigem sessao autenticada |
+| JS partilhado sem bundler (`sensor.js`) | Reutiliza fetch/render entre dashboard e admin sem introduzir build step (mantem HTML/CSS/JS vanilla) |
 
 ### 16.2 FAQ
 
@@ -923,16 +1006,24 @@ Serverless functions + deploy automatico + dominio customizado gratuito.
 Parcialmente. Assets sao cacheados, mas dados requerem rede.
 
 **Como adicionar novos sensores?**
-Adicione fields no ThingSpeak e mapeie no frontend (script.js).
+Adicione fields no ThingSpeak e mapeie no frontend (`public/js/sensor.js`, que e
+carregado pelo dashboard e pelo admin).
 
 **Qual a estrutura do JWT?**
 Header.Payload.Signature - Header define algoritmo, Payload tem claims (userId, exp), Signature garante integridade.
 
 **Como funciona o controlo ativo de atuadores?**
-O dashboard envia POST `/api/control` (autenticado) -> `server.js` publica no broker
-MQTT local -> o ESP32 subscreve `fazenda/estufa01/atuador/*/comando` e aciona relé/PWM.
-So funciona na rede local da estufa; no deploy Vercel o endpoint devolve 503
-(consultar Secao 11.1.1 e bug #11).
+O painel de admin (`admin.html`, autenticado) envia POST `/api/control` via
+`public/js/control.js` -> `server.js` publica no broker MQTT local -> o ESP32
+subscreve `fazenda/estufa01/atuador/*/comando` e aciona relé/PWM. O dashboard
+publico **nao** tem botoes de comando. So funciona na rede local da estufa; no
+deploy Vercel o endpoint devolve 503 (consultar Secao 11.1.1 e bug #11).
+
+**Como sei o estado real apos enviar um comando?**
+A API nao devolve ack do ESP32: confirma apenas a publicacao no broker. O estado
+real chega pelo ThingSpeak (field5-8) no ciclo de monitorizacao seguinte
+(`INTERVALO_S`), atualizando os cards de atuadores no dashboard e no admin.
+
 
 ---
 
@@ -1016,7 +1107,7 @@ feeds: [{ created_at, field1-8, entry_id }]
 `
 estufa-dashboard-tcc/
 |-- api/                     # Backend - 5 arquivos (index, auth, admin, db, thingspeak)
-|-- public/                  # Frontend - 12 arquivos HTML/CSS/JS + manifests + icons
+|-- public/                  # Frontend - 14 arquivos HTML/CSS/JS + 3 modulos js/ + manifests + icons
 |-- mobile/                  # Apps mobile - 2 apps (dashboard, admin)
 |   |-- dashboard/           # App dashboard com Capacitor
 |   |-- admin/               # App admin com Capacitor
@@ -1039,4 +1130,5 @@ estufa-dashboard-tcc/
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.3.0**
+**Fim do Blueprint Estufa 01 v1.3.1**
+

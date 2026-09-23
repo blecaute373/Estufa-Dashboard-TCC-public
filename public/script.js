@@ -1,93 +1,24 @@
 /* ══════════════════════════════════════════
    CONFIGURAÇÃO
+   INTERVALO_S / URL_LAST / URL_FEEDS / TH vivem em /js/sensor.js,
+   carregado ANTES deste ficheiro (ver <script> no dashboard.html).
+   Também de lá vêm (escopo global partilhado):
+     buscarUltimo(), processarUltimo(),
+     estadoTemp/Solo/Lux/Ar(), atualizarSensor(),
+     setDelta(), setStateDot(), atualizarAtuador(),
+     setStatus(), setText().
+   Este ficheiro acrescenta apenas o que é exclusivo do dashboard:
+   gráfico Chart.js, alertas, countdown, exportação CSV e auth.
 ══════════════════════════════════════════ */
-const INTERVALO_S = 16;
-
-// URLs do proxy ThingSpeak (via backend, sem CORS)
-const URL_LAST  = '/api/thingspeak/last';
-const URL_FEEDS = (n) => `/api/thingspeak/history?results=${n}`;
-
-/* thresholds do master (sketch_apr13a.ino) */
-const TH = {
-  tempSup: 30, tempInf: 26,
-  soloInf: 40, soloSup: 70,
-  luxMin: 100, luxMax: 600,
-  umidArCrit: 30,
-};
 
 let qtdPontos = 60;
 let mainChart = null;
 let countdownTimer = null;
 let segundosRestantes = INTERVALO_S;
 let alertasCount = 0;
-let ultimoCache = { temp: NaN, solo: NaN, lux: NaN, ar: NaN };
 let ultimoHistorico = [];
 
-/* ══════════════════════════════════════════
-   FETCH — ÚLTIMO DADO
-══════════════════════════════════════════ */
-async function buscarUltimo() {
-  try {
-    const res  = await fetch(URL_LAST);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    processarUltimo(data);
-    setStatus('online', 'Online');
-  } catch(e) {
-    setStatus('offline', 'Sem conexão');
-    console.error('[TS] Erro:', e);
-  }
-}
-
-function processarUltimo(d) {
-  const temp   = parseFloat(d.field1);
-  const solo   = parseFloat(d.field2);
-  const lux    = parseFloat(d.field3);
-  const umidAr = parseFloat(d.field4);
-  const vent   = parseInt(d.field5, 10);
-  const valv   = parseInt(d.field6, 10);
-  const duty   = parseInt(d.field7, 10);
-  const rssi   = parseInt(d.field8, 10);
-
-  /* Sensores — valor + delta vs leitura anterior + estado */
-  atualizarSensor('valTemp', 'barTemp', 'ringTemp', 'deltaTemp', 'stateTemp', temp,   40,  1, ultimoCache.temp, estadoTemp(temp));
-  atualizarSensor('valSolo', 'barSolo', 'ringSolo', 'deltaSolo', 'stateSolo', solo,   100, 0, ultimoCache.solo, estadoSolo(solo));
-  atualizarSensor('valLux',  'barLux',  'ringLux',  'deltaLux',  'stateLux',  lux,    800, 0, ultimoCache.lux,  estadoLux(lux));
-  atualizarSensor('valAr',   'barAr',   'ringAr',   'deltaAr',   'stateAr',   umidAr, 100, 1, ultimoCache.ar,   estadoAr(umidAr));
-  ultimoCache = { temp, solo, lux, ar: umidAr };
-
-  const stamp = d.created_at ? new Date(d.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
-  setText('kpiUpdated', 'atualizado ' + stamp);
-
-  /* Atuadores */
-  atualizarAtuador('cardVent',  'chipVent',  'lblVent',  vent === 1, 'Ligado',  'Desligado');
-  atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Aberta',  'Fechada');
-  atualizarAtuador('cardLight', 'chipLight', 'lblLight', duty > 0,  'Ligada',  'Apagada');
-
-  const dutyEl = document.getElementById('dutyPct');
-  const dutyBar = document.getElementById('dutyBar');
-  const dutyCtrl = document.getElementById('dutyPctCtrl');
-  const slider = document.getElementById('sliderLight');
-  const dutyVal = isNaN(duty) ? 0 : duty;
-  if(dutyEl) dutyEl.textContent = dutyVal;
-  if(dutyBar) dutyBar.style.width = dutyVal + '%';
-  if(dutyCtrl) dutyCtrl.textContent = dutyVal + ' %';
-  // Sincroniza o slider com o estado real vindo do ThingSpeak,
-  // sem disparar o envio de comando (atualização só de leitura)
-  if(slider && document.activeElement !== slider) slider.value = dutyVal;
-
-  /* Sistema */
-  const hora = d.created_at ? new Date(d.created_at).toLocaleString('pt-BR') : '--';
-  setText('sysUltima', hora);
-  const rssiEl = document.getElementById('sysRssi');
-  if(rssiEl) {
-    rssiEl.textContent = isNaN(rssi) ? '--' : rssi + ' dBm';
-    rssiEl.className = 'sys-value ' + (rssi > -70 ? 'ok' : rssi > -85 ? 'warn' : 'danger');
-  }
-
-  /* Alertas automáticos por threshold */
-  verificarAlertas(temp, solo, lux, umidAr);
-}
+/* buscarUltimo() e processarUltimo() vivem em /js/sensor.js */
 
 /* ══════════════════════════════════════════
    FETCH — HISTÓRICO PARA GRÁFICO
@@ -210,105 +141,9 @@ function limparAlertas() {
   alertasJaDisparados.clear();
 }
 
-/* ══════════════════════════════════════════
-   ATUALIZAÇÃO DE UI
-══════════════════════════════════════════ */
-const CIRC = 2 * Math.PI * 17; // = 106.8
-
-function estadoTemp(v) {
-  if (isNaN(v)) return ['idle', '—'];
-  if (v > TH.tempSup) return ['danger', 'acima do ideal'];
-  if (v < TH.tempInf && v > 0) return ['warn', 'abaixo do ideal'];
-  return ['ok', 'ideal'];
-}
-function estadoSolo(v) {
-  if (isNaN(v)) return ['idle', '—'];
-  if (v < TH.soloInf) return ['warn', 'seco'];
-  if (v > TH.soloSup) return ['warn', 'saturado'];
-  return ['ok', 'ideal'];
-}
-function estadoLux(v) {
-  if (isNaN(v)) return ['idle', '—'];
-  if (v < TH.luxMin) return ['warn', 'baixa luz'];
-  if (v > TH.luxMax) return ['warn', 'luz alta'];
-  return ['ok', 'ideal'];
-}
-function estadoAr(v) {
-  if (isNaN(v)) return ['idle', '—'];
-  if (v > 0 && v < TH.umidArCrit) return ['danger', 'crítico'];
-  return ['ok', 'estável'];
-}
-
-function atualizarSensor(idVal, idBar, idRing, idDelta, idState, valor, max, casas, anterior, estado) {
-  const elVal  = document.getElementById(idVal);
-  const elBar  = document.getElementById(idBar);
-  const elRing = document.getElementById(idRing);
-  if(!elVal) return;
-
-  elVal.classList.remove('shimmer');
-  elVal.classList.remove('skel');
-
-  if(isNaN(valor)) {
-    const unit0 = elVal.querySelector('.sensor-unit');
-    elVal.textContent = '--';
-    if(unit0) elVal.appendChild(unit0);
-    setDelta(idDelta, NaN, NaN);
-    setStateDot(idState, 'idle', '—');
-    return;
-  }
-
-  const disp = valor.toFixed(casas);
-  const unit = elVal.querySelector('.sensor-unit');
-  elVal.textContent = disp;
-  if(unit) elVal.appendChild(unit);
-
-  const pct  = Math.max(0, Math.min(valor / max, 1));
-  if(elBar)  elBar.style.width = (pct * 100) + '%';
-  if(elRing) elRing.style.strokeDashoffset = CIRC * (1 - pct);
-  setDelta(idDelta, valor, anterior);
-  if (estado) setStateDot(idState, estado[0], estado[1]);
-}
-
-function setDelta(id, atual, anterior) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (isNaN(atual) || isNaN(anterior)) { el.textContent = '— primeira leitura'; el.className = 'delta flat'; return; }
-  const diff = atual - anterior;
-  if (Math.abs(diff) < 1e-9) { el.textContent = '→ estável'; el.className = 'delta flat'; return; }
-  const arrow = diff > 0 ? '▲' : '▼';
-  el.textContent = arrow + ' ' + Math.abs(diff).toFixed(1) + ' vs anterior';
-  el.className = 'delta ' + (diff > 0 ? 'up' : 'down');
-}
-
-function setStateDot(id, cls, txt) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.className = 'state-dot state-' + cls;
-  el.textContent = txt;
-}
-
-function atualizarAtuador(cardId, chipId, lblId, ligado, txtOn, txtOff) {
-  const card = document.getElementById(cardId);
-  const chip = document.getElementById(chipId);
-  const lbl  = document.getElementById(lblId);
-  if(!card) return;
-
-  card.classList.toggle('is-on', ligado);
-  if(chip) chip.className = 'act-chip ' + (ligado ? 'chip-on' : 'chip-off');
-  if(lbl)  lbl.textContent = ligado ? txtOn : txtOff;
-}
-
-function setStatus(cls, txt) {
-  const pill = document.getElementById('statusPill');
-  const text = document.getElementById('statusText');
-  if(pill) pill.className = 'status-pill ' + cls;
-  if(text) text.textContent = txt;
-}
-
-function setText(id, v) {
-  const el = document.getElementById(id);
-  if(el) el.textContent = v ?? '--';
-}
+/* CIRC, estadoTemp/Solo/Lux/Ar(), atualizarSensor(), setDelta(),
+   setStateDot(), atualizarAtuador(), setStatus() e setText()
+   vivem em /js/sensor.js (escopo global partilhado). */
 
 /* ══════════════════════════════════════════
    COUNTDOWN
@@ -450,131 +285,15 @@ document.querySelectorAll('.legend-item[data-series]').forEach(btn => {
 });
 
 /* ══════════════════════════════════════════
-   CONTROLO ATIVO DE ATUADORES
-   Envia comandos via POST /api/control (proxy MQTT local)
-   ══════════════════════════════════════════ */
+   CONTROLO DE ATUADORES → /js/control.js
+   Por segurança, o dashboard é SÓ-LEITURA: enviarComando() e os
+   listeners de .ctrl-btn / #sliderLight vivem em /js/control.js,
+   carregado apenas pelo painel de admin (autenticado).
+   Endpoint: POST /api/control (proxy MQTT local, BLUEPRINT §11.1.1).
+══════════════════════════════════════════ */
 
-let ctrlLock = false;   // evita duplos-cliques durante envio
-
-/**
- * Lê o token JWT do localStorage (fallback usado em PWA mobile)
- * para enviar junto com pedidos autenticados à API de controlo.
- */
-function getAuthToken() {
-  return localStorage.getItem('estufa_token');
-}
-
-/**
- * Envia um comando para um atuador via /api/control.
- * @param {string} atuador - 'vent' | 'valve' | 'light'
- * @param {string|number} acao - 'on' | 'off' | número (0-100 para luz)
- */
-async function enviarComando(atuador, acao) {
-  if (ctrlLock) return;
-  ctrlLock = true;
-
-  // Desabilita botões durante envio
-  const btns = document.querySelectorAll('.ctrl-btn[data-atuador="' + atuador + '"]');
-  const slider = document.getElementById('sliderLight');
-  btns.forEach(b => b.disabled = true);
-  if (slider) slider.disabled = true;
-
-  try {
-    const headers = { 'Content-Type': 'application/json' };
-    const token = getAuthToken();
-    if (token) {
-      headers['Authorization'] = 'Bearer ' + token;
-    }
-
-    const payload = (atuador === 'light')
-      ? { actuator: atuador, action: Number(acao) }
-      : { actuator: atuador, action: acao };
-
-    const res = await fetch('/api/control', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      if (res.status === 401) {
-        throw new Error('Não autorizado — faça login para controlar.');
-      }
-      if (res.status === 503) {
-        throw new Error('Broker MQTT local indisponível. Este controlo só funciona na rede local da estufa.');
-      }
-      throw new Error(errBody.detail || 'HTTP ' + res.status);
-    }
-
-    // Atualização otimista da UI
-    if (atuador === 'light') {
-      const pct = Number(acao);
-      const dutyCtl = document.getElementById('dutyPctCtrl');
-      if (dutyCtl) dutyCtl.textContent = pct + ' %';
-      atualizarAtuador('cardLight', 'chipLight', 'lblLight', pct > 0, 'Ligada', 'Apagada');
-    } else {
-      const on = acao === 'on';
-      const labelLigado = atuador === 'vent' ? 'Ligado' : 'Aberta';
-      const labelDeslig = atuador === 'vent' ? 'Desligado' : 'Fechada';
-      const cardId = atuador === 'vent' ? 'cardVent' : 'cardValve';
-      const chipId = atuador === 'vent' ? 'chipVent' : 'chipValve';
-      const lblId = atuador === 'vent' ? 'lblVent' : 'lblValve';
-      atualizarAtuador(cardId, chipId, lblId, on, labelLigado, labelDeslig);
-    }
-
-    console.log('[CTRL] ' + atuador + ' → ' + acao + ' | OK');
-  } catch (e) {
-    console.error('[CTRL] Falha:', e.message);
-    mostrarMsgControlo(e.message, 'error');
-  } finally {
-    ctrlLock = false;
-    btns.forEach(b => b.disabled = false);
-    if (slider) slider.disabled = false;
-  }
-}
-
-/**
- * Mostra uma mensagem de status de controlo (sucesso/erro) abaixo da grid.
- */
-function mostrarMsgControlo(msg, tipo) {
-  let el = document.getElementById('ctrlStatusMsg');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'ctrlStatusMsg';
-    el.className = 'ctrl-status-msg';
-    const grid = document.querySelector('.actuator-grid');
-    if (grid) grid.parentNode.insertBefore(el, grid.nextSibling);
-  }
-  el.textContent = (tipo === 'error' ? '⚠ ' : '✓ ') + msg;
-  el.classList.remove('show');
-  void el.offsetWidth; // force reflow
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 5000);
-}
-
-/* ── Event listeners para botões de controlo ─────────────────────────── */
-document.querySelectorAll('.ctrl-btn[data-atuador]').forEach(btn => {
-  btn.addEventListener('click', function () {
-    const atuador = this.getAttribute('data-atuador');
-    const acao = this.getAttribute('data-acao');
-    enviarComando(atuador, acao);
-  });
-});
-
-/* ── Event listener para o slider de iluminação ─────────────────────── */
-const sliderLight = document.getElementById('sliderLight');
-if (sliderLight) {
-  sliderLight.addEventListener('input', function (e) {
-    const pct = parseInt(e.target.value, 10);
-    const lbl = document.getElementById('dutyPctCtrl');
-    if (lbl) lbl.textContent = pct + ' %';
-  });
-  sliderLight.addEventListener('change', function (e) {
-    const pct = parseInt(e.target.value, 10);
-    enviarComando('light', pct);
-  });
-}
+/* Os listeners de .ctrl-btn[data-atuador] e #sliderLight são
+   registados por /js/control.js no painel de admin. */
 
 /* ══════════════════════════════════════════
    CICLO PRINCIPAL

@@ -1,0 +1,203 @@
+/* ESTUFA 01 · control.css — controlo de atuadores + monitorização ao vivo (admin)
+   Carregado pelo admin.html. O base dos cards (.actuator-grid / .actuator-card /
+   .act-chip) vem de dashboard2.css, também carregado pelo admin. */
+
+/* ── CONTROLO MANUAL DE ATUADORES ───────────────────────── */
+
+.act-control {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ctrl-btn {
+  width: 100%;
+  padding: 9px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+  font-family: var(--sans);
+}
+.ctrl-btn:hover:not(:disabled) {
+  border-color: var(--border-2);
+  background: var(--surface-2);
+}
+.ctrl-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ctrl-btn.ctrl-on:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 0 1px var(--green);
+}
+.ctrl-btn.ctrl-off:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 0 1px var(--red);
+}
+
+.ctrl-slider-wrap {
+  width: 100%;
+}
+.ctrl-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--inset);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+.ctrl-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--lux);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.ctrl-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.ctrl-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--lux);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+}
+.ctrl-slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ctrl-slider-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.ctrl-value-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ctrl-value {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.ctrl-status-msg {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: var(--amber);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.25s;
+  pointer-events: none;
+}
+.ctrl-status-msg.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── MONITORIZAÇÃO AO VIVO (faixa compacta no admin) ─────── */
+.live-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.live-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.live-cell .s-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.live-cell .live-val {
+  font-family: var(--mono);
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.live-cell .live-val .sensor-unit {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-left: 2px;
+}
+.live-cell .state-dot {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+}
+.state-dot.state-ok      { color: var(--green);  background: rgba(74,222,128,.1);  border-color: rgba(74,222,128,.3); }
+.state-dot.state-warn    { color: var(--amber);  background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.3); }
+.state-dot.state-danger  { color: var(--red);    background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); }
+.state-dot.state-idle    { color: var(--muted);  background: rgba(255,255,255,.05);border-color: var(--border); }
+
+/* Delta vs leitura anterior (o admin não carrega css/dashboard.css) */
+.live-cell .delta {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  margin-top: 6px;
+  color: var(--muted);
+}
+.live-cell .delta.up   { color: var(--red); }
+.live-cell .delta.down { color: var(--green); }
+.live-cell .delta.flat { color: var(--muted); }
+
+/* Rodapé da faixa de monitorização: estado da ligação + sistema */
+.live-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin: 2px 0 4px;
+}
+.live-note {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+.live-note .sys-value { color: var(--text-2); font-weight: 600; }
+.live-note .sys-value.ok     { color: var(--green); }
+.live-note .sys-value.warn   { color: var(--amber); }
+.live-note .sys-value.danger { color: var(--red); }
+

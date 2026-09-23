@@ -15,6 +15,10 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/base2.css">
 <link rel="stylesheet" href="/css/admin.css">
+<!-- dashboard2.css: base dos cards de atuadores (.actuator-card/.act-chip/.duty-*) -->
+<link rel="stylesheet" href="/css/dashboard2.css">
+<!-- control.css: botões/slider de comando + faixa de monitorização ao vivo -->
+<link rel="stylesheet" href="/css/control.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -40,6 +44,107 @@
       </button>
     </div>
   </header>
+
+  <!-- ═══════════ MONITORIZAÇÃO AO VIVO (ThingSpeak) ═══════════ -->
+  <div class="section-label">📡 Monitorização ao Vivo <span class="count-chip">auto 16s</span></div>
+  <div class="live-strip">
+    <div class="live-cell">
+      <div class="s-label">Temperatura</div>
+      <div class="live-val" id="valTemp">--<span class="sensor-unit"> °C</span></div>
+      <div class="delta flat" id="deltaTemp">— primeira leitura</div>
+      <span class="state-dot state-idle" id="stateTemp">—</span>
+    </div>
+    <div class="live-cell">
+      <div class="s-label">Umidade do Solo</div>
+      <div class="live-val" id="valSolo">--<span class="sensor-unit"> %</span></div>
+      <div class="delta flat" id="deltaSolo">— primeira leitura</div>
+      <span class="state-dot state-idle" id="stateSolo">—</span>
+    </div>
+    <div class="live-cell">
+      <div class="s-label">Luminosidade</div>
+      <div class="live-val" id="valLux">--<span class="sensor-unit"> lux</span></div>
+      <div class="delta flat" id="deltaLux">— primeira leitura</div>
+      <span class="state-dot state-idle" id="stateLux">—</span>
+    </div>
+    <div class="live-cell">
+      <div class="s-label">Umidade do Ar</div>
+      <div class="live-val" id="valAr">--<span class="sensor-unit"> %</span></div>
+      <div class="delta flat" id="deltaAr">— primeira leitura</div>
+      <span class="state-dot state-idle" id="stateAr">—</span>
+    </div>
+  </div>
+  <div class="live-foot">
+    <span class="status-pill loading" id="statusPill"><span class="s-dot"></span><span id="statusText">A ligar…</span></span>
+    <span class="live-note">Última leitura: <span class="sys-value" id="sysUltima">--</span></span>
+    <span class="live-note">Sinal Wi-Fi: <span class="sys-value" id="sysRssi">--</span></span>
+    <span class="live-note" id="kpiUpdated">aguardando feed…</span>
+  </div>
+
+  <!-- ═══════════ CONTROLO MANUAL DE ATUADORES ═══════════ -->
+  <div class="section-label">🎛 Controlo de Atuadores <span class="count-chip">requer login</span></div>
+  <div class="actuator-grid">
+
+    <!-- Ventilador -->
+    <div class="actuator-card act-vent" id="cardVent">
+      <div class="act-glow"></div>
+      <div class="act-icon-ring"><span>🌀</span></div>
+      <div class="act-name">Ventilador</div>
+      <div class="act-chip chip-off" id="chipVent">
+        <span class="chip-dot"></span><span id="lblVent">Desligado</span>
+      </div>
+      <div class="act-control">
+        <button class="ctrl-btn ctrl-on"  type="button" data-atuador="vent" data-acao="on">Ligar</button>
+        <button class="ctrl-btn ctrl-off" type="button" data-atuador="vent" data-acao="off">Desligar</button>
+      </div>
+      <div class="act-hint">Auto · liga ≥ 30 °C · desliga ≤ 26 °C</div>
+    </div>
+
+    <!-- Válvula de Irrigação -->
+    <div class="actuator-card act-valve" id="cardValve">
+      <div class="act-glow"></div>
+      <div class="act-icon-ring"><span>💧</span></div>
+      <div class="act-name">Válvula de Irrigação</div>
+      <div class="act-chip chip-off" id="chipValve">
+        <span class="chip-dot"></span><span id="lblValve">Fechada</span>
+      </div>
+      <div class="act-control">
+        <button class="ctrl-btn ctrl-on"  type="button" data-atuador="valve" data-acao="on">Abrir</button>
+        <button class="ctrl-btn ctrl-off" type="button" data-atuador="valve" data-acao="off">Fechar</button>
+      </div>
+      <div class="act-hint">Auto · abre ≤ 40 % · fecha ≥ 70 %</div>
+    </div>
+
+    <!-- Iluminação -->
+    <div class="actuator-card act-light" id="cardLight">
+      <div class="act-glow"></div>
+      <div class="act-icon-ring"><span>💡</span></div>
+      <div class="act-name">Iluminação</div>
+      <div class="act-chip chip-off" id="chipLight">
+        <span class="chip-dot"></span><span id="lblLight">Apagada</span>
+      </div>
+      <div class="duty-wrap">
+        <div class="duty-label">Duty atual</div>
+        <div class="duty-track"><div class="duty-fill" id="dutyBar" style="width:0%"></div></div>
+        <div class="duty-label"><span id="dutyPct">0</span> %</div>
+      </div>
+      <div class="act-control">
+        <input class="ctrl-slider" type="range" id="sliderLight" min="0" max="100" step="5" value="0"
+               aria-label="Intensidade da iluminação (PWM 0-100 %)">
+        <div class="ctrl-slider-footer">
+          <span class="ctrl-value-label">PWM · 0-100 %</span>
+          <span class="ctrl-value" id="dutyPctCtrl">0 %</span>
+        </div>
+      </div>
+      <div class="act-hint">Auto · liga ≤ 100 lux · desliga ≥ 600 lux</div>
+    </div>
+
+  </div>
+  <div class="ctrl-status-msg" id="ctrlStatusMsg"></div>
+  <p class="live-note" style="margin-top:8px">
+    ⚠ O comando só é entregue quando o servidor alcança o broker MQTT local da estufa
+    (fora da rede local a API responde 503).
+  </p>
+
   <div class="section-label">📊 Resumo</div>
   <div class="stat-grid">
     <div class="stat-card s-green">
@@ -307,5 +412,9 @@ function searchLogs(term) {
 </script>
 <script src="/js/theme.js"></script>
 <script src="/pwa.js"></script>
+<!-- sensor.js: fetch/render partilhado (monitorização read-only) -->
+<script src="/js/sensor.js"></script>
+<!-- control.js: enviarComando() + listeners .ctrl-btn / #sliderLight + ciclo ao vivo -->
+<script src="/js/control.js"></script>
 </body>
 </html>
