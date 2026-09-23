@@ -121,10 +121,11 @@
 
   </div>
 
-  <!-- ATUADORES -->
-  <div class="section-label">⚡ Atuadores</div>
+    <!-- ATUADORES -->
+        <div class="section-label">🎛 Controlos Manuais</div>
   <div class="actuator-grid">
 
+    <!-- Ventilador -->
     <div class="actuator-card act-vent" id="cardVent">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>🌀</span></div>
@@ -132,9 +133,14 @@
       <div class="act-chip chip-off" id="chipVent">
         <span class="chip-dot"></span><span id="lblVent">Desligado</span>
       </div>
-      <div style="font-size:0.66rem;color:var(--muted);margin-top:8px;font-family:var(--mono)">Liga ≥ 30°C · Desliga ≤ 26°C</div>
+      <div class="act-hint">Auto · liga ≥ 30 °C · desliga ≤ 26 °C</div>
+      <div class="act-control">
+        <button class="ctrl-btn ctrl-on" data-atuador="vent" data-acao="on" type="button">Ligar</button>
+        <button class="ctrl-btn ctrl-off" data-atuador="vent" data-acao="off" type="button">Desligar</button>
+      </div>
     </div>
 
+    <!-- Válvula de Irrigação -->
     <div class="actuator-card act-valve" id="cardValve">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>💧</span></div>
@@ -142,9 +148,14 @@
       <div class="act-chip chip-off" id="chipValve">
         <span class="chip-dot"></span><span id="lblValve">Fechada</span>
       </div>
-      <div style="font-size:0.66rem;color:var(--muted);margin-top:8px;font-family:var(--mono)">Abre ≤ 40% · Fecha ≥ 70%</div>
+      <div class="act-hint">Auto · abre ≤ 40 % · fecha ≥ 70 %</div>
+      <div class="act-control">
+        <button class="ctrl-btn ctrl-on" data-atuador="valve" data-acao="on" type="button">Abrir</button>
+        <button class="ctrl-btn ctrl-off" data-atuador="valve" data-acao="off" type="button">Fechar</button>
+      </div>
     </div>
 
+    <!-- Iluminação -->
     <div class="actuator-card act-light" id="cardLight">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>💡</span></div>
@@ -152,9 +163,17 @@
       <div class="act-chip chip-off" id="chipLight">
         <span class="chip-dot"></span><span id="lblLight">Apagada</span>
       </div>
-      <div class="duty-wrap">
-        <div class="duty-label">PWM: <span id="dutyPct">0</span>%</div>
-        <div class="duty-track"><div class="duty-fill" id="dutyBar" style="width:0%"></div></div>
+      <div class="act-hint">Auto · liga ≤ 100 lux · desliga ≥ 600 lux</div>
+      <div class="act-control">
+        <div class="ctrl-slider-wrap">
+          <input type="range" min="0" max="100" value="0" step="5"
+                 class="ctrl-slider" id="sliderLight"
+                 data-atuador="light" aria-label="Duty cycle iluminação">
+          <div class="ctrl-slider-footer">
+            <span class="ctrl-value-label">Duty</span>
+            <span class="ctrl-value" id="dutyPctCtrl">0 %</span>
+          </div>
+        </div>
       </div>
     </div>
 

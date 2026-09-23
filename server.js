@@ -38,6 +38,39 @@ if (!isThingSpeakConfigured) {
 const User       = require('./models/User');
 const AccessLog  = require('./models/AccessLog');
 
+
+
+/**
+ * Rota /api/control — Proxy MQTT para controle dos atuadores
+ *
+ * O ESP32 (estufa_unificado) escuta comandos nos tópicos:
+ *   fazenda/estufa01/atuador/vent_001/comando   → {command:ON|OFF}
+ *   fazenda/estufa01/atuador/valv_001/comando   → {command:ON|OFF}
+ *   fazenda/estufa01/atuador/ilum_001/comando   → {duty:0-100}
+ *
+ * Requer POST com JSON:
+ *   { actuator: 'vent'|'valve'|'light', action: 'on'|'off'|number }
+ *
+ * Funciona apenas no servidor local (broker MQTT na mesma rede).
+ * Em Vercel/serverless usa-se conexão WebSocket MQTT direta do frontend.
+ */
+const mqtt = require('mqtt');
+
+const LOCAL_MQTT_BROKER = process.env.LOCAL_MQTT_BROKER || 'mqtt://192.168.100.3:1883';
+
+let mqttClient = null;
+function getMqttClient() {
+  if (!mqttClient) {
+    mqttClient = mqtt.connect(LOCAL_MQTT_BROKER);
+    mqttClient.on('error', () => { mqttClient = null; });
+    mqttClient.on('close', () => { mqttClient = null; });
+  }
+  if (!mqttClient.connected) {
+    mqttClient = mqtt.connect(LOCAL_MQTT_BROKER);
+  }
+  return mqttClient;
+}
+
 /* ── Helpers DB ── */
 async function log(userId, username, event, req, details = null) {
   await auditLog(AccessLog, { userId, username, event, req, details });
@@ -192,6 +225,40 @@ app.get('/api/admin/users', requireAdminApi, async (req, res) => {
     return res.json({ data: users });
   } catch (err) {
     return sendProblem(req, res, 'INTERNAL', 'Erro ao carregar usuários. Tente novamente.', err);
+  }
+});
+
+
+// ── CONTROL (proxy MQTT local, ver BLUEPRINT.md §1.4 Nao-Objetivos) ──
+app.post('/api/control', requireAuthApi, async (req, res) => {
+  const { actuator, action } = req.body || {};
+  if (!actuator || action === undefined)
+    return sendProblem(req, res, 'VALIDATION', 'Informe actuator e action.');
+  const topicMap = {
+    vent:  'fazenda/estufa01/atuador/vent_001/comando',
+    valve: 'fazenda/estufa01/atuador/valv_001/comando',
+    light: 'fazenda/estufa01/atuador/ilum_001/comando',
+  };
+  const payloadMap = {
+    vent:  (a) => JSON.stringify({ command: a === 'on' ? 'ON' : 'OFF' }),
+    valve: (a) => JSON.stringify({ command: a === 'on' ? 'ON' : 'OFF' }),
+    light: (a) => JSON.stringify({ duty: Math.max(0, Math.min(100, Number(a))) }),
+  };
+  if (!topicMap[actuator])
+    return sendProblem(req, res, 'VALIDATION', 'Actuator invalido.');
+  try {
+    const client = getMqttClient();
+    if (!client.connected)
+      return sendProblem(req, res, 'UPSTREAM', 'Broker MQTT local indisponivel. Tente novamente.');
+    const payload = payloadMap[actuator](action);
+    client.publish(topicMap[actuator], payload, (err) => {
+      if (err)
+        return sendProblem(req, res, 'UPSTREAM', 'Falha ao publicar comando.');
+    });
+    await log(null, req.user?.username || 'desconhecido', 'control_' + actuator, req, { action });
+    return res.json({ ok: true, actuator, action });
+  } catch (err) {
+    return sendProblem(req, res, 'INTERNAL', 'Erro ao enviar comando.', err);
   }
 });
 

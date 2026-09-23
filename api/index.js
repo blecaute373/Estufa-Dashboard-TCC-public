@@ -49,6 +49,12 @@ app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
 });
 
+
+// ── CONTROL (stub em serverless — requer broker local via WebSocket) ──
+app.post('/api/control', async (req, res) => {
+  res.status(503).json({ ok: false, error: 'Controle apenas disponivel em modo local (broker MQTT na rede da estufa).' });
+});
+
 // Health para monitoramento (Vercel/monitor externo)
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, uptime: process.uptime() });

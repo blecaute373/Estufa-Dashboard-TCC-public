@@ -26,6 +26,7 @@ cookies.txt  # sessão curl local — nunca versionar
 estufa.db
 *.sqlite
 *.sqlite3
+estufa_unificado (2).ino
 
 # Build outputs
 dist/

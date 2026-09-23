@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.2.0 · **Data:** 15/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.3.0 · **Data:** 22/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,20 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.3.0 (22/09/2026) - Controlo Ativo de Atuadores no Dashboard
+
+`
+feat: botoes ON/OFF (ventilador, valvula) + slider PWM (iluminacao) no dashboard
+feat: server.js POST /api/control (proxy MQTT, requireAuthApi + auditoria AccessLog)
+feat: firmware ESP32 subscreve topicos */comando e trata JSON {command} / {duty}
+fix: handlers do ESP32 nao re-publicam no proprio topic (evita loop MQTT)
+fix: correcao da tabela ThingSpeak 5.2 (field2=solo, field3=lux, field4=umid.ar,
+     field5-8=atuadores/RSSI) — antes desatualizada
+docs: BLUEPRINT 1.3.0 — 1.4 Nao-Objetivos reescrito (controlo local-only),
+      nova 11.1.1, env LOCAL_MQTT_BROKER, bug #11, FAQ controlo
+test: 38/38 node:test a passar; mqtt 5.16 adicionado a package.json
+`
 
 ### v1.2.0 (15/09/2026) - Conformidade ENGENHARIA.md (P0+P1+P2+P3)
 
@@ -108,13 +122,18 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.1.0):** Dashboard web completo com autenticacao, graficos ThingSpeak, PWA, apps mobile (Android) e desktop (Electron/Windows).
-- **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron.
-- **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app).
-- **Total de commits:** 45 commits (09/05/2026 - 11/09/2026).
+- **Versao atual (v1.3.0):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **controlo ativo de atuadores (local)**, PWA, apps mobile (Android) e desktop (Electron/Windows).
+- **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
+- **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
+  **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
+- **Total de commits:** 46 commits (09/05/2026 - 22/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API)
+  - **Controlo ativo de atuadores** (ventilador ON/OFF, valvula abrir/fechar,
+    iluminacao duty PWM 0-100%) via `/api/control` + MQTT local — apenas na
+    rede da estufa (Ver Secao 11.1.1)
   - Painel admin com logs de acesso e gerenciamento de usuarios
   - PWA com Service Worker v2 (cache limpo + network-first)
   - Apps mobile Android via Capacitor + PWABuilder
@@ -141,8 +160,12 @@ a874402 | 09/05/2026 | Initial commit
   - Service worker sem teste automatizado
   - PWABuilder requer hospedagem HTTPS
   - Chart.js dependente de CDN (sem fallback local)
+  - `/api/control` sem rate-limit proprio (protegido por auth + rede local)
+  - Firmware `.ino` fora do versionamento (gitignored) — sem CI de compilacao
+  - Botao "verificar broker" inexistente — indisponibilidade do broker so aparece
+    apos clique (503)
 
-- _Ultima atualizacao: 11/09/2026_
+- _Ultima atualizacao: 22/09/2026_
 
 ---
 
@@ -158,6 +181,9 @@ a874402 | 09/05/2026 | Initial commit
 8. **Capacitor sync manual.** npx cap sync necessario apos mudancas no frontend; nao ha automatizacao.
 9. **Admin sem link para dashboard.** Pagina admin nao tem link para dashboard (decisao intencional de seguranca).
 10. **Build Android requer Android Studio.** Build nativo requer Android Studio + SDK configurado localmente.
+11. **Controlo de atuadores so local.** `/api/control` devolve 503 no deploy Vercel
+    (serverless nao alcanca o broker MQTT da rede da estufa); o controlo ativo so
+    funciona com `server.js` a correr na mesma rede do ESP32.
 
 ---
 
@@ -241,7 +267,14 @@ O sistema e composto por:
 
 ### 1.4 Nao-Objetivos
 
-- **Nao e um sistema de controle ativo.** O Estufa 01 apenas monitora; nao aciona atuadores.
+- **Nao e um sistema de controle ativo em nuvem.** O controlo manual de atuadores
+  (ventilador, valvula, iluminacao) funciona **apenas via servidor local** (`server.js`,
+  rede da estufa): o deploy Vercel (serverless) devolve **503** em `/api/control`
+  (ver `api/index.js`), porque nao alcanca o broker MQTT local. O dashboard trata
+  esse caso e mostra a mensagem adequada.
+- **Controlo ativo requer broker MQTT local.** O ESP32 subscreve os topicos
+  `fazenda/<estufa>/atuador/*/comando` e so recebe comandos publicados nesse broker
+  (`LOCAL_MQTT_BROKER`).
 - **Nao substitui sistemas SCADA profissionais.** E um projeto academico/monitoramento basico.
 - **Nao processa dados em edge.** Todo processamento e serverless (Vercel) ou client-side.
 
@@ -291,6 +324,8 @@ O sistema e composto por:
 | **Mobile App** | App Android nativo | Capacitor + PWABuilder |
 | **Desktop App** | App Windows nativo | Electron |
 | **ThingSpeak** | Dados dos sensores IoT | ThingSpeak API |
+| **Broker MQTT local** | Transporte de comandos de atuadores (server.js -> ESP32) | MQTT (mosquitto) |
+| **ESP32** | Sensores + atuadores (relés/PWM); subscreve topicos `.../comando` | Firmware Arduino (`estufa_unificado (2).ino`) |
 
 ### 2.3 Fluxo de Dados
 
@@ -299,6 +334,9 @@ O sistema e composto por:
 3. **Backend** responde com JSON -> Frontend atualiza graficos
 4. **Alertas** -> Frontend verifica thresholds e exibe alertas visuais
 5. **Logs** -> Backend registra acesso no MongoDB via AccessLog
+6. **Controlo ativo** -> Dashboard (botoes/slider) -> POST /api/control (server.js,
+   protegido por auth) -> Broker MQTT local -> ESP32 aciona relé/PWM
+   (Em Vercel: stub devolve 503; ver Secao 11.1)
 
 ### 2.4 Stack Tecnologica
 
@@ -318,6 +356,7 @@ O sistema e composto por:
 | Security | **express-rate-limit 7.5** | Protecao contra brute-force (20 req/15 min) |
 | Config | **dotenv 17.4** | Gerenciamento de variaveis de ambiente |
 | Cookies | **cookie-parser 1.4** | Gerenciamento seguro de cookies |
+| MQTT client | **mqtt 5.16** | Publica comandos de atuadores no broker local (`server.js`) |
 
 ### 2.5 Estrutura de Pastas
 
@@ -381,6 +420,7 @@ estufa-dashboard-tcc/
 |
 |-- electron-dashboard.js      # App desktop Dashboard (Electron)
 |-- electron-admin.js          # App desktop Admin (Electron)
+|-- estufa_unificado (2).ino    # Firmware ESP32 (gitignored — contem credenciais WiFi)
 |-- build-dashboard.json       # Config electron-builder (dashboard)
 |-- build-admin.json           # Config electron-builder (admin)
 |-- server.js                  # Servidor local (dev)
@@ -487,14 +527,19 @@ function authenticateToken(req, res, next) {
 
 | Campo | Nome | Unidade | Descricao |
 | ----- | ---- | ------- | --------- |
-| field1 | Temperatura | C | Temperatura ambiente |
-| field2 | Umidade | % | Umidade relativa do ar |
-| field3 | Umidade Solo | % | Umidade do solo |
-| field4 | Luminosidade | lux | Intensidade luminosa |
-| field5 | Temperatura Solo | C | Temperatura do solo |
-| field6 | CO2 | ppm | Concentracao de CO2 |
-| field7 | pH | pH | Nivel de pH do solo |
-| field8 | Pressao | kPa | Pressao atmosferica |
+| field1 | Temperatura | C | Temperatura ambiente (DHT22) |
+| field2 | Umidade Solo | % | Umidade do solo (sensor analogico) |
+| field3 | Luminosidade | lux | Intensidade luminosa (BH1750) |
+| field4 | Umidade Ar | % | Umidade relativa do ar (DHT22) |
+| field5 | Estado Ventilador | 0/1 | Estado digital do relé (0=Off, 1=On) |
+| field6 | Estado Valvula | 0/1 | Estado digital da valvula (0=Fechada, 1=Aberta) |
+| field7 | Duty Iluminacao | 0-100 | Percentagem PWM (0=apagado, 100=completo) |
+| field8 | RSSI WiFi | dBm | Forca do sinal do ESP32 |
+
+> **Nota (fonte de verdade):** este mapeamento e o que o firmware publica
+> (`publicarThingSpeak()` no `.ino`) e o que o frontend le
+> (`processarUltimo()` em `public/script.js`). Tabelas antigas que listavam
+> field5=temp. solo, field6=CO2, field7=pH, field8=pressao estavam **desatualizadas**.
 
 ### 5.3 Endpoints
 
@@ -530,7 +575,7 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | Landing | index.html | Pagina inicial com botao de login |
 | Login Dashboard | login-dashboard.html | Formulario login usuario |
 | Login Admin | login-admin.html | Formulario login admin |
-| Dashboard | dashboard.html | Graficos em tempo real + alertas |
+| Dashboard | dashboard.html | Graficos em tempo real + alertas + controlo ativo (vent/valv/ilum) |
 | Admin | admin.html | Logs + gerenciamento usuarios |
 
 ### 6.2 Componentes CSS
@@ -552,6 +597,8 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | updateCharts() | Atualiza graficos com novos dados |
 | checkAlerts() | Verifica thresholds e exibe alertas |
 | doLogout() | Limpa sessao e redirect |
+| enviarComando() | POST /api/control (proxy MQTT) — controla vent/valv/ilum com lock anti-duplo-clique |
+| mostrarMsgControlo() | Mensagem de feedback/erro (503, 401) abaixo da grid de atuadores |
 
 ### 6.4 Tipos de Graficos
 
@@ -689,6 +736,20 @@ app.whenReady().then(createWindow);
 
 **Nota:** As variaveis `TS_API_KEY` e `TS_CHANNEL` sao usadas pelo backend para comunicacao com a API do ThingSpeak. O `JWT_SECRET` e gerado dinamicamente usando `crypto.randomBytes(64)` se nao definido.
 
+| Variavel | Descricao | Obrigatoria |
+| -------- | --------- | ----------- |
+| LOCAL_MQTT_BROKER | URL do broker MQTT local (controlo de atuadores em `server.js`) | Nao (default: `mqtt://192.168.100.3:1883`) |
+
+### 11.1.1 Controlo de Atuadores (`/api/control`)
+
+- **Servidor local (`server.js`):** rota real, protegida por `requireAuthApi`,
+  valida `actuator` (`vent|valve|light`) e `action`, publica JSON no broker MQTT
+  e regista auditoria (`control_<actuator>`) no AccessLog.
+- **Vercel (`api/index.js`):** stub que devolve **503** — o serverless nao alcanca
+  o broker da rede da estufa. O frontend trata 503 com mensagem amigavel.
+- **Topicos MQTT:** `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001/comando`
+  payloads `{"command":"ON"|"OFF"}` (vent/valv) e `{"duty":0-100}` (ilum).
+
 ### 11.3 CI/CD
 
 - Push na main -> Deploy automatico via GitHub integration
@@ -773,6 +834,8 @@ app.whenReady().then(createWindow);
 - [x] Service Worker com cache seguro
 - [x] Electron com nodeIntegration=false
 - [ ] Dependencias auditadas (npm audit)
+- [x] `/api/control` protegida por `requireAuthApi` + auditoria no AccessLog
+      (sem rate-limit proprio — mitigado por auth + rede local; ver Secao 11.1.1)
 
 ### 14.2 Recomendacoes Express.js Security
 
@@ -864,6 +927,12 @@ Adicione fields no ThingSpeak e mapeie no frontend (script.js).
 
 **Qual a estrutura do JWT?**
 Header.Payload.Signature - Header define algoritmo, Payload tem claims (userId, exp), Signature garante integridade.
+
+**Como funciona o controlo ativo de atuadores?**
+O dashboard envia POST `/api/control` (autenticado) -> `server.js` publica no broker
+MQTT local -> o ESP32 subscreve `fazenda/estufa01/atuador/*/comando` e aciona relé/PWM.
+So funciona na rede local da estufa; no deploy Vercel o endpoint devolve 503
+(consultar Secao 11.1.1 e bug #11).
 
 ---
 
@@ -970,4 +1039,4 @@ estufa-dashboard-tcc/
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.1.0**
+**Fim do Blueprint Estufa 01 v1.3.0**
