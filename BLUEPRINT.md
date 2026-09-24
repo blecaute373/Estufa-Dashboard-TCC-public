@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.3.1 · **Data:** 22/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.3.2 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,28 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.3.2 (24/09/2026) - Modo AUTO/MANUAL dos Atuadores + Visual Neon no Admin
+
+`
+feat(control): modo AUTO/MANUAL dos atuadores + visual neon no admin
+     - server.js /api/control: action 'auto' -> {command:'AUTO'}; light aceita
+       duty 0-100 (NaN -> VALIDATION 400) ou 'auto'; resposta inclui payload
+     - control.js reescrito: so comando manual, credentials same-origin (cookie
+       httpOnly, sem Bearer do localStorage), 401 -> redirect, 503 -> broker
+       indisponivel, erros RFC 9457 (detail/title)
+     - control.js: botoes on/off/auto em vent/valve + label de modo; luz com
+       seletor AUTO/MANUAL e slider que publica so no change
+     - admin.html/control.css: rotulos de hardware (Rele GPIO 26/27, LED
+       WS2811), botao Auto, badge de modo, estados ativos por atuador
+     - dashboard2.css: tema neon por atuador (--act-accent/--act-soft/--act-glow,
+       --state-neon) + card com surface-solid
+     - sensor.js: documenta mapeamento field1-8 (GPIOs); valvula Ligado/Desligado
+nota: a reescrita removeu cicloMonitorizar() e a faixa ao vivo do admin ficou
+      sem polling (bug #12 em aberto)
+docs: BLUEPRINT 1.3.2 — Registro, Estado Atual, 6.2-6.3, 7.1-7.2, 11.1.1, 16.2
+test: 38/38 node:test a passar
+`
 
 ### v1.3.1 (22/09/2026) - Controlo Movido para o Painel de Admin + Monitorizacao ao Vivo
 
@@ -141,21 +163,23 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.3.1):** Dashboard web com autenticacao, graficos ThingSpeak,
-  **controlo ativo de atuadores (local, apenas no painel de admin)**, PWA,
-  apps mobile (Android) e desktop (Electron/Windows).
+- **Versao atual (v1.3.2):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **controlo ativo de atuadores com modo AUTO/MANUAL (local, apenas no painel de
+  admin)**, PWA, apps mobile (Android) e desktop (Electron/Windows).
 - **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
   **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
-- **Total de commits:** 47 commits (09/05/2026 - 22/09/2026).
+- **Total de commits:** 50 commits (09/05/2026 - 24/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
-  - **Controlo ativo de atuadores** (ventilador ON/OFF, valvula abrir/fechar,
-    iluminacao duty PWM 0-100%) via `/api/control` + MQTT local — **disponivel
-    apenas no painel de admin** e apenas na rede da estufa (Ver Secao 11.1.1)
+  - **Controlo ativo de atuadores com modo AUTO/MANUAL** (ventilador e valvula
+    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO) via `/api/control` +
+    MQTT local — **disponivel apenas no painel de admin** e apenas na rede da
+    estufa (Ver Secao 11.1.1)
   - **Monitorizacao ao vivo no admin** (4 sensores + estado dos atuadores +
-    status/RSSI), reutilizando `/js/sensor.js`
+    status/RSSI), reutilizando `/js/sensor.js` — na v1.3.2 sem refresh
+    periodico (bug #12)
   - Painel admin com logs de acesso e gerenciamento de usuarios
   - PWA com Service Worker v4 (cache limpo + network-first)
   - Apps mobile Android via Capacitor + PWABuilder
@@ -186,8 +210,10 @@ a874402 | 09/05/2026 | Initial commit
   - Firmware `.ino` fora do versionamento (gitignored) — sem CI de compilacao
   - Botao "verificar broker" inexistente — indisponibilidade do broker so aparece
     apos clique (503)
+  - Faixa ao vivo do admin sem refresh periodico desde a v1.3.2 — o polling saiu
+    do control.js e nada reagenda `buscarUltimo()` (bug #12)
 
-- _Ultima atualizacao: 22/09/2026_
+- _Ultima atualizacao: 24/09/2026_
 
 ---
 
@@ -206,6 +232,10 @@ a874402 | 09/05/2026 | Initial commit
 11. **Controlo de atuadores so local.** `/api/control` devolve 503 no deploy Vercel
     (serverless nao alcanca o broker MQTT da rede da estufa); o controlo ativo so
     funciona com `server.js` a correr na mesma rede do ESP32.
+12. **Faixa ao vivo do admin sem polling.** A reescrita do control.js (v1.3.2)
+    removeu `cicloMonitorizar()` e nenhum ficheiro reagenda `buscarUltimo()` no
+    admin — a faixa de monitorizacao atualiza apenas na carga da pagina.
+    Correcao prevista: reintroduzir o intervalo (control.js ou admin.html).
 
 ---
 
@@ -416,7 +446,7 @@ estufa-dashboard-tcc/
 |   |-- js/                    # JS modular
 |   |   |-- theme.js           # Alternancia claro/escuro persistente
 |   |   |-- sensor.js          # Fetch ThingSpeak + render (partilhado)
-|   |   |-- control.js         # enviarComando() + listeners (apenas admin)
+|   |   |-- control.js         # comando manual on/off/auto + luz auto/manual (admin)
 |   |-- script.js              # Logica dashboard (graficos, alertas, CSV)
 |   |-- pwa.js                 # Registro Service Worker
 |   |-- sw.js                  # Service Worker v4 (cache modular + network-first)
@@ -622,8 +652,11 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 - **Alertas**: Badges visuais (verde/amarelo/vermelho)
 - **Botoes**: Estilos hover/active
 - **Formularios**: Inputs, labels, validacao visual
-- **control.css**: `.ctrl-btn`, `.ctrl-slider`, `.ctrl-status-msg`, `.live-strip`
-  (comando + faixa de monitorizacao) — carregado **apenas** pelo admin
+- **control.css**: `.ctrl-btn` (+ `.ctrl-auto` / `.ctrl-mode`), `.ctrl-slider`,
+  `.ctrl-status-msg`, `.live-strip` (comando + faixa de monitorizacao) — carregado
+  **apenas** pelo admin
+- **dashboard2.css**: cards de atuadores com tema neon por tipo (`--act-accent`,
+  `--act-soft`, `--act-glow`), `.act-gpio` (rele GPIO) e `.act-mode` (Auto/Manual)
 
 ### 6.3 Funcoes JavaScript
 
@@ -648,13 +681,21 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | atualizarAtuador() | Chip ON/OFF + classe `.is-on` no card |
 | setStatus() / setText() | Status pill e utilitario de texto |
 
-**`public/js/control.js`** (apenas admin):
+**`public/js/control.js`** (apenas admin) — v1.3.2: so comando manual; o browser
+nunca fala com o broker MQTT (quem publica e o `server.js`):
 
 | Funcao | Descricao |
 | ------ | --------- |
-| enviarComando() | POST /api/control (proxy MQTT) — vent/valv/ilum com lock anti-duplo-clique |
-| mostrarMsgControlo() | Mensagem de feedback/erro (503, 401) sob a grid de atuadores |
-| cicloMonitorizar() | Polling do feed (INTERVALO_S) para a faixa ao vivo do admin |
+| enviarComando(actuator, action) | POST /api/control com cookie httpOnly (`credentials: same-origin`); 401 -> redirect, 503 -> broker indisponivel, erros RFC 9457 |
+| setBotoesDisabled(actuator, disabled) | Desativa/reativa botoes e slider do atuador durante o envio (anti-duplo-clique) |
+| apiErrorMessage(payload, fallback) | Extrai `detail`/`title` (RFC 9457) com fallback legado `error` |
+| mostrarStatus(msg, tipo) | Feedback em `#ctrlStatusMsg` (classe `.warn`), auto-hide 3.5s |
+| marcarModo(actuator, modo) | Atualiza o label "Modo: Auto/Manual" (`modeVent`/`modeValve`/`modeLight`) |
+| setLightMode(modo) | Alterna AUTO/MANUAL da iluminacao (`.is-active` nos botoes, slider desabilitado em AUTO) |
+
+> **Nota (v1.3.2):** o antigo `cicloMonitorizar()` (polling do feed para a faixa
+> ao vivo) foi removido nesta reescrita e nada reagenda `buscarUltimo()` no admin
+> — atualiza so na carga da pagina (bug #12, correcao prevista).
 
 
 ### 6.4 Tipos de Graficos
@@ -675,9 +716,12 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 - **Filtros**: Por usuario, acao, periodo
 - **Paginacao**: 25 registros por pagina
 - **Monitorizacao ao Vivo**: faixa com 4 sensores (`.live-strip`), status pill,
-  ultima leitura, RSSI e estado dos atuadores (via `/js/sensor.js`)
-- **Controlo de Atuadores**: cards com botoes ON/OFF (ventilador, valvula) e
-  slider PWM 0-100 % (iluminacao), com mensagem de feedback (`.ctrl-status-msg`)
+  ultima leitura, RSSI e estado dos atuadores (via `/js/sensor.js`) — na v1.3.2
+  sem refresh periodico (bug #12: so atualiza na carga da pagina)
+- **Controlo de Atuadores**: cards com botoes ON/OFF/AUTO (ventilador, valvula),
+  seletor AUTO/MANUAL + slider PWM 0-100 % (iluminacao), rotulos de hardware
+  (Rele GPIO 26/27, LED WS2811), badge de modo (`.act-mode`) e mensagem de
+  feedback (`.ctrl-status-msg`)
 
 ### 7.2 Funcoes JavaScript
 
@@ -693,7 +737,8 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | doLogout() | Logout admin |
 
 **Em `js/sensor.js` + `js/control.js`** (ver Secao 6.3): `buscarUltimo()`,
-`processarUltimo()`, `atualizarAtuador()`, `enviarComando()`, `cicloMonitorizar()`.
+`processarUltimo()`, `atualizarAtuador()`, `enviarComando()`, `marcarModo()`,
+`setLightMode()`.
 
 
 ---
@@ -818,15 +863,25 @@ app.whenReady().then(createWindow);
 
 - **Cliente autorizado:** apenas `public/js/control.js`, carregado **somente** por
   `admin.html`. O dashboard publico nao tem botoes de comando nem o script.
+  Desde a v1.3.2 autentica-se apenas com o cookie httpOnly (`credentials:
+  same-origin`); o envio do token `Authorization: Bearer` foi removido.
 - **Servidor local (`server.js`):** rota real, protegida por `requireAuthApi`,
-  valida `actuator` (`vent|valve|light`) e `action`, publica JSON no broker MQTT
-  e regista auditoria (`control_<actuator>`) no AccessLog.
+  valida `actuator` (`vent|valve|light`) e `action` (`on|off|auto`; em `light`
+  tambem um numero 0-100 como duty — NaN devolve VALIDATION/400), publica JSON
+  no broker MQTT, regista auditoria (`control_<actuator>`) no AccessLog e
+  responde `{ ok, actuator, action, payload }`.
 - **Vercel (`api/index.js`):** stub que devolve **503** — o serverless nao alcanca
   o broker da rede da estufa. O frontend trata 503 com mensagem amigavel.
 - **Topicos MQTT:** `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001/comando`
-  payloads `{"command":"ON"|"OFF"}` (vent/valv) e `{"duty":0-100}` (ilum).
+  payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv) e `{"duty":0-100}` ou
+  `{"command":"AUTO"}` (ilum).
+- **Modo AUTO:** a decisao fica no firmware (o backend so reencaminha o comando);
+  os limites praticos aparecem nos hints dos cards — vent liga >= 30 C / desliga
+  <= 26 C; valvula abre <= 40 % / fecha >= 70 %; luz liga <= 100 lux / desliga
+  >= 600 lux. A UI mostra "Modo: Auto/Manual" (atualizado no clique, sem ack).
 - **Sem ack:** a API confirma apenas a publicacao no broker (`res.json({ok:true})`);
-  o estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos cards.
+  o estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos cards
+  quando o feed e atualizado (no admin, ver bug #12).
 
 
 ### 11.3 CI/CD
@@ -1018,11 +1073,16 @@ O painel de admin (`admin.html`, autenticado) envia POST `/api/control` via
 subscreve `fazenda/estufa01/atuador/*/comando` e aciona relé/PWM. O dashboard
 publico **nao** tem botoes de comando. So funciona na rede local da estufa; no
 deploy Vercel o endpoint devolve 503 (consultar Secao 11.1.1 e bug #11).
+Alem do manual (ON/OFF e duty), vent/valv/luz aceitam o modo **AUTO**
+(`action: "auto"` -> `{"command":"AUTO"}`), com o firmware a decidir pelos
+thresholds (ver Secao 11.1.1).
 
 **Como sei o estado real apos enviar um comando?**
 A API nao devolve ack do ESP32: confirma apenas a publicacao no broker. O estado
 real chega pelo ThingSpeak (field5-8) no ciclo de monitorizacao seguinte
-(`INTERVALO_S`), atualizando os cards de atuadores no dashboard e no admin.
+(`INTERVALO_S`), atualizando os cards de atuadores no dashboard e no admin —
+no admin o ciclo so roda quando o bug #12 for corrigido (na v1.3.2 atualiza
+apenas na carga da pagina).
 
 
 ---
@@ -1130,5 +1190,5 @@ estufa-dashboard-tcc/
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.3.1**
+**Fim do Blueprint Estufa 01 v1.3.2**
 
