@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.4.1 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.4.2 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,20 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.4.2 (24/09/2026) - Fix: Feedback Imediato nos Cards + QR Maior
+
+`
+fix(ui): status dos cards atualiza no clique + QR de download mais legivel
+     - control.js: aplicarEstadoOtimista() — badge/chip muda logo apos comando
+       aceite (vent/valve on-off; duty/ligada da luz); o ThingSpeak confirma ou
+       corrige no ciclo seguinte (continua sem ack)
+     - index.html: QR maior (180px, preto puro), zona de silencio maior e link
+       clicavel de fallback sob o QR (mesma constante APP_DOWNLOAD_URL)
+     - sw.js cache estufa-v8 (control.js + CSS atualizados)
+docs: BLUEPRINT 1.4.2 — Registro, Estado Atual, 2.2/2.4/2.5, 8.1
+test: 38/38 node:test a passar
+`
 
 ### v1.4.1 (24/09/2026) - Cards v2: Halo Neon, Barras e Icones SVG
 
@@ -197,14 +211,14 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.4.1):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.4.2):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL (admin, rede local)**, **cards Dark/Neon**
   e **QR de download do app na tela de login**; PWA, apps mobile (Android) e
   desktop (Electron/Windows).
 - **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
   **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
-- **Total de commits:** 55 commits (09/05/2026 - 24/09/2026).
+- **Total de commits:** 56 commits (09/05/2026 - 24/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
@@ -217,7 +231,7 @@ a874402 | 09/05/2026 | Initial commit
   - **QR Code de download do app na tela de login** (index.html; geracao local
     com `js/qrcode.min.js`, sem CDN; link configuravel no script)
   - Painel admin com logs de acesso e gerenciamento de usuarios
-  - PWA com Service Worker v7 (cache limpo + network-first)
+  - PWA com Service Worker v8 (cache limpo + network-first)
   - Apps mobile Android via Capacitor + PWABuilder
   - Apps desktop Windows via Electron
   - Sistema de alertas por threshold (temperatura, umidade, etc.)
@@ -407,7 +421,7 @@ O sistema e composto por:
 | **Backend API** | REST API, autenticacao, proxy ThingSpeak, logs | Node.js + Express |
 | **MongoDB** | Persistencia de usuarios e logs de acesso | MongoDB Atlas |
 | **Frontend** | Dashboard interativo, graficos, alertas | HTML + CSS + JS + Chart.js |
-| **Service Worker** | Cache offline, PWA install | sw.js v7 |
+| **Service Worker** | Cache offline, PWA install | sw.js v8 |
 | **Mobile App** | App Android nativo | Capacitor + PWABuilder |
 | **Desktop App** | App Windows nativo | Electron |
 | **ThingSpeak** | Dados dos sensores IoT | ThingSpeak API |
@@ -435,7 +449,7 @@ O sistema e composto por:
 | Frontend | **HTML/CSS/JS vanilla** | Simples, sem build step, PWA-ready |
 | Graficos | **Chart.js** | Leve, interativo, canvas rendering (60k+ GitHub stars) |
 | Auth | **JWT 9.0 + bcryptjs 3.0** | Stateless, seguro, httpOnly cookie |
-| PWA | **Service Worker v7** | Offline, instalavel, network-first |
+| PWA | **Service Worker v8** | Offline, instalavel, network-first |
 | Mobile | **Capacitor 8.3** | Cross-platform, WebView-based, facil integracao |
 | Desktop | **Electron 42.2** | Cross-platform, Node.js integration |
 | Deploy | **Vercel** | Serverless, CI/CD integrado, gratuito |
@@ -479,7 +493,7 @@ estufa-dashboard-tcc/
 |   |   |-- control.js         # comando manual on/off/auto + luz auto/manual (admin)
 |   |-- script.js              # Logica dashboard (graficos, alertas, CSV)
 |   |-- pwa.js                 # Registro Service Worker
-|   |-- sw.js                  # Service Worker v7 (cache modular + network-first)
+|   |-- sw.js                  # Service Worker v8 (cache modular + network-first)
 |   |-- manifest-dashboard.json # PWA manifest do dashboard
 |   |-- manifest-admin.json     # PWA manifest do admin
 |   |-- icons/                  # Icones SVG/PNG para PWA
@@ -781,9 +795,9 @@ nunca fala com o broker MQTT (quem publica e o `server.js`):
 
 ## 8. PWA e Service Worker
 
-### 8.1 Service Worker v7 (sw.js)
+### 8.1 Service Worker v8 (sw.js)
 
-- **Cache:** `estufa-v7` (versionado — `activate` apaga versoes antigas)
+- **Cache:** `estufa-v8` (versionado — `activate` apaga versoes antigas)
 - **Pre-cache (ASSETS):** CSS modular (10 folhas, incl. control.css), scripts
   (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`,
   `/js/qrcode.min.js`, `/pwa.js`),

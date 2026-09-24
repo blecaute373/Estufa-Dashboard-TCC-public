@@ -38,11 +38,34 @@ async function enviarComando(actuator, action) {
     }
 
     mostrarStatus(`Comando enviado: ${actuator} → ${action}`, 'ok');
+    aplicarEstadoOtimista(actuator, action);
   } catch (e) {
     mostrarStatus('Erro de rede ao enviar comando.', 'warn');
     console.error('[control] Erro:', e);
   } finally {
     setBotoesDisabled(actuator, false);
+  }
+}
+
+/* Feedback imediato nos cards quando o comando e aceite (badge/chip verde ou
+   vermelho) — o ThingSpeak confirma ou corrige o estado real no ciclo seguinte. */
+function aplicarEstadoOtimista(actuator, action) {
+  if (typeof atualizarAtuador !== 'function') return;         // guard: sensor.js ausente
+
+  if (actuator === 'vent' && (action === 'on' || action === 'off')) {
+    atualizarAtuador('cardVent', 'chipVent', 'lblVent', action === 'on', 'Ligado', 'Desligado');
+  } else if (actuator === 'valve' && (action === 'on' || action === 'off')) {
+    atualizarAtuador('cardValve', 'chipValve', 'lblValve', action === 'on', 'Aberta', 'Fechada');
+  } else if (actuator === 'light') {
+    const duty = Number(action);                              // 'auto' -> NaN: sem estimativa
+    if (Number.isNaN(duty)) return;
+    atualizarAtuador('cardLight', 'chipLight', 'lblLight', duty > 0, 'Ligada', 'Apagada');
+    const dutyEl   = document.getElementById('dutyPct');
+    const dutyBar  = document.getElementById('dutyBar');
+    const dutyCtrl = document.getElementById('dutyPctCtrl');
+    if (dutyEl)   dutyEl.textContent = duty;
+    if (dutyBar)  dutyBar.style.width = duty + '%';
+    if (dutyCtrl) dutyCtrl.textContent = duty + ' %';
   }
 }
 

@@ -131,6 +131,7 @@
         <div class="app-qr-text">
           Baixe o aplicativo
           <span>Leia o QR Code com a câmera do celular</span>
+          <a id="appQrLink" href="https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases" target="_blank" rel="noopener">Abrir link de download</a>
         </div>
       </div>
 
@@ -333,13 +334,15 @@ checkStatus();
    Troque APP_DOWNLOAD_URL pelo link final do APK/loja quando publicado. */
 (function () {
   const APP_DOWNLOAD_URL = 'https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases';
+  const link = document.getElementById('appQrLink');   // fallback clicável (mantém-se em sincronia)
+  if (link) link.href = APP_DOWNLOAD_URL;
   const el = document.getElementById('appQr');
   if (!el || typeof QRCode === 'undefined') return;
   new QRCode(el, {
     text: APP_DOWNLOAD_URL,
-    width: 120,
-    height: 120,
-    colorDark: '#111827',
+    width: 180,                    // maior = módulos maiores = leitura mais fiável
+    height: 180,
+    colorDark: '#000000',          // contraste máximo
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
