@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.3.2 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.4.0 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,22 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.4.0 (24/09/2026) - Cards Dark/Neon + QR Code no Login
+
+`
+feat: refatora design dos cards para estilo neon e adiciona qr code no login
+     - cards: fundo #1a1c23, borda tematica (14px), icone em circulo vazado com
+       glow neon, titulo centrado na cor tema, badge de estado transparente
+     - botoes ghost por funcao: Ligar/Abrir (verde), Desligar/Fechar (vermelho)
+       e Auto (roxo); valvula volta a Aberta/Fechada; hint da luz alinhado
+       entre dashboard e admin (ciclo circadiano do firmware)
+     - index.html: bloco .app-download com QR de download do app
+       (js/qrcode.min.js vendorizado, sem CDN; link configuravel no script)
+     - sw.js cache estufa-v6 (pre-cache de qrcode.min.js)
+docs: BLUEPRINT 1.4.0 — Registro, Estado Atual, 2.2/2.4/2.5, 6.1-6.2, 8.1
+test: 38/38 node:test a passar
+`
 
 ### v1.3.2 (24/09/2026) - Modo AUTO/MANUAL dos Atuadores + Visual Neon no Admin
 
@@ -168,13 +184,14 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.3.2):** Dashboard web com autenticacao, graficos ThingSpeak,
-  **controlo ativo de atuadores com modo AUTO/MANUAL (local, apenas no painel de
-  admin)**, PWA, apps mobile (Android) e desktop (Electron/Windows).
+- **Versao atual (v1.4.0):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **controlo de atuadores AUTO/MANUAL (admin, rede local)**, **cards Dark/Neon**
+  e **QR de download do app na tela de login**; PWA, apps mobile (Android) e
+  desktop (Electron/Windows).
 - **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
   **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
-- **Total de commits:** 53 commits (09/05/2026 - 24/09/2026).
+- **Total de commits:** 54 commits (09/05/2026 - 24/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
@@ -184,8 +201,10 @@ a874402 | 09/05/2026 | Initial commit
     estufa (Ver Secao 11.1.1)
   - **Monitorizacao ao vivo no admin** (4 sensores + estado dos atuadores +
     status/RSSI), reutilizando `/js/sensor.js` (ciclo de `INTERVALO_S` s)
+  - **QR Code de download do app na tela de login** (index.html; geracao local
+    com `js/qrcode.min.js`, sem CDN; link configuravel no script)
   - Painel admin com logs de acesso e gerenciamento de usuarios
-  - PWA com Service Worker v5 (cache limpo + network-first)
+  - PWA com Service Worker v6 (cache limpo + network-first)
   - Apps mobile Android via Capacitor + PWABuilder
   - Apps desktop Windows via Electron
   - Sistema de alertas por threshold (temperatura, umidade, etc.)
@@ -375,7 +394,7 @@ O sistema e composto por:
 | **Backend API** | REST API, autenticacao, proxy ThingSpeak, logs | Node.js + Express |
 | **MongoDB** | Persistencia de usuarios e logs de acesso | MongoDB Atlas |
 | **Frontend** | Dashboard interativo, graficos, alertas | HTML + CSS + JS + Chart.js |
-| **Service Worker** | Cache offline, PWA install | sw.js v5 |
+| **Service Worker** | Cache offline, PWA install | sw.js v6 |
 | **Mobile App** | App Android nativo | Capacitor + PWABuilder |
 | **Desktop App** | App Windows nativo | Electron |
 | **ThingSpeak** | Dados dos sensores IoT | ThingSpeak API |
@@ -403,7 +422,7 @@ O sistema e composto por:
 | Frontend | **HTML/CSS/JS vanilla** | Simples, sem build step, PWA-ready |
 | Graficos | **Chart.js** | Leve, interativo, canvas rendering (60k+ GitHub stars) |
 | Auth | **JWT 9.0 + bcryptjs 3.0** | Stateless, seguro, httpOnly cookie |
-| PWA | **Service Worker v5** | Offline, instalavel, network-first |
+| PWA | **Service Worker v6** | Offline, instalavel, network-first |
 | Mobile | **Capacitor 8.3** | Cross-platform, WebView-based, facil integracao |
 | Desktop | **Electron 42.2** | Cross-platform, Node.js integration |
 | Deploy | **Vercel** | Serverless, CI/CD integrado, gratuito |
@@ -447,7 +466,7 @@ estufa-dashboard-tcc/
 |   |   |-- control.js         # comando manual on/off/auto + luz auto/manual (admin)
 |   |-- script.js              # Logica dashboard (graficos, alertas, CSV)
 |   |-- pwa.js                 # Registro Service Worker
-|   |-- sw.js                  # Service Worker v5 (cache modular + network-first)
+|   |-- sw.js                  # Service Worker v6 (cache modular + network-first)
 |   |-- manifest-dashboard.json # PWA manifest do dashboard
 |   |-- manifest-admin.json     # PWA manifest do admin
 |   |-- icons/                  # Icones SVG/PNG para PWA
@@ -631,7 +650,7 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 
 | Pagina | Arquivo | Descricao |
 | ------ | ------- | --------- |
-| Landing | index.html | Pagina inicial com botao de login |
+| Login unificado | index.html | Entrar/Registrar + QR de download do app |
 | Login Dashboard | login-dashboard.html | Formulario login usuario |
 | Login Admin | login-admin.html | Formulario login admin |
 | Dashboard | dashboard.html | Graficos em tempo real + alertas (somente leitura — sem comandos) |
@@ -650,11 +669,13 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 - **Alertas**: Badges visuais (verde/amarelo/vermelho)
 - **Botoes**: Estilos hover/active
 - **Formularios**: Inputs, labels, validacao visual
-- **control.css**: `.ctrl-btn` (+ `.ctrl-auto` / `.ctrl-mode`), `.ctrl-slider`,
-  `.ctrl-status-msg`, `.live-strip` (comando + faixa de monitorizacao) — carregado
-  **apenas** pelo admin
-- **dashboard2.css**: cards de atuadores com tema neon por tipo (`--act-accent`,
-  `--act-soft`, `--act-glow`), `.act-gpio` (rele GPIO) e `.act-mode` (Auto/Manual)
+- **dashboard2.css**: cards Dark/Neon (fundo `#1a1c23`, borda tematica 14px,
+  icone em circulo vazado com glow, titulo na cor tema, chips transparentes) +
+  `.act-gpio` (rele GPIO) e `.act-mode` (Auto/Manual)
+- **control.css**: botoes ghost por funcao (`.ctrl-on` verde / `.ctrl-off`
+  vermelho / `.ctrl-auto` roxo), `.ctrl-slider`, `.ctrl-status-msg`, `.live-strip`
+  — carregado **apenas** pelo admin
+- **auth2.css**: campos, mensagens e `.app-download` (QR de download no login)
 
 ### 6.3 Funcoes JavaScript
 
@@ -747,11 +768,12 @@ nunca fala com o broker MQTT (quem publica e o `server.js`):
 
 ## 8. PWA e Service Worker
 
-### 8.1 Service Worker v5 (sw.js)
+### 8.1 Service Worker v6 (sw.js)
 
-- **Cache:** `estufa-v5` (versionado — `activate` apaga versoes antigas)
+- **Cache:** `estufa-v6` (versionado — `activate` apaga versoes antigas)
 - **Pre-cache (ASSETS):** CSS modular (10 folhas, incl. control.css), scripts
-  (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`, `/pwa.js`),
+  (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`,
+  `/js/qrcode.min.js`, `/pwa.js`),
   paginas publicas (`index.html`, logins) e manifests PWA
 - **Nao pre-cacheia rotas protegidas** (`/`, `/dashboard.html`, `/admin.html`) —
   ficam a cargo do network-first em runtime, para nao gravar a pagina de login
@@ -1192,5 +1214,5 @@ estufa-dashboard-tcc/
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.3.2**
+**Fim do Blueprint Estufa 01 v1.4.0**
 

@@ -125,6 +125,15 @@
         <div class="msg" id="registerMsg" role="alert"></div>
       </div>
 
+      <!-- DOWNLOAD DO APP -->
+      <div class="app-download">
+        <div class="app-qr" id="appQr" aria-label="QR Code para baixar o aplicativo"></div>
+        <div class="app-qr-text">
+          Baixe o aplicativo
+          <span>Leia o QR Code com a câmera do celular</span>
+        </div>
+      </div>
+
       <div class="auth-foot">
         <span>Estufa 01 · ThingSpeak</span>
         <span><span id="userCount">—</span> usuário(s)</span>
@@ -317,6 +326,24 @@ document.addEventListener('keydown', e => {
 
 /* Init */
 checkStatus();
+</script>
+<script src="/js/qrcode.min.js"></script>
+<script>
+/* ── QR CODE — DOWNLOAD DO APP ──
+   Troque APP_DOWNLOAD_URL pelo link final do APK/loja quando publicado. */
+(function () {
+  const APP_DOWNLOAD_URL = 'https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases';
+  const el = document.getElementById('appQr');
+  if (!el || typeof QRCode === 'undefined') return;
+  new QRCode(el, {
+    text: APP_DOWNLOAD_URL,
+    width: 120,
+    height: 120,
+    colorDark: '#111827',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+})();
 </script>
 <script src="/js/theme.js"></script>
 <script src="/pwa.js"></script>

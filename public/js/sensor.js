@@ -69,7 +69,7 @@ function processarUltimo(d) {
 
   /* Atuadores */
   atualizarAtuador('cardVent',  'chipVent',  'lblVent',  vent === 1, 'Ligado',  'Desligado');
-  atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Ligado',  'Desligado');
+  atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Aberta',  'Fechada');
   atualizarAtuador('cardLight', 'chipLight', 'lblLight', duty > 0,  'Ligada',  'Apagada');
 
   const dutyEl = document.getElementById('dutyPct');

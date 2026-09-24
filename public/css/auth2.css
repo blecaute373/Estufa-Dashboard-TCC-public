@@ -123,3 +123,18 @@
   .auth-form-side{padding:28px 22px 24px}
   .hero-title{font-size:1.6rem}
 }
+
+/* ── QR de download do app (index.html) ── */
+.app-download{
+  margin-top:20px;padding-top:16px;border-top:1px solid var(--hairline);
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap
+}
+.app-qr{
+  background:#ffffff;border-radius:14px;padding:10px;line-height:0;
+  box-shadow:var(--shadow-sm);flex-shrink:0
+}
+.app-qr img,.app-qr canvas{display:block;width:120px;height:120px;border-radius:6px}
+.app-qr-text{font-size:.78rem;font-weight:700;color:var(--text-2)}
+.app-qr-text span{display:block;margin-top:4px;font-family:var(--mono);font-size:.6rem;font-weight:500;
+  color:var(--muted);letter-spacing:.04em}
+@media (max-width:420px){.app-download{gap:10px}.app-qr-text{text-align:center;width:100%}}
