@@ -26,12 +26,20 @@
   position:relative;
   overflow:hidden;
   text-align:center;
+  box-shadow:0 0 24px -12px var(--act-glow);
   transition:border-color .25s, box-shadow .3s, transform .18s;
 }
+/* Rim light néon no topo do card (detalhe do mockup) */
+.actuator-card::before{
+  content:'';position:absolute;top:0;left:14%;right:14%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--act-accent),transparent);
+  opacity:.5;transition:opacity .3s;pointer-events:none;
+}
+.actuator-card.is-on::before{opacity:.95}
 .actuator-card:hover{transform:translateY(-2px)}
 .actuator-card.is-on{
   border-color:var(--act-accent);
-  box-shadow:0 0 26px -6px var(--act-glow);
+  box-shadow:0 0 30px -6px var(--act-glow), 0 0 0 1px var(--act-soft);
 }
 
 /* Halo difuso no rodapé do card — cor herdada do modificador */
@@ -42,20 +50,37 @@
 }
 .actuator-card.is-on .act-glow{opacity:1}
 
-/* Ícone do topo — círculo vazado com glow néon na cor tema do card */
+/* Ícone do topo — círculo com halo néon na cor tema (ícone em SVG line-art) */
 .act-icon-ring{
   width:54px;height:54px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;
-  background:transparent;
+  color:var(--act-accent);
+  background:radial-gradient(circle at 50% 45%, var(--act-soft), transparent 72%);
   border:1px solid var(--act-accent);
-  box-shadow:0 0 18px var(--act-glow);
-  margin:0 auto 12px;
+  box-shadow:0 0 20px var(--act-glow), inset 0 0 12px var(--act-soft);
+  margin:0 auto 8px;
   transition:box-shadow .3s, border-color .3s;
 }
+.act-icon-ring svg{width:26px;height:26px;display:block;transform-origin:50% 50%;transform-box:view-box}
 .actuator-card.is-on .act-icon-ring{
-  box-shadow:0 0 26px var(--act-glow), inset 0 0 10px var(--act-soft);
+  box-shadow:0 0 28px var(--act-glow), inset 0 0 12px var(--act-soft);
 }
+
+/* Barras "equalizer" decorativas — acendem e pulsam quando o atuador liga */
+.act-bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:12px;margin-bottom:10px}
+.act-bars i{width:2px;border-radius:2px;background:var(--act-accent);opacity:.4;transition:opacity .3s}
+.act-bars i:nth-child(1){height:5px}
+.act-bars i:nth-child(2){height:9px}
+.act-bars i:nth-child(3){height:12px}
+.act-bars i:nth-child(4){height:7px}
+.act-bars i:nth-child(5){height:4px}
+.actuator-card.is-on .act-bars i{opacity:.95;animation:bar-pulse 1.3s ease-in-out infinite}
+.actuator-card.is-on .act-bars i:nth-child(2){animation-delay:.12s}
+.actuator-card.is-on .act-bars i:nth-child(3){animation-delay:.24s}
+.actuator-card.is-on .act-bars i:nth-child(4){animation-delay:.36s}
+.actuator-card.is-on .act-bars i:nth-child(5){animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.5)}}
+@media (prefers-reduced-motion:reduce){.actuator-card.is-on .act-bars i{animation:none}}
 
 .act-name{font-size:.86rem;font-weight:800;color:var(--act-accent, var(--text-2));margin-bottom:10px}
 .act-name .act-gpio{
@@ -90,10 +115,10 @@
 }
 .act-mode .mode-value{color:var(--text-2);font-weight:600}
 
-.act-vent.is-on .act-icon-ring span{display:inline-block;animation:spin-fan 1.1s linear infinite}
-.act-valve.is-on .act-icon-ring span{display:inline-block;animation:drip 1.2s ease-in-out infinite}
-.act-exhaust.is-on .act-icon-ring span{display:inline-block;animation:spin-fan 1.4s linear infinite}
-.act-light.is-on .act-icon-ring span{display:inline-block;animation:flicker 1.6s ease-in-out infinite}
+.act-vent.is-on .act-icon-ring svg{animation:spin-fan 1.1s linear infinite}
+.act-valve.is-on .act-icon-ring svg{animation:drip 1.2s ease-in-out infinite}
+.act-exhaust.is-on .act-icon-ring svg{animation:spin-fan 1.4s linear infinite}
+.act-light.is-on .act-icon-ring svg{animation:flicker 1.6s ease-in-out infinite}
 @keyframes spin-fan{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes drip{0%,100%{transform:translateY(0)}60%{transform:translateY(3px)}}
 @keyframes flicker{0%,100%{opacity:1}50%{opacity:.55}}
