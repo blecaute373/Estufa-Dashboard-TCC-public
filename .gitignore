@@ -1,6 +1,7 @@
 ﻿# Dependencies
 node_modules/
-# npm lockfile SEMPRE versionado (ENGENHARIA §16.2).`r`n# (linha package-lock.json removida de propósito — build reprodutível.)`r`nyarn.lock
+# npm lockfile SEMPRE versionado (ENGENHARIA §16.2) — linha package-lock.json removida de propósito (build reprodutível)
+yarn.lock
 pnpm-lock.yaml
 bun.lock
 bun.lockb
@@ -26,7 +27,9 @@ cookies.txt  # sessão curl local — nunca versionar
 estufa.db
 *.sqlite
 *.sqlite3
-estufa_unificado (2).ino
+
+# Firmware ESP32 (contem credenciais WiFi/ThingSpeak) - nunca versionar
+*.ino
 
 # Build outputs
 dist/
