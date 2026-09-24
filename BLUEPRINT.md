@@ -30,6 +30,9 @@ fix(admin): repoe o cicloMonitorizar() da faixa ao vivo (guard sensor.js +
      DOMContentLoaded-safe) + corrige comentario do cabecalho que fechava o
      bloco em 'atuador/*/comando' (SyntaxError latente desde a reescrita);
      sw.js cache estufa-v5 (bug #12 fechado)
+fix(ui): hint da iluminacao corrigido para o ciclo circadiano real (100/600
+     lux eram thresholds de alerta do dashboard, nao do firmware)
+chore(security): .gitignore cobre sketches .ino (firmware com credenciais)
 docs: BLUEPRINT 1.3.2 — Registro, Estado Atual, 2.2/2.4/2.5, 6.2-6.3, 7.1-7.2, 8.1, 11.1.1, 16.2
 test: 38/38 node:test a passar
 `
@@ -171,7 +174,7 @@ a874402 | 09/05/2026 | Initial commit
 - **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
   **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
-- **Total de commits:** 51 commits (09/05/2026 - 24/09/2026).
+- **Total de commits:** 53 commits (09/05/2026 - 24/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
@@ -875,9 +878,10 @@ app.whenReady().then(createWindow);
   payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv) e `{"duty":0-100}` ou
   `{"command":"AUTO"}` (ilum).
 - **Modo AUTO:** a decisao fica no firmware (o backend so reencaminha o comando);
-  os limites praticos aparecem nos hints dos cards — vent liga >= 30 C / desliga
-  <= 26 C; valvula abre <= 40 % / fecha >= 70 %; luz liga <= 100 lux / desliga
-  >= 600 lux. A UI mostra "Modo: Auto/Manual" (atualizado no clique, sem ack).
+  os limites praticos — vent liga >= 30 C / desliga <= 26 C; valvula abre <= 40 %
+  / fecha >= 70 %; luz segue o ciclo circadiano do firmware (fotoperiodo, com
+  atenuacao por luz natural medida em janela de blackout — apaga >= 5000 lux).
+  A UI mostra "Modo: Auto/Manual" (atualizado no clique, sem ack).
 - **Sem ack:** a API confirma apenas a publicacao no broker (`res.json({ok:true})`);
   o estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos cards
   quando o feed e atualizado (no admin, a cada `INTERVALO_S` via cicloMonitorizar).
