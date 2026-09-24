@@ -84,41 +84,45 @@
   <div class="section-label">🎛 Controlo de Atuadores <span class="count-chip">requer login</span></div>
   <div class="actuator-grid">
 
-    <!-- Ventilador -->
+    <!-- Ventilador — Relé GPIO 26 -->
     <div class="actuator-card act-vent" id="cardVent">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>🌀</span></div>
-      <div class="act-name">Ventilador</div>
+      <div class="act-name">Ventilador <span class="act-gpio">Relé GPIO 26</span></div>
       <div class="act-chip chip-off" id="chipVent">
         <span class="chip-dot"></span><span id="lblVent">Desligado</span>
       </div>
-      <div class="act-control">
-        <button class="ctrl-btn ctrl-on"  type="button" data-atuador="vent" data-acao="on">Ligar</button>
-        <button class="ctrl-btn ctrl-off" type="button" data-atuador="vent" data-acao="off">Desligar</button>
+      <div class="act-control act-control-row">
+        <button class="ctrl-btn ctrl-on"   type="button" data-atuador="vent" data-acao="on">Ligado</button>
+        <button class="ctrl-btn ctrl-off"  type="button" data-atuador="vent" data-acao="off">Desligado</button>
+        <button class="ctrl-btn ctrl-auto" type="button" data-atuador="vent" data-acao="auto">Auto</button>
       </div>
       <div class="act-hint">Auto · liga ≥ 30 °C · desliga ≤ 26 °C</div>
+      <div class="act-mode">Modo: <span class="mode-value" id="modeVent">Manual</span></div>
     </div>
 
-    <!-- Válvula de Irrigação -->
+    <!-- Válvula Solenoide / Aspersor — Relé GPIO 27 -->
     <div class="actuator-card act-valve" id="cardValve">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>💧</span></div>
-      <div class="act-name">Válvula de Irrigação</div>
+      <div class="act-name">Válvula Solenoide / Aspersor <span class="act-gpio">Relé GPIO 27</span></div>
       <div class="act-chip chip-off" id="chipValve">
-        <span class="chip-dot"></span><span id="lblValve">Fechada</span>
+        <span class="chip-dot"></span><span id="lblValve">Desligado</span>
       </div>
-      <div class="act-control">
-        <button class="ctrl-btn ctrl-on"  type="button" data-atuador="valve" data-acao="on">Abrir</button>
-        <button class="ctrl-btn ctrl-off" type="button" data-atuador="valve" data-acao="off">Fechar</button>
+      <div class="act-control act-control-row">
+        <button class="ctrl-btn ctrl-on"   type="button" data-atuador="valve" data-acao="on">Ligado</button>
+        <button class="ctrl-btn ctrl-off"  type="button" data-atuador="valve" data-acao="off">Desligado</button>
+        <button class="ctrl-btn ctrl-auto" type="button" data-atuador="valve" data-acao="auto">Auto</button>
       </div>
       <div class="act-hint">Auto · abre ≤ 40 % · fecha ≥ 70 %</div>
+      <div class="act-mode">Modo: <span class="mode-value" id="modeValve">Manual</span></div>
     </div>
 
-    <!-- Iluminação -->
+    <!-- Iluminação LED WS2811 -->
     <div class="actuator-card act-light" id="cardLight">
       <div class="act-glow"></div>
       <div class="act-icon-ring"><span>💡</span></div>
-      <div class="act-name">Iluminação</div>
+      <div class="act-name">Iluminação <span class="act-gpio">LED WS2811</span></div>
       <div class="act-chip chip-off" id="chipLight">
         <span class="chip-dot"></span><span id="lblLight">Apagada</span>
       </div>
@@ -128,7 +132,12 @@
         <div class="duty-label"><span id="dutyPct">0</span> %</div>
       </div>
       <div class="act-control">
+        <div class="act-control-row">
+          <button class="ctrl-btn ctrl-mode" type="button" data-atuador="light" data-modo="auto" id="btnLightAuto">Auto</button>
+          <button class="ctrl-btn ctrl-mode is-active" type="button" data-atuador="light" data-modo="manual" id="btnLightManual">Manual</button>
+        </div>
         <input class="ctrl-slider" type="range" id="sliderLight" min="0" max="100" step="5" value="0"
+               data-atuador="light"
                aria-label="Intensidade da iluminação (PWM 0-100 %)">
         <div class="ctrl-slider-footer">
           <span class="ctrl-value-label">PWM · 0-100 %</span>
@@ -136,6 +145,7 @@
         </div>
       </div>
       <div class="act-hint">Auto · liga ≤ 100 lux · desliga ≥ 600 lux</div>
+      <div class="act-mode">Modo: <span class="mode-value" id="modeLight">Manual</span></div>
     </div>
 
   </div>

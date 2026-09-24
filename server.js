@@ -239,24 +239,38 @@ app.post('/api/control', requireAuthApi, async (req, res) => {
     valve: 'fazenda/estufa01/atuador/valv_001/comando',
     light: 'fazenda/estufa01/atuador/ilum_001/comando',
   };
-  const payloadMap = {
-    vent:  (a) => JSON.stringify({ command: a === 'on' ? 'ON' : 'OFF' }),
-    valve: (a) => JSON.stringify({ command: a === 'on' ? 'ON' : 'OFF' }),
-    light: (a) => JSON.stringify({ duty: Math.max(0, Math.min(100, Number(a))) }),
-  };
   if (!topicMap[actuator])
     return sendProblem(req, res, 'VALIDATION', 'Actuator invalido.');
+
+  // vent/valve: action 'on' | 'off' | 'auto' → {command: 'ON'|'OFF'|'AUTO'}
+  // light:      action 'auto' → {command:'AUTO'}; caso contrário, número 0-100 → {duty}
+  let payload;
+  if (actuator === 'light') {
+    if (action === 'auto') {
+      payload = { command: 'AUTO' };
+    } else {
+      const duty = Math.max(0, Math.min(100, Number(action)));
+      if (Number.isNaN(duty))
+        return sendProblem(req, res, 'VALIDATION', 'action de light deve ser um numero (duty 0-100) ou "auto".');
+      payload = { duty };
+    }
+  } else {
+    if (action === 'auto') payload = { command: 'AUTO' };
+    else if (action === 'on') payload = { command: 'ON' };
+    else if (action === 'off') payload = { command: 'OFF' };
+    else return sendProblem(req, res, 'VALIDATION', 'action deve ser "on", "off" ou "auto".');
+  }
+
   try {
     const client = getMqttClient();
     if (!client.connected)
       return sendProblem(req, res, 'UPSTREAM', 'Broker MQTT local indisponivel. Tente novamente.');
-    const payload = payloadMap[actuator](action);
-    client.publish(topicMap[actuator], payload, (err) => {
+    client.publish(topicMap[actuator], JSON.stringify(payload), (err) => {
       if (err)
         return sendProblem(req, res, 'UPSTREAM', 'Falha ao publicar comando.');
     });
     await log(null, req.user?.username || 'desconhecido', 'control_' + actuator, req, { action });
-    return res.json({ ok: true, actuator, action });
+    return res.json({ ok: true, actuator, action, payload });
   } catch (err) {
     return sendProblem(req, res, 'INTERNAL', 'Erro ao enviar comando.', err);
   }

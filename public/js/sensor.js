@@ -3,6 +3,16 @@
    Carregado pelo dashboard (read-only) e pelo painel de admin.
    Totalmente guardado: IDs de DOM ausentes são no-ops.
    Sem import/export (compatível Electron/Capacitor/node --check).
+
+   Mapeamento dos feeds do ThingSpeak (firmware estufa_unificado.ino):
+     field1 — Temperatura (°C)
+     field2 — Humidade do Solo (%)
+     field3 — Luminosidade (Lux)
+     field4 — Humidade do Ar (%)
+     field5 — Estado do Ventilador       (0 / 1)   — Relé GPIO 26
+     field6 — Estado da Válvula Solenoide (0 / 1)  — Relé GPIO 27
+     field7 — Brilho/Duty Cycle da Iluminação (0–100 %) — LED WS2811
+     field8 — Sinal Wi-Fi (RSSI, dBm)
 ═══════════════════════════════════════════ */
 
 const INTERVALO_S = 16;
@@ -38,14 +48,14 @@ async function buscarUltimo() {
 }
 
 function processarUltimo(d) {
-  const temp   = parseFloat(d.field1);
-  const solo   = parseFloat(d.field2);
-  const lux    = parseFloat(d.field3);
-  const umidAr = parseFloat(d.field4);
-  const vent   = parseInt(d.field5, 10);
-  const valv   = parseInt(d.field6, 10);
-  const duty   = parseInt(d.field7, 10);
-  const rssi   = parseInt(d.field8, 10);
+  const temp   = parseFloat(d.field1); // Temperatura (°C)
+  const solo   = parseFloat(d.field2); // Humidade do Solo (%)
+  const lux    = parseFloat(d.field3); // Luminosidade (Lux)
+  const umidAr = parseFloat(d.field4); // Humidade do Ar (%)
+  const vent   = parseInt(d.field5, 10); // Ventilador — Relé GPIO 26 (0/1)
+  const valv   = parseInt(d.field6, 10); // Válvula Solenoide — Relé GPIO 27 (0/1)
+  const duty   = parseInt(d.field7, 10); // Iluminação LED WS2811 — duty cycle (0-100%)
+  const rssi   = parseInt(d.field8, 10); // Sinal Wi-Fi (RSSI)
 
   /* Sensores — valor + delta vs leitura anterior + estado */
   atualizarSensor('valTemp', 'barTemp', 'ringTemp', 'deltaTemp', 'stateTemp', temp,   40,  1, ultimoCache.temp, estadoTemp(temp));
@@ -59,7 +69,7 @@ function processarUltimo(d) {
 
   /* Atuadores */
   atualizarAtuador('cardVent',  'chipVent',  'lblVent',  vent === 1, 'Ligado',  'Desligado');
-  atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Aberta',  'Fechada');
+  atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Ligado',  'Desligado');
   atualizarAtuador('cardLight', 'chipLight', 'lblLight', duty > 0,  'Ligada',  'Apagada');
 
   const dutyEl = document.getElementById('dutyPct');

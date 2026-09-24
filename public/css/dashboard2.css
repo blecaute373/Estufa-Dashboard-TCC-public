@@ -1,34 +1,110 @@
-/* ESTUFA 01 · dashboard2.css — atuadores + grafico */
-.actuator-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:6px}
-.actuator-card{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid var(--border);border-radius:18px;padding:18px;position:relative;overflow:hidden;
-  transition:border-color .25s,transform .18s}
+/* ESTUFA 01 · dashboard2.css — atuadores (Glow/Neon Dark UI) + gráfico */
+
+/* ── Cores de destaque por tipo de atuador ──────────────────
+   Cada modificador injeta 3 variáveis locais que o resto do
+   ficheiro (aqui e em control.css) consome — assim a paleta
+   base continua a vir só do tokens.css, sem cores fixas soltas
+   pelo CSS. Basta adicionar a classe ao card para ele herdar
+   o tema de cor certo. */
+.act-vent     { --act-accent: #00e5ff; --act-soft: rgba(0,229,255,.16);  --act-glow: rgba(0,229,255,.42); }
+.act-valve    { --act-accent: #00a2ff; --act-soft: rgba(0,162,255,.16);  --act-glow: rgba(0,162,255,.42); }
+.act-exhaust  { --act-accent: #9d4edd; --act-soft: rgba(157,78,221,.18); --act-glow: rgba(157,78,221,.45); }
+.act-light    { --act-accent: #ff9100; --act-soft: rgba(255,145,0,.18); --act-glow: rgba(255,145,0,.45); }
+
+/* Badge de estado ligado — verde néon fixo (pedido de design),
+   independente da cor de destaque do atuador. */
+:root { --state-neon: #00ff88; }
+
+.actuator-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:6px}
+
+.actuator-card{
+  background:var(--surface-solid);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  position:relative;
+  overflow:hidden;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  transition:border-color .25s, box-shadow .3s, transform .18s;
+}
 .actuator-card:hover{transform:translateY(-2px)}
-.actuator-card.is-on{border-color:var(--border-strong);box-shadow:var(--glow-soft)}
-.act-glow{position:absolute;inset:auto -30% -60% -30%;height:120px;filter:blur(40px);opacity:0;transition:opacity .3s;pointer-events:none}
-.act-vent.is-on .act-glow{background:rgba(103,232,249,.18);opacity:1}
-.act-valve.is-on .act-glow{background:rgba(74,222,128,.16);opacity:1}
-.act-light.is-on .act-glow{background:rgba(253,224,71,.16);opacity:1}
-.act-icon-ring{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:20px;background:var(--inset);border:1px solid var(--border);margin-bottom:12px}
-.act-name{font-size:.86rem;font-weight:700;color:var(--text-2);margin-bottom:8px}
+.actuator-card.is-on{
+  border-color:var(--act-accent, var(--border-strong));
+  box-shadow:0 0 0 1px var(--act-soft), 0 0 34px -6px var(--act-glow), var(--shadow-sm);
+}
+
+/* Halo difuso no rodapé do card — cor herdada do modificador */
+.act-glow{
+  position:absolute;inset:auto -30% -60% -30%;height:120px;
+  background:var(--act-glow, transparent);
+  filter:blur(40px);opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.actuator-card.is-on .act-glow{opacity:1}
+
+/* Ícone central — anel com borda e brilho néon na cor do atuador */
+.act-icon-ring{
+  width:46px;height:46px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  background:var(--inset);
+  border:1px solid var(--act-soft, var(--border));
+  box-shadow:0 0 0 3px var(--act-soft, transparent);
+  margin-bottom:14px;
+  transition:box-shadow .3s, border-color .3s;
+}
+.actuator-card.is-on .act-icon-ring{
+  border-color:var(--act-accent);
+  box-shadow:0 0 20px var(--act-glow), 0 0 0 3px var(--act-soft);
+}
+
+.act-name{font-size:.86rem;font-weight:700;color:var(--text-2);margin-bottom:10px}
+.act-name .act-gpio{
+  display:block;
+  font-family:var(--mono);
+  font-size:.6rem;
+  font-weight:600;
+  letter-spacing:.04em;
+  color:var(--muted);
+  margin-top:2px;
+  text-transform:none;
+}
+
+/* Badge de estado dinâmico — fundo translúcido escuro, texto verde néon quando ligado */
 .act-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;
   font-size:.68rem;font-weight:800;letter-spacing:.05em;transition:all .3s;border:1px solid}
-.chip-on{background:rgba(74,222,128,.12);color:var(--green);border-color:rgba(74,222,128,.32)}
+.chip-on{background:rgba(0,255,136,.10);color:var(--state-neon);border-color:rgba(0,255,136,.32)}
 .chip-off{background:rgba(248,113,113,.07);color:var(--red);border-color:rgba(248,113,113,.22)}
 .chip-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
-.chip-on .chip-dot{animation:pulse-dot 2s infinite}
+.chip-on .chip-dot{animation:pulse-dot 2s infinite;box-shadow:0 0 6px var(--state-neon)}
+
 .act-hint{font-size:.64rem;color:var(--muted);margin-top:8px;font-family:var(--mono)}
+
+/* Legenda inferior de modo — texto secundário mono-espaçado */
+.act-mode{
+  margin-top:10px;
+  font-family:var(--mono);
+  font-size:.64rem;
+  letter-spacing:.05em;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.act-mode .mode-value{color:var(--text-2);font-weight:600}
+
 .act-vent.is-on .act-icon-ring span{display:inline-block;animation:spin-fan 1.1s linear infinite}
 .act-valve.is-on .act-icon-ring span{display:inline-block;animation:drip 1.2s ease-in-out infinite}
+.act-exhaust.is-on .act-icon-ring span{display:inline-block;animation:spin-fan 1.4s linear infinite}
 .act-light.is-on .act-icon-ring span{display:inline-block;animation:flicker 1.6s ease-in-out infinite}
 @keyframes spin-fan{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes drip{0%,100%{transform:translateY(0)}60%{transform:translateY(3px)}}
 @keyframes flicker{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
+
 .duty-wrap{margin-top:10px}
 .duty-label{font-family:var(--mono);font-size:.66rem;color:var(--muted);margin-bottom:4px}
 .duty-track{height:4px;background:var(--inset);border-radius:2px;overflow:hidden}
-.duty-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--lux-2),var(--lux));transition:width .8s ease}
+.duty-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--act-accent,var(--lux-2)),var(--act-accent,var(--lux)));transition:width .8s ease}
+
 .chart-card{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:6px}
 .chart-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
@@ -54,5 +130,5 @@
 @media (max-width:640px){.chart-wrap{height:210px}}
 
 /* NOTA: os estilos de controlo (.act-control / .ctrl-btn / .ctrl-slider /
-   .ctrl-status-msg) foram movidos para css/control.css, carregado apenas
+   .ctrl-status-msg) ficam em css/control.css, carregado apenas
    pelo painel de admin — o dashboard é só-leitura. */

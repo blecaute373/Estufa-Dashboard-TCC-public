@@ -1,6 +1,7 @@
 /* ESTUFA 01 · control.css — controlo de atuadores + monitorização ao vivo (admin)
    Carregado pelo admin.html. O base dos cards (.actuator-grid / .actuator-card /
-   .act-chip) vem de dashboard2.css, também carregado pelo admin. */
+   .act-chip) e as variáveis --act-accent/--act-soft/--act-glow por tipo de
+   atuador vêm de dashboard2.css, também carregado pelo admin. */
 
 /* ── CONTROLO MANUAL DE ATUADORES ───────────────────────── */
 
@@ -10,38 +11,84 @@
   flex-direction: column;
   gap: 8px;
 }
+.act-control.act-control-row {
+  flex-direction: row;
+}
+.act-control.act-control-row .ctrl-btn {
+  flex: 1;
+}
 
 .ctrl-btn {
   width: 100%;
   padding: 9px 0;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface-solid);
   color: var(--text-2);
-  font-weight: 600;
-  font-size: 0.76rem;
+  font-weight: 700;
+  font-size: 0.72rem;
   cursor: pointer;
   transition: all 0.15s;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   font-family: var(--sans);
 }
 .ctrl-btn:hover:not(:disabled) {
-  border-color: var(--border-2);
-  background: var(--surface-2);
+  border-color: var(--act-accent, var(--border-2));
+  background: var(--act-soft, var(--surface-2));
+  color: var(--text);
 }
 .ctrl-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Estado ativo — realce brilhante correspondente à cor do atuador */
 .ctrl-btn.ctrl-on:hover:not(:disabled) {
-  border-color: var(--green);
-  color: var(--green);
-  box-shadow: 0 0 0 1px var(--green);
+  border-color: var(--act-accent, var(--green));
+  color: var(--act-accent, var(--green));
+  box-shadow: 0 0 14px var(--act-soft, transparent);
 }
 .ctrl-btn.ctrl-off:hover:not(:disabled) {
   border-color: var(--red);
   color: var(--red);
-  box-shadow: 0 0 0 1px var(--red);
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.22);
+}
+.ctrl-btn.ctrl-auto {
+  color: var(--muted);
+}
+.ctrl-btn.ctrl-auto:hover:not(:disabled) {
+  border-color: var(--border-2);
+  color: var(--text-2);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+/* Seletor de modo AUTO / MANUAL (iluminação) — os dois botões ficam lado a
+   lado; o modo corrente recebe .is-active via control.js. */
+.ctrl-btn.ctrl-mode {
+  color: var(--muted);
+}
+.ctrl-btn.ctrl-mode.is-active {
+  border-color: var(--act-accent, var(--border-2));
+  color: var(--act-accent, var(--text));
+  background: var(--act-soft, var(--surface-2));
+  box-shadow: 0 0 12px var(--act-soft, transparent);
+}
+.ctrl-slider:disabled::-webkit-slider-thumb { background: var(--muted-2); box-shadow: none; }
+.ctrl-slider:disabled::-moz-range-thumb { background: var(--muted-2); }
+
+/* Reflete o estado real do atuador (classe .is-on no card, ligada pelo sensor.js) */
+.actuator-card.is-on .ctrl-btn.ctrl-on {
+  border-color: var(--act-accent);
+  color: var(--act-accent);
+  background: var(--act-soft);
+  box-shadow: 0 0 16px var(--act-glow);
+}
+.actuator-card:not(.is-on) .ctrl-btn.ctrl-off {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(248, 113, 113, 0.08);
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.2);
 }
 
 .ctrl-slider-wrap {
@@ -62,9 +109,9 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--lux);
-  border: 2px solid var(--surface);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  background: var(--act-accent, var(--lux));
+  border: 2px solid var(--surface-solid);
+  box-shadow: 0 0 10px var(--act-glow, rgba(0, 0, 0, 0.4));
   cursor: pointer;
   transition: transform 0.12s;
 }
@@ -75,8 +122,8 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--lux);
-  border: 2px solid var(--surface);
+  background: var(--act-accent, var(--lux));
+  border: 2px solid var(--surface-solid);
   cursor: pointer;
 }
 .ctrl-slider:disabled {
@@ -131,7 +178,7 @@
   margin-bottom: 6px;
 }
 .live-cell {
-  background: var(--surface);
+  background: var(--surface-solid);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px 16px;
@@ -167,7 +214,7 @@
   border-radius: 99px;
   border: 1px solid transparent;
 }
-.state-dot.state-ok      { color: var(--green);  background: rgba(74,222,128,.1);  border-color: rgba(74,222,128,.3); }
+.state-dot.state-ok      { color: var(--state-neon, var(--green)); background: rgba(0,255,136,.1);  border-color: rgba(0,255,136,.3); }
 .state-dot.state-warn    { color: var(--amber);  background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.3); }
 .state-dot.state-danger  { color: var(--red);    background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); }
 .state-dot.state-idle    { color: var(--muted);  background: rgba(255,255,255,.05);border-color: var(--border); }
@@ -180,7 +227,7 @@
   color: var(--muted);
 }
 .live-cell .delta.up   { color: var(--red); }
-.live-cell .delta.down { color: var(--green); }
+.live-cell .delta.down { color: var(--state-neon, var(--green)); }
 .live-cell .delta.flat { color: var(--muted); }
 
 /* Rodapé da faixa de monitorização: estado da ligação + sistema */
@@ -197,7 +244,6 @@
   color: var(--muted);
 }
 .live-note .sys-value { color: var(--text-2); font-weight: 600; }
-.live-note .sys-value.ok     { color: var(--green); }
+.live-note .sys-value.ok     { color: var(--state-neon, var(--green)); }
 .live-note .sys-value.warn   { color: var(--amber); }
 .live-note .sys-value.danger { color: var(--red); }
-
