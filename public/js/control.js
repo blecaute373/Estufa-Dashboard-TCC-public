@@ -3,7 +3,9 @@
    Fala com a rota já existente no server.js: POST /api/control
      body: { actuator: 'vent'|'valve'|'light', action: 'on'|'off'|'auto'|<0-100> }
    O browser nunca toca no broker MQTT — só o backend (getMqttClient em
-   server.js), que publica nos tópicos fazenda/estufa01/atuador/*/comando.
+   server.js), que publica nos tópicos fazenda/estufa01/atuador/<id>/comando.
+   Também mantém a monitorização ao vivo do admin: cicloMonitorizar() faz
+   polling do feed via buscarUltimo() (/js/sensor.js) a cada INTERVALO_S.
 ═══════════════════════════════════════════ */
 
 const URL_CONTROL = '/api/control';
@@ -128,3 +130,29 @@ if (sliderLight) {
 
 // Estado inicial: manual, slider habilitado
 setLightMode('manual');
+
+/* ══════════════════════════════════════════
+   MONITORIZAÇÃO AO VIVO (admin)
+   Polling do feed (funções partilhadas de /js/sensor.js) para a faixa
+   de sensores + estado dos atuadores; guard se o sensor.js não carregou.
+═══════════════════════════════════════════ */
+async function cicloMonitorizar() {
+  if (typeof buscarUltimo !== 'function') {
+    console.error('[control] /js/sensor.js não carregou — monitorização inativa.');
+    return;
+  }
+  await buscarUltimo();
+}
+
+function iniciarControlo() {
+  cicloMonitorizar();
+  setInterval(cicloMonitorizar, (typeof INTERVALO_S === 'number' ? INTERVALO_S : 16) * 1000);
+}
+
+/* Carregado no fim do <body>: normalmente o DOM já está pronto.
+   O fallback cobre o caso de ser carregado no <head> com defer/async. */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciarControlo);
+} else {
+  iniciarControlo();
+}
