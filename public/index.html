@@ -131,7 +131,7 @@
         <div class="app-qr-text">
           Baixe o aplicativo
           <span>Leia o QR Code com a câmera do celular</span>
-          <a id="appQrLink" href="https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases" target="_blank" rel="noopener">Abrir link de download</a>
+          <a id="appQrLink" href="https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk" target="_blank" rel="noopener">Abrir link de download</a>
         </div>
       </div>
 
@@ -331,9 +331,10 @@ checkStatus();
 <script src="/js/qrcode.min.js"></script>
 <script>
 /* ── QR CODE — DOWNLOAD DO APP ──
-   Troque APP_DOWNLOAD_URL pelo link final do APK/loja quando publicado. */
+   Aponta para o download direto do APK (GitHub Releases). Publique o APK numa
+   release com o nome exato "estufa01.apk" — o link abaixo passa a baixá-lo. */
 (function () {
-  const APP_DOWNLOAD_URL = 'https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases';
+  const APP_DOWNLOAD_URL = 'https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk';
   const link = document.getElementById('appQrLink');   // fallback clicável (mantém-se em sincronia)
   if (link) link.href = APP_DOWNLOAD_URL;
   const el = document.getElementById('appQr');
