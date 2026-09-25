@@ -1,6 +1,6 @@
 /**
  * Entry point para Vercel serverless
- * Combina auth, thingspeak, admin + serve páginas com auth
+ * Combina auth, thingspeak, admin, control + serve páginas com auth
  */
 'use strict';
 
@@ -11,6 +11,7 @@ const path = require('path');
 const authApp = require('./auth');
 const thingspeakApp = require('./thingspeak');
 const adminApp = require('./admin');
+const controlApp = require('./control');
 const { requireAuthPage, requireAdminPage } = require('../lib/auth');
 const { requestId } = require('../lib/middleware');
 
@@ -29,6 +30,8 @@ const requireAdminPageMw = requireAdminPage('/index.html', '/dashboard.html?erro
 app.use(authApp);
 app.use(thingspeakApp);
 app.use(adminApp);
+// /api/control (fila de comandos) + /api/control/pending (poll do ESP32) — ADR-0007
+app.use(controlApp);
 
 // Páginas públicas (login — sem auth)
 app.get('/login-dashboard.html', (req, res) => {
@@ -50,10 +53,8 @@ app.get('/', requireAuth, (req, res) => {
 });
 
 
-// ── CONTROL (stub em serverless — requer broker local via WebSocket) ──
-app.post('/api/control', async (req, res) => {
-  res.status(503).json({ ok: false, error: 'Controle apenas disponivel em modo local (broker MQTT na rede da estufa).' });
-});
+// ── CONTROL: as rotas reais vivem em api/control.js (ADR-0007 — fila de
+// comandos: admin enfileira, o ESP32 recolhe no poll). ──
 
 // Health para monitoramento (Vercel/monitor externo)
 app.get('/api/health', (req, res) => {

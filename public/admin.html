@@ -171,8 +171,8 @@
   </div>
   <div class="ctrl-status-msg" id="ctrlStatusMsg"></div>
   <p class="live-note" style="margin-top:8px">
-    ⚠ O comando só é entregue quando o servidor alcança o broker MQTT local da estufa
-    (fora da rede local a API responde 503).
+    ⚠ O comando é enfileirado no painel e aplicado pelo ESP32 no próximo ciclo
+    de polling (até ~5 s). O estado real volta pelo ThingSpeak (cards).
   </p>
 
   <div class="section-label">📊 Resumo</div>

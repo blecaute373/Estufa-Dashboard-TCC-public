@@ -2,7 +2,7 @@
 
 > **Documento de uso geral** — não é específico da Pandora nem de nenhuma linguagem/framework, embora se conecte com o projeto onde fizer sentido. Pensado como referência pra qualquer projeto de software sério, em qualquer stack.
 >
-> **Versão:** 9.2.0 · **Data:** 22/09/2026 · **Status:** framework de referência — pesquisa real sobre o estado atual (2026) da engenharia de software industrial, incluindo onde a indústria genuinamente discorda, não só onde há consenso. Histórico completo de todas as rodadas de pesquisa (o que mudou em cada uma) está na **Seção 41**.
+> **Versão:** 9.0.0 (em construção — mais rodadas de pesquisa em andamento) · **Data:** 18/09/2026 · **Status:** framework de referência — pesquisa real sobre o estado atual (2026) da engenharia de software industrial, incluindo onde a indústria genuinamente discorda, não só onde há consenso. Histórico completo de todas as rodadas de pesquisa (o que mudou em cada uma) está na **Seção 41**.
 
 ---
 
@@ -11,50 +11,52 @@
 **Como navegar**: o **Núcleo** (Seções 1-24) se aplica a praticamente qualquer projeto server-side/API, independente de stack. Os **Domínios Estendidos** (25-38) só valem conforme o tipo de projeto — não precisa ler tudo, só a seção que bate com o que você está construindo. As seções de **Fontes** (24, 30, 39) são apêndice, agrupadas por rodada de pesquisa. Sigla desconhecida no meio da leitura → **Glossário (40)**, no final.
 
 **Núcleo**
-- 0. Escopo e Como Usar Este Documento — 0.1 Mapa Rápido por Tipo de Projeto
-- 1. Princípio Central: Otimize Pro Que Seu Projeto Precisa Agora
-- 2. Código Limpo e Legibilidade — 2.1 O Que Ainda Se Sustenta · 2.2 A Crítica Séria · 2.3 Código Limpo na Era de IA · 2.4 Dívida Técnica e Code Smells
-- 3. Princípios de Design: SOLID, DRY, KISS, YAGNI
-- 4. Arquitetura de Software — 4.1 Monolito vs. Microsserviços · 4.2 DDD · 4.3 Arquitetura Hexagonal · 4.4 Platform Engineering/IDP · 4.5 Multi-tenancy
-- 5. Testes — 5.1 Pirâmide de Testes · 5.2 Tamanho de Teste (Google) · 5.3 Testes na Era de IA · 5.4 TDD · 5.5 Contract Testing · 5.6 Teste de Carga e Performance
-- 6. Controle de Versão e Colaboração — 6.1 Branching · 6.2 Conventional Commits · 6.3 Code Review
-- 7. Metodologia de Desenvolvimento e Processos — 7.1 Por Que Agile Existiu · 7.2 Crítica de 2025-2026 · 7.3 Diagnóstico · 7.4 Teste Prático
-- 8. CI/CD e Estratégias de Deploy — 8.1 Pipeline Mínimo · 8.2 Estratégias de Deploy · 8.3 Feature Flags · 8.4 DORA Metrics · 8.5 Teste A/B e Experimentação
-- 9. Segurança (DevSecOps) — 9.1 OWASP Top 10 (2025) · 9.2 Princípios Que Não Mudam · 9.3 Cadeia de Suprimentos · 9.4 SBOM/SLSA · 9.5 LGPD/Privacy by Design · 9.6 Arquivo Não Confiável · 9.7 Webhook · 9.8 Criptografia/KMS · 9.9 SOC 2 · 9.10 Segredo Vazado em Git
-- 10. Observabilidade — 10.1 Três Pilares · 10.2 SLI/SLO/SLA · 10.3 Comece Pequeno · 10.4 Postmortem Sem Culpa · 10.5 OpenTelemetry · 10.6 Fadiga de Alerta/On-Call
-- 11. Resiliência e Tolerância a Falhas — 11.1 Retry com Backoff · 11.2 Circuit Breaker · 11.3 Bulkhead · 11.4 Fallback em Cadeia · 11.5 Chaos Engineering · 11.6 Backup e Disaster Recovery
-- 12. Concorrência e Paralelismo — 12.1 I/O-Bound vs. CPU-Bound · 12.2 Race Condition em Single-Thread · 12.3 Primitivas de Sincronização · 12.4 Boas Práticas
-- 13. Caching e Performance — 13.1 O Problema Difícil · 13.2 Estratégias Principais · 13.3 Problemas Clássicos · 13.4 Meça Antes de Otimizar
-- 14. Design de APIs — 14.1 REST · 14.2 Rate Limiting · 14.3 GraphQL/gRPC · 14.4 Arquitetura Orientada a Eventos · 14.5 Event Sourcing/CQRS/Saga · 14.6 API Gateway/BFF
-- 15. Bancos de Dados e Persistência — 15.1 Migrations · 15.2 Problema N+1 · 15.3 Transações e Consistência · 15.4 Índices · 15.5 Escalabilidade · 15.6 Bancos Vetoriais/Busca Semântica · 15.7 CAP e PACELC
-- 16. Tratamento de Erros — 16.1 Fail-Fast · 16.2 Exceções vs. Valores de Erro · 16.3 Mensagens de Erro
-- 17. Configuração e Ambientes: Twelve-Factor — 17.1 Health Checks e Graceful Shutdown
-- 18. Documentação — 18.1 README Mínimo · 18.2 ADR · 18.3 Comentário no Código · 18.4 Documentação de API
-- 19. Gerenciamento de Dependências — 19.1 SemVer · 19.2 Lockfiles · 19.3 Atualização Contínua · 19.4 Licenciamento de Dependência
-- 20. Inteligência Artificial na Engenharia de Software — 20.1 Construir COM IA vs. DE IA · 20.2 Evals · 20.3 Prompt Injection · 20.4 Conexões · 20.5 Human-in-the-Loop
-- 21. Tutorial Completo: Aplicando Tudo a uma Feature Real (21.1-21.10)
-- 22. Aplicação a Projetos Reais — 22.1 Pandora · 22.2 Estufa 01 (dashboard IoT)
-- 23. Checklist — Antes de Chamar uma Feature de "Pronta"
-- 24. Fontes e Leituras Principais
+
+-   0. Escopo e Como Usar Este Documento — 0.1 Mapa Rápido por Tipo de Projeto
+-   1. Princípio Central: Otimize Pro Que Seu Projeto Precisa Agora
+-   2. Código Limpo e Legibilidade — 2.1 O Que Ainda Se Sustenta · 2.2 A Crítica Séria · 2.3 Código Limpo na Era de IA · 2.4 Dívida Técnica e Code Smells
+-   3. Princípios de Design: SOLID, DRY, KISS, YAGNI
+-   4. Arquitetura de Software — 4.1 Monolito vs. Microsserviços · 4.2 DDD · 4.3 Arquitetura Hexagonal · 4.4 Platform Engineering/IDP · 4.5 Multi-tenancy
+-   5. Testes — 5.1 Pirâmide de Testes · 5.2 Tamanho de Teste (Google) · 5.3 Testes na Era de IA · 5.4 TDD · 5.5 Contract Testing · 5.6 Teste de Carga e Performance
+-   6. Controle de Versão e Colaboração — 6.1 Branching · 6.2 Conventional Commits · 6.3 Code Review
+-   7. Metodologia de Desenvolvimento e Processos — 7.1 Por Que Agile Existiu · 7.2 Crítica de 2025-2026 · 7.3 Diagnóstico · 7.4 Teste Prático
+-   8. CI/CD e Estratégias de Deploy — 8.1 Pipeline Mínimo · 8.2 Estratégias de Deploy · 8.3 Feature Flags · 8.4 DORA Metrics · 8.5 Teste A/B e Experimentação
+-   9. Segurança (DevSecOps) — 9.1 OWASP Top 10 (2025) · 9.2 Princípios Que Não Mudam · 9.3 Cadeia de Suprimentos · 9.4 SBOM/SLSA · 9.5 LGPD/Privacy by Design · 9.6 Arquivo Não Confiável · 9.7 Webhook · 9.8 Criptografia/KMS · 9.9 SOC 2 · 9.10 Segredo Vazado em Git
+-   10. Observabilidade — 10.1 Três Pilares · 10.2 SLI/SLO/SLA · 10.3 Comece Pequeno · 10.4 Postmortem Sem Culpa · 10.5 OpenTelemetry · 10.6 Fadiga de Alerta/On-Call
+-   11. Resiliência e Tolerância a Falhas — 11.1 Retry com Backoff · 11.2 Circuit Breaker · 11.3 Bulkhead · 11.4 Fallback em Cadeia · 11.5 Chaos Engineering · 11.6 Backup e Disaster Recovery
+-   12. Concorrência e Paralelismo — 12.1 I/O-Bound vs. CPU-Bound · 12.2 Race Condition em Single-Thread · 12.3 Primitivas de Sincronização · 12.4 Boas Práticas
+-   13. Caching e Performance — 13.1 O Problema Difícil · 13.2 Estratégias Principais · 13.3 Problemas Clássicos · 13.4 Meça Antes de Otimizar
+-   14. Design de APIs — 14.1 REST · 14.2 Rate Limiting · 14.3 GraphQL/gRPC · 14.4 Arquitetura Orientada a Eventos · 14.5 Event Sourcing/CQRS/Saga · 14.6 API Gateway/BFF
+-   15. Bancos de Dados e Persistência — 15.1 Migrations · 15.2 Problema N+1 · 15.3 Transações e Consistência · 15.4 Índices · 15.5 Escalabilidade · 15.6 Bancos Vetoriais/Busca Semântica · 15.7 CAP e PACELC
+-   16. Tratamento de Erros — 16.1 Fail-Fast · 16.2 Exceções vs. Valores de Erro · 16.3 Mensagens de Erro
+-   17. Configuração e Ambientes: Twelve-Factor — 17.1 Health Checks e Graceful Shutdown
+-   18. Documentação — 18.1 README Mínimo · 18.2 ADR · 18.3 Comentário no Código · 18.4 Documentação de API
+-   19. Gerenciamento de Dependências — 19.1 SemVer · 19.2 Lockfiles · 19.3 Atualização Contínua · 19.4 Licenciamento de Dependência
+-   20. Inteligência Artificial na Engenharia de Software — 20.1 Construir COM IA vs. DE IA · 20.2 Evals · 20.3 Prompt Injection · 20.4 Conexões · 20.5 Human-in-the-Loop
+-   21. Tutorial Completo: Aplicando Tudo a uma Feature Real (21.1-21.10)
+-   22. Aplicação ao Projeto Pandora
+-   23. Checklist — Antes de Chamar uma Feature de "Pronta"
+-   24. Fontes e Leituras Principais
 
 **Domínios Estendidos** (use conforme o tipo de projeto)
-- 25. Engenharia de Frontend e Interface — 25.1 Arquitetura de Componente · 25.2 Gerenciamento de Estado · 25.3 Core Web Vitals · 25.4 Acessibilidade
-- 26. Comunicação em Tempo Real — 26.1 WebSocket/SSE/Long-Polling · 26.2 Reconexão e Heartbeat · 26.3 Escalar Conexão com Estado · 26.4 Backpressure
-- 27. Internacionalização (i18n) e Localização (l10n) — 27.1 Decisão de Arquitetura · 27.2 Pluralização
-- 28. Engenharia Sob Restrição de Custo — 28.1 Custo Variável de API de IA · 28.2 Cache Como Alavanca de Custo · 28.3 Serverless vs. Sempre-Ativo
-- 29. Sistemas Embarcados e Tempo Real de Hardware — 29.1 Tempo Real É Determinismo · 29.2 RTOS · 29.3 Sem Alocação Dinâmica · 29.4 ISR · 29.5 MQTT e Provisionamento IoT
-- 30. Fontes e Leituras Adicionais (Rodada 4)
-- 31. Engenharia de Sistemas de Pagamento — 31.1 Nunca Toque em Número de Cartão · 31.2 Idempotência na Cobrança · 31.3 Dinheiro é Inteiro
-- 32. Aplicações Desktop — 32.1 Tauri vs. Electron · 32.2 Capabilities e CSP · 32.3 Auto-Update e Assinatura
-- 33. Fundamentos de Rede — 33.1 Handshake TLS · 33.2 Balanceamento de Carga L4/L7 · 33.3 CDN
-- 34. Desenvolvimento Mobile — 34.1 Nativo vs. Cross-Platform · 34.2 Ciclo de Publicação
-- 35. Engenharia de Dados (ETL/ELT) — 35.1 ETL vs. ELT · 35.2 Orquestração
-- 36. MLOps: Treinar e Servir Modelo Próprio — 36.1 Por Que Não é Só DevOps · 36.2 Data Versioning/Feature Store/Model Registry
-- 37. Desenvolvimento de Jogos — 37.1 Escolha de Motor e Risco de Licença
-- 38. Design de Interface de Linha de Comando (CLI) — 38.1 Convenções · 38.2 Saída pra Humano e Máquina · 38.3 Confirmação de Ação Destrutiva
-- 39. Fontes e Leituras Adicionais (Rodadas 5-7)
-- 40. Glossário de Siglas
-- 41. Histórico de Versões
+
+-   25. Engenharia de Frontend e Interface — 25.1 Arquitetura de Componente · 25.2 Gerenciamento de Estado · 25.3 Core Web Vitals · 25.4 Acessibilidade
+-   26. Comunicação em Tempo Real — 26.1 WebSocket/SSE/Long-Polling · 26.2 Reconexão e Heartbeat · 26.3 Escalar Conexão com Estado · 26.4 Backpressure
+-   27. Internacionalização (i18n) e Localização (l10n) — 27.1 Decisão de Arquitetura · 27.2 Pluralização
+-   28. Engenharia Sob Restrição de Custo — 28.1 Custo Variável de API de IA · 28.2 Cache Como Alavanca de Custo · 28.3 Serverless vs. Sempre-Ativo
+-   29. Sistemas Embarcados e Tempo Real de Hardware — 29.1 Tempo Real É Determinismo · 29.2 RTOS · 29.3 Sem Alocação Dinâmica · 29.4 ISR · 29.5 MQTT e Provisionamento IoT
+-   30. Fontes e Leituras Adicionais (Rodada 4)
+-   31. Engenharia de Sistemas de Pagamento — 31.1 Nunca Toque em Número de Cartão · 31.2 Idempotência na Cobrança · 31.3 Dinheiro é Inteiro
+-   32. Aplicações Desktop — 32.1 Tauri vs. Electron · 32.2 Capabilities e CSP · 32.3 Auto-Update e Assinatura
+-   33. Fundamentos de Rede — 33.1 Handshake TLS · 33.2 Balanceamento de Carga L4/L7 · 33.3 CDN
+-   34. Desenvolvimento Mobile — 34.1 Nativo vs. Cross-Platform · 34.2 Ciclo de Publicação
+-   35. Engenharia de Dados (ETL/ELT) — 35.1 ETL vs. ELT · 35.2 Orquestração
+-   36. MLOps: Treinar e Servir Modelo Próprio — 36.1 Por Que Não é Só DevOps · 36.2 Data Versioning/Feature Store/Model Registry
+-   37. Desenvolvimento de Jogos — 37.1 Escolha de Motor e Risco de Licença
+-   38. Design de Interface de Linha de Comando (CLI) — 38.1 Convenções · 38.2 Saída pra Humano e Máquina · 38.3 Confirmação de Ação Destrutiva
+-   39. Fontes e Leituras Adicionais (Rodadas 5-7)
+-   40. Glossário de Siglas
+-   41. Histórico de Versões
 
 ---
 
@@ -66,27 +68,27 @@ Duas coisas antes de qualquer conteúdo:
 
 **Contexto decide mais que princípio abstrato.** A pergunta certa quase nunca é "isso é boa prática?" — é "isso é boa prática **pro meu contexto** (tamanho de time, estágio do produto, criticidade, stack)?". Esse documento é organizado pra deixar esse "depende" explícito e acionável, não pra escondê-lo atrás de afirmações categóricas.
 
-**Como o documento está organizado**: as Seções 1-24 formam o núcleo — se aplicam a praticamente qualquer projeto server-side/API, independente de domínio. As **Seções 25-38** são extensões de domínio específico, cada uma resolvendo um tipo de projeto que o núcleo não cobre — de frontend (25) a jogo (37) a CLI (38). Nem todo projeto precisa de todas: um serviço backend puro não tem por que ler a Seção 29 (embarcado), e um firmware de microcontrolador não tem por que ler a Seção 25 (frontend). O **Índice** logo no início do documento lista todas as 41 seções com suas subseções — use ele pra saber o que se aplica ao que você está construindo antes de ler linear. As Seções 39-41 são apêndice (fontes, glossário, histórico).
+**Como o documento está organizado**: as Seções 1-24 formam o núcleo — se aplicam a praticamente qualquer projeto server-side/API, independente de domínio. As **Seções 25-38** são extensões de domínio específico, cada uma resolvendo um tipo de projeto que o núcleo não cobre — de frontend (25) a jogo (37) a CLI (38). Nem todo projeto precisa de todas: um serviço backend puro não tem por que ler a Seção 29 (embarcado), e um firmware de microcontrolador não tem por que ler a Seção 25 (frontend). O **Índice** logo no início do documento lista todas as 38 seções com suas subseções — use ele pra saber o que se aplica ao que você está construindo antes de ler linear.
 
 ### 0.1 Mapa Rápido: Por Tipo de Projeto
 
 Antes de ler linear, uma forma mais rápida de usar este documento pra começar um projeto novo: ache a linha mais parecida com o que você vai construir e comece pelas seções listadas — o resto do núcleo (1-19) se aplica quase sempre e vale como leitura de fundo, mas o que está na tabela é o que muda o resultado de "genérico" pra "ajustado ao que você está fazendo".
 
-| Tipo de projeto | Seções essenciais além do núcleo geral | Vale checar também |
-|---|---|---|
-| API/serviço backend puro | 14 (design de API), 15 (banco), 11 (resiliência) | 4.4 se vira mais de um serviço |
-| Frontend web (site, SPA) | 25 (frontend), 33.3 (CDN) | 27 (i18n), 5.6/25.3 (performance) |
-| App full-stack web | Núcleo inteiro + 25 + 14 | 26 se tiver qualquer parte em tempo real |
-| App mobile | 34 (mobile), 25.2 (estado — os conceitos transferem) | 26 se tiver notificação/chat ao vivo, 28 se tiver IA com custo por chamada |
-| App desktop | 32 (Tauri/Electron) | 25.2 (estado), 9.2 (input não-confiável) |
-| Bot de chat (Discord, WhatsApp, Telegram) | 9.7 (webhook), 26 (tempo real), 11 (resiliência) | 20 se tiver IA embutida, 20.5 se sugerir ação em vez de executar sozinho |
-| Produto com IA/LLM embutido (agente, assistente, chat) | 20 inteira, 28 (custo de API de IA) | 15.6 se usar RAG/memória vetorial, 20.5 se qualquer ação exigir aprovação humana |
-| SaaS com cobrança | 31 (pagamento), 9.5 (LGPD) | 4.5 (multi-tenancy), 9.9 (SOC 2, se for vender pra empresa grande) |
-| Ferramenta de linha de comando (CLI) | 38 (CLI) | 19 (dependência, se distribuída como pacote) |
-| Projeto embarcado/firmware (Mecatrônica) | 29 inteira | 9.2 (princípios de segurança que também valem em C), 12 (concorrência — os conceitos, não as primitivas de linguagem gerenciada) |
-| Pipeline de dado / ETL | 35 (engenharia de dados) | 11.1 (retry/idempotência), 11.6 (backup) |
-| Jogo | 37 (escolha de motor) | O resto do núcleo se aplica pouco — game loop, física e renderização são corpo de prática à parte |
-| Sistema com IA sugerindo e humano aprovando (ex.: copiloto de decisão) | 20.5 (human-in-the-loop), 26 (tempo real, se aprovação vier por chat) | 31.3 se envolver valor financeiro, 10 (observabilidade — trilha de auditoria) |
+| Tipo de projeto                                                        | Seções essenciais além do núcleo geral                                | Vale checar também                                                                                                               |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| API/serviço backend puro                                               | 14 (design de API), 15 (banco), 11 (resiliência)                      | 4.4 se vira mais de um serviço                                                                                                   |
+| Frontend web (site, SPA)                                               | 25 (frontend), 33.3 (CDN)                                             | 27 (i18n), 5.6/25.3 (performance)                                                                                                |
+| App full-stack web                                                     | Núcleo inteiro + 25 + 14                                              | 26 se tiver qualquer parte em tempo real                                                                                         |
+| App mobile                                                             | 34 (mobile), 25.2 (estado — os conceitos transferem)                  | 26 se tiver notificação/chat ao vivo, 28 se tiver IA com custo por chamada                                                       |
+| App desktop                                                            | 32 (Tauri/Electron)                                                   | 25.2 (estado), 9.2 (input não-confiável)                                                                                         |
+| Bot de chat (Discord, WhatsApp, Telegram)                              | 9.7 (webhook), 26 (tempo real), 11 (resiliência)                      | 20 se tiver IA embutida, 20.5 se sugerir ação em vez de executar sozinho                                                         |
+| Produto com IA/LLM embutido (agente, assistente, chat)                 | 20 inteira, 28 (custo de API de IA)                                   | 15.6 se usar RAG/memória vetorial, 20.5 se qualquer ação exigir aprovação humana                                                 |
+| SaaS com cobrança                                                      | 31 (pagamento), 9.5 (LGPD)                                            | 4.5 (multi-tenancy), 9.9 (SOC 2, se for vender pra empresa grande)                                                               |
+| Ferramenta de linha de comando (CLI)                                   | 38 (CLI)                                                              | 19 (dependência, se distribuída como pacote)                                                                                     |
+| Projeto embarcado/firmware (Mecatrônica)                               | 29 inteira                                                            | 9.2 (princípios de segurança que também valem em C), 12 (concorrência — os conceitos, não as primitivas de linguagem gerenciada) |
+| Pipeline de dado / ETL                                                 | 35 (engenharia de dados)                                              | 11.1 (retry/idempotência), 11.6 (backup)                                                                                         |
+| Jogo                                                                   | 37 (escolha de motor)                                                 | O resto do núcleo se aplica pouco — game loop, física e renderização são corpo de prática à parte                                |
+| Sistema com IA sugerindo e humano aprovando (ex.: copiloto de decisão) | 20.5 (human-in-the-loop), 26 (tempo real, se aprovação vier por chat) | 31.3 se envolver valor financeiro, 10 (observabilidade — trilha de auditoria)                                                    |
 
 ---
 
@@ -122,12 +124,12 @@ Com assistentes de código (Copilot, Cursor, Claude Code e similares) virando pa
 
 **Sinais nomeados de que algo precisa de refatoração** (catálogo de "code smells", útil como vocabulário compartilhado de time):
 
-| Smell | O que é | Sintoma |
-|---|---|---|
-| **God Object** | Uma classe/módulo que sabe e faz demais | Qualquer mudança no sistema parece tocar esse arquivo |
-| **Shotgun Surgery** | Uma mudança de conceito exige editar dezenas de arquivos espalhados | O oposto do God Object — fragmentação excessiva da mesma responsabilidade |
-| **Feature Envy** | Um método usa mais dados de outra classe do que da própria | Sinal de que a lógica está no lugar errado |
-| **Long Parameter List** | Função com 6+ parâmetros | Geralmente sinal de que faltam um ou dois objetos agrupando conceito relacionado |
+| Smell                   | O que é                                                             | Sintoma                                                                          |
+| ----------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **God Object**          | Uma classe/módulo que sabe e faz demais                             | Qualquer mudança no sistema parece tocar esse arquivo                            |
+| **Shotgun Surgery**     | Uma mudança de conceito exige editar dezenas de arquivos espalhados | O oposto do God Object — fragmentação excessiva da mesma responsabilidade        |
+| **Feature Envy**        | Um método usa mais dados de outra classe do que da própria          | Sinal de que a lógica está no lugar errado                                       |
+| **Long Parameter List** | Função com 6+ parâmetros                                            | Geralmente sinal de que faltam um ou dois objetos agrupando conceito relacionado |
 
 **Refatoração como disciplina, não evento**: o catálogo de refatorações de Fowler (extrair método, extrair variável, inline, mover método) propõe transformações pequenas e nomeadas, cada uma preservando comportamento externo, em vez de "reescrever esse módulo". Reescrita completa tem histórico de fracasso desproporcional (Seção 4.1) — refatoração incremental, com teste cobrindo o comportamento antes de mexer, quase sempre vence.
 
@@ -137,16 +139,16 @@ Com assistentes de código (Copilot, Cursor, Claude Code e similares) virando pa
 
 ## 3. Princípios de Design: SOLID, DRY, KISS, YAGNI
 
-| Princípio | O que diz | Onde vira over-engineering se aplicado sem critério |
-|---|---|---|
-| **S**ingle Responsibility | Uma unidade de código, uma razão pra mudar | Fragmentar uma classe simples em 5 "responsabilidades" que sempre mudam juntas na prática |
-| **O**pen/Closed | Aberto pra extensão, fechado pra modificação | Criar camada de abstração/plugin pra um caso de uso que nunca vai ter uma segunda variação real |
-| **L**iskov Substitution | Subtipo deve poder substituir o tipo base sem quebrar comportamento | Raramente vira over-engineering sozinho — mais um sinal de design de herança ruim quando violado |
-| **I**nterface Segregation | Interfaces específicas, não uma genérica gigante | Criar 10 interfaces de um método cada quando 2 interfaces coerentes resolveriam |
-| **D**ependency Inversion | Depender de abstração, não de implementação concreta | Injetar interface pra uma dependência que nunca vai ter segunda implementação (ex.: um único banco de dados pro projeto inteiro) |
-| **DRY** (Don't Repeat Yourself) | Não duplicar conhecimento/lógica de negócio | "Abstração prematura" — duas coisas que parecem iguais hoje mas representam conceitos de negócio diferentes; forçar reuso cedo demais cria acoplamento que duplicação não criaria |
-| **KISS** (Keep It Simple) | Prefira a solução mais simples que resolve o problema real | — |
-| **YAGNI** (You Aren't Gonna Need It) | Não construa flexibilidade pra requisito hipotético | — |
+| Princípio                            | O que diz                                                           | Onde vira over-engineering se aplicado sem critério                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S**ingle Responsibility            | Uma unidade de código, uma razão pra mudar                          | Fragmentar uma classe simples em 5 "responsabilidades" que sempre mudam juntas na prática                                                                                         |
+| **O**pen/Closed                      | Aberto pra extensão, fechado pra modificação                        | Criar camada de abstração/plugin pra um caso de uso que nunca vai ter uma segunda variação real                                                                                   |
+| **L**iskov Substitution              | Subtipo deve poder substituir o tipo base sem quebrar comportamento | Raramente vira over-engineering sozinho — mais um sinal de design de herança ruim quando violado                                                                                  |
+| **I**nterface Segregation            | Interfaces específicas, não uma genérica gigante                    | Criar 10 interfaces de um método cada quando 2 interfaces coerentes resolveriam                                                                                                   |
+| **D**ependency Inversion             | Depender de abstração, não de implementação concreta                | Injetar interface pra uma dependência que nunca vai ter segunda implementação (ex.: um único banco de dados pro projeto inteiro)                                                  |
+| **DRY** (Don't Repeat Yourself)      | Não duplicar conhecimento/lógica de negócio                         | "Abstração prematura" — duas coisas que parecem iguais hoje mas representam conceitos de negócio diferentes; forçar reuso cedo demais cria acoplamento que duplicação não criaria |
+| **KISS** (Keep It Simple)            | Prefira a solução mais simples que resolve o problema real          | —                                                                                                                                                                                 |
+| **YAGNI** (You Aren't Gonna Need It) | Não construa flexibilidade pra requisito hipotético                 | —                                                                                                                                                                                 |
 
 **A tensão real, documentada por engenheiros seniores (ex.: Sandi Metz — "duplicação é mais barata que a abstração errada")**: DRY aplicado cedo demais, antes do padrão de reuso real se provar, tende a criar uma abstração errada que é mais cara de desfazer do que a duplicação teria sido. A prática recomendada por várias vozes sérias da indústria: **tolerar duplicação até a terceira ocorrência real** ("regra dos três") antes de extrair abstração — as duas primeiras vezes ainda não provam que é o mesmo conceito de negócio, só que parece igual.
 
@@ -158,12 +160,12 @@ Com assistentes de código (Copilot, Cursor, Claude Code e similares) virando pa
 
 Depois de uma década de "microsserviços por padrão" (2016-2022) seguida de reação séria contra o excesso (2022-2024), a indústria em 2026 convergiu pra uma posição mais pragmática, não mais binária:
 
-| Sinal | Aponta pra |
-|---|---|
-| Time com menos de ~10 engenheiros, produto com menos de 1 ano | **Monolito modular** — um único deployável, com fronteiras internas claras (módulos/pacotes bem separados) |
-| Mais de ~50 engenheiros, ou partes do sistema com necessidade de escala genuinamente diferente entre si | Microsserviços começam a fazer sentido — mas exigem maturidade operacional real (observabilidade, orquestração) antes de compensar |
-| Incerto sobre onde as fronteiras de domínio realmente estão | Monolito — decompor cedo demais **fixa um chute** como decisão arquitetural cara de reverter |
-| Times autônomos que precisam deployar sem coordenar uns com os outros | Microsserviços resolvem um problema **organizacional**, não só técnico — Lei de Conway (a arquitetura tende a espelhar a estrutura de comunicação da organização) explica por que isso importa mais que a tecnologia em si |
+| Sinal                                                                                                   | Aponta pra                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Time com menos de ~10 engenheiros, produto com menos de 1 ano                                           | **Monolito modular** — um único deployável, com fronteiras internas claras (módulos/pacotes bem separados)                                                                                                                 |
+| Mais de ~50 engenheiros, ou partes do sistema com necessidade de escala genuinamente diferente entre si | Microsserviços começam a fazer sentido — mas exigem maturidade operacional real (observabilidade, orquestração) antes de compensar                                                                                         |
+| Incerto sobre onde as fronteiras de domínio realmente estão                                             | Monolito — decompor cedo demais **fixa um chute** como decisão arquitetural cara de reverter                                                                                                                               |
+| Times autônomos que precisam deployar sem coordenar uns com os outros                                   | Microsserviços resolvem um problema **organizacional**, não só técnico — Lei de Conway (a arquitetura tende a espelhar a estrutura de comunicação da organização) explica por que isso importa mais que a tecnologia em si |
 
 **Casos de referência real, não hipotéticos**: Shopify roda bilhões de dólares em transações sobre um monolito modular (Ruby on Rails) com milhares de engenheiros — a prova de que monolito não é sinônimo de "não escala". Netflix é o exemplo canônico de microsserviços — mas tem centenas de engenheiros dedicados só à plataforma que sustenta isso, investimento que a maioria das organizações não tem.
 
@@ -191,11 +193,11 @@ Tendência que virou categoria própria de engenharia entre 2022 e 2026: em vez 
 
 Quando um produto atende mais de um cliente/organização a partir da mesma aplicação (o caso de praticamente todo SaaS), como isolar o dado de cada um é decisão de arquitetura que raramente é revisitada depois — mudar de modelo depois que o produto já tem cliente real é um dos retrabalhos mais caros que existem. Três padrões cobrem a maior parte dos casos reais:
 
-| Padrão | Como funciona | Onde vale |
-|---|---|---|
-| **Pooled** (banco e schema compartilhados) | Toda tabela de negócio tem uma coluna `tenant_id`; isolamento reforçado por política de linha (**Row-Level Security** do Postgres, ou equivalente) | Custo de infraestrutura mais baixo por cliente — o padrão default da maioria dos MVPs e produtos self-service |
-| **Silo** (schema ou banco dedicado por cliente) | Cada cliente tem seu próprio schema ou banco inteiro | Cliente enterprise que exige isolamento contratual, residência de dado específica, ou requisito de conformidade que o modelo compartilhado não atende |
-| **Bridge/híbrido** | Cliente pequeno fica no modelo pooled; cliente grande migra pra schema ou banco dedicado | Padrão mais comum em produto que cresce de self-service pra enterprise — permite não pagar o custo operacional do silo pra quem não precisa dele |
+| Padrão                                          | Como funciona                                                                                                                                      | Onde vale                                                                                                                                             |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pooled** (banco e schema compartilhados)      | Toda tabela de negócio tem uma coluna `tenant_id`; isolamento reforçado por política de linha (**Row-Level Security** do Postgres, ou equivalente) | Custo de infraestrutura mais baixo por cliente — o padrão default da maioria dos MVPs e produtos self-service                                         |
+| **Silo** (schema ou banco dedicado por cliente) | Cada cliente tem seu próprio schema ou banco inteiro                                                                                               | Cliente enterprise que exige isolamento contratual, residência de dado específica, ou requisito de conformidade que o modelo compartilhado não atende |
+| **Bridge/híbrido**                              | Cliente pequeno fica no modelo pooled; cliente grande migra pra schema ou banco dedicado                                                           | Padrão mais comum em produto que cresce de self-service pra enterprise — permite não pagar o custo operacional do silo pra quem não precisa dele      |
 
 **O risco específico do modelo pooled que mais gera incidente real**: esquecer o filtro de `tenant_id` numa única query nova é o tipo de bug que não aparece em teste (o dado de teste geralmente tem só um tenant) e vira vazamento de dado entre cliente em produção — a mitigação mais robusta é reforçar isolamento no nível do banco (RLS) em vez de confiar só em toda query da aplicação lembrar de filtrar certo.
 
@@ -211,12 +213,12 @@ Modelo clássico (Mike Cohn, 2009): muitos testes de unidade rápidos e isolados
 
 **Alternativas legítimas, não "erradas", pra contextos diferentes**:
 
-| Modelo | Formato | Quando faz mais sentido |
-|---|---|---|
-| Pirâmide clássica | Muita unidade, pouco E2E | Backend com lógica de negócio pesada e complexa |
-| Troféu de testes | Ênfase em integração | Frontend, onde testar unidades isoladas de UI dá falsa confiança |
-| Colmeia de testes | Muitos testes de integração pequenos | Arquiteturas de microsserviços |
-| Diamante de testes | Ênfase no meio, pouca unidade/E2E | Sistemas data-heavy onde a lógica real está na integração com dados |
+| Modelo             | Formato                              | Quando faz mais sentido                                             |
+| ------------------ | ------------------------------------ | ------------------------------------------------------------------- |
+| Pirâmide clássica  | Muita unidade, pouco E2E             | Backend com lógica de negócio pesada e complexa                     |
+| Troféu de testes   | Ênfase em integração                 | Frontend, onde testar unidades isoladas de UI dá falsa confiança    |
+| Colmeia de testes  | Muitos testes de integração pequenos | Arquiteturas de microsserviços                                      |
+| Diamante de testes | Ênfase no meio, pouca unidade/E2E    | Sistemas data-heavy onde a lógica real está na integração com dados |
 
 **Nenhum modelo é universal** — a escolha certa reflete onde o risco real do seu sistema está concentrado, não qual modelo está na moda.
 
@@ -244,10 +246,10 @@ Quando a arquitetura já decompôs em múltiplos serviços (Seção 4.1), testar
 
 Diferente de Chaos Engineering (Seção 11.5, que injeta falha inesperada), teste de carga aplica volume de tráfego **esperado, planejado e crescente**, de forma controlada, pra responder uma pergunta diferente: até onde o sistema aguenta antes de degradar, e como ele degrada quando passa disso.
 
-| Tipo | O que testa |
-|---|---|
-| **Teste de carga** | Comportamento sob o pico de tráfego esperado (ex.: Black Friday, lançamento de feature) |
-| **Teste de estresse** | Além do esperado, de propósito, até achar o ponto de ruptura — qual recurso esgota primeiro (CPU, memória, conexão de banco, socket) |
+| Tipo                            | O que testa                                                                                                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Teste de carga**              | Comportamento sob o pico de tráfego esperado (ex.: Black Friday, lançamento de feature)                                                                        |
+| **Teste de estresse**           | Além do esperado, de propósito, até achar o ponto de ruptura — qual recurso esgota primeiro (CPU, memória, conexão de banco, socket)                           |
 | **Teste de resistência (soak)** | Carga moderada sustentada por período longo — pega vazamento de memória e esgotamento de recurso que só aparecem depois de hora rodando, nunca num teste curto |
 
 Ferramenta de referência hoje: **k6**, **Locust**, **Gatling** (JMeter continua em uso, mas é considerado legado pela maioria das comparações recentes). **A métrica certa a olhar é percentil, não média** (Seção 10.2 já cobre essa distinção pra SLI/SLO) — média esconde exatamente o comportamento de cauda que mais importa: um serviço com latência média de 100ms e p99 de 4 segundos tem um problema real que a média nunca revela.
@@ -260,11 +262,11 @@ Ferramenta de referência hoje: **k6**, **Locust**, **Gatling** (JMeter continua
 
 ### 6.1 Estratégias de Branching
 
-| Estratégia | Como funciona | Quando faz sentido |
-|---|---|---|
-| **Trunk-Based Development** | Todo mundo commita direto (ou via branch de vida curtíssima, horas) na branch principal | Times com CI/CD real, deploy contínuo — usado por Google, Meta, Netflix em escala |
-| **GitHub Flow** | Branch de feature curta → PR → merge na principal → deploy | Times pequenos/médios, produtos web com deploy contínuo |
-| **Git Flow** | Branches de `develop`, `release/*`, `hotfix/*` além da principal | Software versionado com ciclo de release fixo (desktop, mobile, on-premise) — **hoje é a exceção, não o padrão**, para a maioria dos produtos web |
+| Estratégia                  | Como funciona                                                                           | Quando faz sentido                                                                                                                                |
+| --------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Trunk-Based Development** | Todo mundo commita direto (ou via branch de vida curtíssima, horas) na branch principal | Times com CI/CD real, deploy contínuo — usado por Google, Meta, Netflix em escala                                                                 |
+| **GitHub Flow**             | Branch de feature curta → PR → merge na principal → deploy                              | Times pequenos/médios, produtos web com deploy contínuo                                                                                           |
+| **Git Flow**                | Branches de `develop`, `release/*`, `hotfix/*` além da principal                        | Software versionado com ciclo de release fixo (desktop, mobile, on-premise) — **hoje é a exceção, não o padrão**, para a maioria dos produtos web |
 
 **O sinal mais claro de que Git Flow parou de servir**: cherry-pick constante entre branches, branches de release que se arrastam por semanas — isso não é a estrutura "protegendo" o time, é a estrutura escondendo problema até o último minuto.
 
@@ -325,11 +327,11 @@ Lint → typecheck → testes (Seção 5) → build → deploy — cada estágio
 
 ### 8.2 Estratégias de Deploy
 
-| Estratégia | Como funciona | Trade-off |
-|---|---|---|
-| **Rolling** | Substitui instâncias antigas por novas gradualmente | Simples, mas por um período há duas versões rodando ao mesmo tempo |
-| **Blue-Green** | Ambiente novo (green) sobe completo, tráfego troca de uma vez do antigo (blue) | Rollback instantâneo (só troca o roteamento de volta), mas exige infraestrutura em dobro durante o deploy |
-| **Canary** | Nova versão recebe fração pequena do tráfego real primeiro, aumenta gradualmente se métricas ficarem saudáveis | Detecta problema com exposição mínima, mas exige observabilidade real (Seção 10) pra funcionar — canário sem métrica confiável não serve pra nada |
+| Estratégia     | Como funciona                                                                                                  | Trade-off                                                                                                                                         |
+| -------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rolling**    | Substitui instâncias antigas por novas gradualmente                                                            | Simples, mas por um período há duas versões rodando ao mesmo tempo                                                                                |
+| **Blue-Green** | Ambiente novo (green) sobe completo, tráfego troca de uma vez do antigo (blue)                                 | Rollback instantâneo (só troca o roteamento de volta), mas exige infraestrutura em dobro durante o deploy                                         |
+| **Canary**     | Nova versão recebe fração pequena do tráfego real primeiro, aumenta gradualmente se métricas ficarem saudáveis | Detecta problema com exposição mínima, mas exige observabilidade real (Seção 10) pra funcionar — canário sem métrica confiável não serve pra nada |
 
 ### 8.3 Feature Flags: Desacoplar Deploy de Release
 
@@ -337,13 +339,13 @@ Um princípio que virou essencial pra trunk-based development funcionar de verda
 
 ### 8.4 DORA Metrics: Medindo Performance de Entrega de Verdade
 
-Enquanto a Seção 7 discute se cerimônia de processo produz resultado real, a pergunta complementar é: como medir entrega de software sem virar "sensação" nem contagem de linha de código? A pesquisa DORA (DevOps Research and Assessment, hoje dentro do Google Cloud, origem no livro *Accelerate* de Forsgren, Humble e Kim) validou, ao longo de mais de uma década e dezenas de milhares de respostas, quatro métricas que seguem sendo a referência prática mais citada da indústria:
+Enquanto a Seção 7 discute se cerimônia de processo produz resultado real, a pergunta complementar é: como medir entrega de software sem virar "sensação" nem contagem de linha de código? A pesquisa DORA (DevOps Research and Assessment, hoje dentro do Google Cloud, origem no livro _Accelerate_ de Forsgren, Humble e Kim) validou, ao longo de mais de uma década e dezenas de milhares de respostas, quatro métricas que seguem sendo a referência prática mais citada da indústria:
 
-| Métrica | O que mede | Eixo |
-|---|---|---|
-| **Deployment Frequency** | Com que frequência a organização libera pra produção com sucesso | Velocidade |
-| **Lead Time for Changes** | Tempo entre um commit e ele estar rodando em produção | Velocidade |
-| **Change Failure Rate** | Percentual de deploys que causam falha em produção | Estabilidade |
+| Métrica                                           | O que mede                                                           | Eixo         |
+| ------------------------------------------------- | -------------------------------------------------------------------- | ------------ |
+| **Deployment Frequency**                          | Com que frequência a organização libera pra produção com sucesso     | Velocidade   |
+| **Lead Time for Changes**                         | Tempo entre um commit e ele estar rodando em produção                | Velocidade   |
+| **Change Failure Rate**                           | Percentual de deploys que causam falha em produção                   | Estabilidade |
 | **Failed Deployment Recovery Time** (antigo MTTR) | Tempo pra restaurar o serviço depois de uma falha causada por deploy | Estabilidade |
 
 As duas métricas de velocidade só significam algo lidas junto com as duas de estabilidade — deployar toda hora sem medir taxa de falha é ruído disfarçado de produtividade; o desenho em par é o que impede otimizar uma métrica às custas da outra.
@@ -376,18 +378,18 @@ A Seção 8.3 cobre feature flag como mecanismo de entrega; teste A/B usa o mesm
 
 A lista mudou de forma significativa desde a versão de 2021 — mais de 175 mil CVEs e quase 2,9 milhões de aplicações analisadas, duas categorias inteiramente novas, e um critério explícito de priorizar **causa raiz** sobre sintoma. **Correção em relação à edição anterior deste documento**: a tabela abaixo é a lista oficial completa e na ordem certa, conferida direto na fonte (owasp.org) — a versão anterior citava só 6 das 10 categorias reais e trocava a posição de duas delas.
 
-| # | Categoria | O que mudou / o que cobre |
-|---|---|---|
-| A01 | Quebra de Controle de Acesso | Mantém o #1 — o risco mais prevalente de todos; **SSRF foi absorvido aqui dentro** nesta edição |
-| A02 | Configuração Insegura | **Subiu do #5 (2021) pro #2** — reflete o quanto o comportamento de uma aplicação hoje depende de configuração (nuvem, orquestração) em vez de só código |
-| A03 | Falhas de Cadeia de Suprimentos de Software | **Categoria nova** — expande o antigo "componente vulnerável/desatualizado" pra cobrir todo o ecossistema de dependência, build e distribuição (aprofundado na Seção 9.4); menor número de ocorrências testadas, mas o maior impacto médio de exploração da lista inteira |
-| A04 | Falhas Criptográficas | Caiu do #2 pro #4 |
-| A05 | Injeção | Caiu do #3 pro #5 — de XSS (alta frequência, baixo impacto individual) a SQL Injection (baixa frequência, alto impacto) |
-| A06 | Design Inseguro | Caiu do #4 (2021) pro #6 — categoria que já existia, mas a indústria mostrou melhora real em threat modeling desde então |
-| A07 | Falhas de Autenticação | Mantém #7, renomeada (antes "Falhas de Identificação e Autenticação") — adoção maior de framework padronizado de auth parece estar reduzindo a ocorrência real |
-| A08 | Falhas de Integridade de Software/Dados | Mantém #8 — deserialização insegura, atualização adulterada, **comprometimento de pipeline de CI/CD**; a diferença pra A03 é o nível: aqui é verificar a integridade de um artefato específico, lá é o ecossistema inteiro |
-| A09 | Falhas de Log e Alerta de Segurança | Mantém #9, renomeada — o nome novo enfatiza que log sem alerta que dispara ação tem valor quase nulo pra detectar incidente |
-| A10 | Tratamento Inadequado de Condições Excepcionais | **Categoria nova** — erro/exceção mal tratado expondo dado interno, lógica de erro falha, ou fail-open onde deveria falhar fechado |
+| #   | Categoria                                       | O que mudou / o que cobre                                                                                                                                                                                                                                                 |
+| --- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A01 | Quebra de Controle de Acesso                    | Mantém o #1 — o risco mais prevalente de todos; **SSRF foi absorvido aqui dentro** nesta edição                                                                                                                                                                           |
+| A02 | Configuração Insegura                           | **Subiu do #5 (2021) pro #2** — reflete o quanto o comportamento de uma aplicação hoje depende de configuração (nuvem, orquestração) em vez de só código                                                                                                                  |
+| A03 | Falhas de Cadeia de Suprimentos de Software     | **Categoria nova** — expande o antigo "componente vulnerável/desatualizado" pra cobrir todo o ecossistema de dependência, build e distribuição (aprofundado na Seção 9.4); menor número de ocorrências testadas, mas o maior impacto médio de exploração da lista inteira |
+| A04 | Falhas Criptográficas                           | Caiu do #2 pro #4                                                                                                                                                                                                                                                         |
+| A05 | Injeção                                         | Caiu do #3 pro #5 — de XSS (alta frequência, baixo impacto individual) a SQL Injection (baixa frequência, alto impacto)                                                                                                                                                   |
+| A06 | Design Inseguro                                 | Caiu do #4 (2021) pro #6 — categoria que já existia, mas a indústria mostrou melhora real em threat modeling desde então                                                                                                                                                  |
+| A07 | Falhas de Autenticação                          | Mantém #7, renomeada (antes "Falhas de Identificação e Autenticação") — adoção maior de framework padronizado de auth parece estar reduzindo a ocorrência real                                                                                                            |
+| A08 | Falhas de Integridade de Software/Dados         | Mantém #8 — deserialização insegura, atualização adulterada, **comprometimento de pipeline de CI/CD**; a diferença pra A03 é o nível: aqui é verificar a integridade de um artefato específico, lá é o ecossistema inteiro                                                |
+| A09 | Falhas de Log e Alerta de Segurança             | Mantém #9, renomeada — o nome novo enfatiza que log sem alerta que dispara ação tem valor quase nulo pra detectar incidente                                                                                                                                               |
+| A10 | Tratamento Inadequado de Condições Excepcionais | **Categoria nova** — erro/exceção mal tratado expondo dado interno, lógica de erro falha, ou fail-open onde deveria falhar fechado                                                                                                                                        |
 
 **O que essa mudança sinaliza pra qualquer projeto**: com Configuração Insegura em #2 e Cadeia de Suprimentos estreando em #3, segurança de pipeline e de infraestrutura-como-configuração hoje pesa tanto ou mais que validação de input no código da aplicação em si — o alvo do atacante se moveu pra fora do código que você escreve, pra tudo que constrói e entrega esse código.
 
@@ -421,11 +423,11 @@ Todo projeto que trata dado pessoal de gente no Brasil — nome, e-mail, CPF, da
 
 **O que isso significa em prática de engenharia, não só de política de privacidade**:
 
-| Fase | O que fazer |
-|---|---|
-| Design/requisitos | Mapear que dado pessoal o sistema vai tratar, com que base legal e com qual finalidade específica — coleta "por via das dúvidas" é o oposto do princípio de minimização |
-| Armazenamento | Criptografia em repouso pra dado sensível; retenção com prazo definido, não indefinida por padrão |
-| Acesso | Least privilege (Seção 9.2) aplicado especificamente a quem no time consegue ver dado pessoal em produção, não só a quem consegue alterar infraestrutura |
+| Fase               | O que fazer                                                                                                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Design/requisitos  | Mapear que dado pessoal o sistema vai tratar, com que base legal e com qual finalidade específica — coleta "por via das dúvidas" é o oposto do princípio de minimização                  |
+| Armazenamento      | Criptografia em repouso pra dado sensível; retenção com prazo definido, não indefinida por padrão                                                                                        |
+| Acesso             | Least privilege (Seção 9.2) aplicado especificamente a quem no time consegue ver dado pessoal em produção, não só a quem consegue alterar infraestrutura                                 |
 | Direito do titular | Endpoint ou processo pra atender pedido de exclusão/portabilidade de dado — a lei garante esse direito, e sem um jeito técnico de cumprir, a política de privacidade vira promessa vazia |
 
 **Órgão responsável**: a ANPD (Autoridade Nacional de Proteção de Dados) fiscaliza e pode sancionar — o padrão internacional equivalente, ISO 31700-1:2023, formalizou 30 requisitos de alto nível pra Privacy by Design em produto e serviço de consumo, útil como checklist mesmo fora de contexto de certificação formal.
@@ -436,15 +438,15 @@ Todo projeto que trata dado pessoal de gente no Brasil — nome, e-mail, CPF, da
 
 Qualquer sistema que recebe e processa arquivo de origem externa — upload de usuário, anexo, documento pra converter — trata **conteúdo binário arbitrário de alguém que você não controla** como input, e isso merece tratamento à parte do "validação de input" genérico da Seção 9.2, porque as formas de ataque são específicas do formato de arquivo.
 
-**Validação por conteúdo, não por extensão nem por nome**: a extensão `.pdf` ou o campo `Content-Type` do upload são o que o cliente *diz* que o arquivo é — nunca uma garantia. Verificar os **magic bytes** (a assinatura binária real no início do arquivo) é o mínimo antes de qualquer processamento; renomear um executável pra `.jpg` não muda o que ele é.
+**Validação por conteúdo, não por extensão nem por nome**: a extensão `.pdf` ou o campo `Content-Type` do upload são o que o cliente _diz_ que o arquivo é — nunca uma garantia. Verificar os **magic bytes** (a assinatura binária real no início do arquivo) é o mínimo antes de qualquer processamento; renomear um executável pra `.jpg` não muda o que ele é.
 
 **Riscos específicos por categoria de arquivo**:
 
-| Categoria | Risco concreto | Mitigação |
-|---|---|---|
-| Arquivo compactado (ZIP, RAR, 7z) | **Zip bomb** — um arquivo de poucos KB que expande pra terabytes na extração, esgotando disco/memória (o exemplo clássico, `42.zip`, expande de 42KB pra 4,5 petabytes) | Checar taxa de compressão, contagem de arquivo e tamanho total **antes** de extrair — nunca extrair "e ver no que dá" |
+| Categoria                                                   | Risco concreto                                                                                                                                                                                                    | Mitigação                                                                                                                                                                                                                              |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arquivo compactado (ZIP, RAR, 7z)                           | **Zip bomb** — um arquivo de poucos KB que expande pra terabytes na extração, esgotando disco/memória (o exemplo clássico, `42.zip`, expande de 42KB pra 4,5 petabytes)                                           | Checar taxa de compressão, contagem de arquivo e tamanho total **antes** de extrair — nunca extrair "e ver no que dá"                                                                                                                  |
 | Imagem (processada por biblioteca tipo ImageMagick, Pillow) | Exploit de parser explorando o próprio processamento — o caso histórico mais citado é o CVE-2016-3714 ("ImageTragick"), onde um SVG malicioso executava comando arbitrário durante o processamento do ImageMagick | Manter biblioteca de processamento sempre atualizada (Seção 19.3); decodificar e recodificar a imagem num formato seguro conhecido em vez de só copiar bytes, o que também tem o efeito colateral de remover metadado/payload embutido |
-| Documento office (DOCX, XLSX, ODT) | Execução de macro embutida — exatamente o risco que a auditoria do Universal File Converter já identificou no LibreOffice | Desabilitar execução de macro na configuração do próprio motor de conversão; nunca assumir que "só estou convertendo formato" significa que nenhum código roda no processo |
+| Documento office (DOCX, XLSX, ODT)                          | Execução de macro embutida — exatamente o risco que a auditoria do Universal File Converter já identificou no LibreOffice                                                                                         | Desabilitar execução de macro na configuração do próprio motor de conversão; nunca assumir que "só estou convertendo formato" significa que nenhum código roda no processo                                                             |
 
 **Isolamento do processo que faz a conversão de fato**: contêiner sozinho (Docker) **não é sandbox de segurança** — ele reduz superfície de ataque mas compartilha o kernel do host, e uma falha de isolamento do container ainda expõe o host. Pra processar arquivo genuinamente não confiável, a defesa em profundidade (Seção 9.2) certa é rodar o processo de conversão com uma camada adicional: **gVisor** (kernel de espaço de usuário que intercepta chamada de sistema, mais forte que container sozinho) ou, no mínimo, uma política restritiva de `seccomp`/seleção de syscall permitida — limitando o que o processo de conversão consegue fazer mesmo que o arquivo de entrada consiga explorar uma falha na biblioteca que o processa.
 
@@ -504,21 +506,21 @@ Complementa a Seção 9.8 (que cobre gestão de chave criptográfica) com a prá
 
 ### 10.1 Os Três Pilares (e o Quarto Emergente)
 
-| Pilar | O que é | Melhor pra |
-|---|---|---|
-| **Logs** | Registro de evento discreto, com timestamp e contexto | Debug detalhado de um evento específico — mais flexível, mais propenso a inconsistência entre times |
-| **Métricas** | Série temporal numérica agregada | Alerta e visão de saúde geral — barato de consultar, mas não aponta causa raiz sozinho |
-| **Traces** | Rastreamento de uma requisição através de múltiplos serviços | Achar onde, numa cadeia de chamadas distribuída, o tempo/erro está concentrado |
+| Pilar        | O que é                                                      | Melhor pra                                                                                          |
+| ------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| **Logs**     | Registro de evento discreto, com timestamp e contexto        | Debug detalhado de um evento específico — mais flexível, mais propenso a inconsistência entre times |
+| **Métricas** | Série temporal numérica agregada                             | Alerta e visão de saúde geral — barato de consultar, mas não aponta causa raiz sozinho              |
+| **Traces**   | Rastreamento de uma requisição através de múltiplos serviços | Achar onde, numa cadeia de chamadas distribuída, o tempo/erro está concentrado                      |
 
 Os três se complementam — métrica avisa que algo está errado, trace aponta onde na cadeia, log detalha o que aconteceu exatamente naquele ponto. Nenhum dos três sozinho resolve o problema que os outros dois resolvem. Discussão que avançou bastante em 2026: **profiles** (perfil contínuo de uso de CPU/memória) entrou em fase alpha/release-candidate como quarto sinal dentro do padrão OpenTelemetry (Seção 10.5) — ainda sem a maturidade de produção de logs/métricas/traces, mas deixou de ser só debate teórico.
 
 ### 10.2 SLI, SLO e SLA — a Diferença Que Times Confundem
 
-| Termo | O que é |
-|---|---|
-| **SLI** (Indicador) | A métrica medida de fato — ex.: latência p99, taxa de erro |
-| **SLO** (Objetivo) | A meta interna pra esse indicador — ex.: "p99 < 300ms em 99.9% do tempo" |
-| **SLA** (Acordo) | O compromisso externo/contratual, geralmente mais frouxo que o SLO interno, com consequência formal se violado |
+| Termo               | O que é                                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **SLI** (Indicador) | A métrica medida de fato — ex.: latência p99, taxa de erro                                                     |
+| **SLO** (Objetivo)  | A meta interna pra esse indicador — ex.: "p99 < 300ms em 99.9% do tempo"                                       |
+| **SLA** (Acordo)    | O compromisso externo/contratual, geralmente mais frouxo que o SLO interno, com consequência formal se violado |
 
 SLO deveria ser sempre mais rigoroso que SLA — a folga entre os dois é o que dá margem de manobra antes de uma violação contratual de verdade acontecer.
 
@@ -566,17 +568,17 @@ Reexecutar automaticamente uma operação que falhou por erro transitório (rede
 
 ```ts
 async function comRetry<T>(operacao: () => Promise<T>, maxTentativas = 3): Promise<T> {
-  for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-    try {
-      return await operacao();
-    } catch (erro) {
-      if (tentativa === maxTentativas || !éErroTransitorio(erro)) throw erro;
-      const backoff = Math.pow(2, tentativa) * 1000; // 2s, 4s, 8s...
-      const jitter = Math.random() * 500; // evita "retry storm" sincronizado entre clientes
-      await new Promise(r => setTimeout(r, backoff + jitter));
+    for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+        try {
+            return await operacao();
+        } catch (erro) {
+            if (tentativa === maxTentativas || !éErroTransitorio(erro)) throw erro;
+            const backoff = Math.pow(2, tentativa) * 1000; // 2s, 4s, 8s...
+            const jitter = Math.random() * 500; // evita "retry storm" sincronizado entre clientes
+            await new Promise((r) => setTimeout(r, backoff + jitter));
+        }
     }
-  }
-  throw new Error("inalcançável");
+    throw new Error("inalcançável");
 }
 ```
 
@@ -610,10 +612,10 @@ Resiliência até aqui (11.1-11.5) trata de falha que o sistema absorve sozinho,
 
 Duas métricas definem qualquer plano, e a pergunta certa é sempre em relação a elas, não a "ter backup" de forma genérica:
 
-| Métrica | Pergunta que responde | Exemplo |
-|---|---|---|
-| **RTO** (Recovery Time Objective) | Quanto tempo o sistema pode ficar fora do ar até o dano virar existencial pro negócio? | RTO de 4h pro banco principal: o processo de restauração precisa terminar em menos de 4h |
-| **RPO** (Recovery Point Objective) | Quanto dado, em janela de tempo, é aceitável perder? | RPO de 1h: backup precisa rodar pelo menos de hora em hora, senão a janela de perda passa disso |
+| Métrica                            | Pergunta que responde                                                                  | Exemplo                                                                                         |
+| ---------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **RTO** (Recovery Time Objective)  | Quanto tempo o sistema pode ficar fora do ar até o dano virar existencial pro negócio? | RTO de 4h pro banco principal: o processo de restauração precisa terminar em menos de 4h        |
+| **RPO** (Recovery Point Objective) | Quanto dado, em janela de tempo, é aceitável perder?                                   | RPO de 1h: backup precisa rodar pelo menos de hora em hora, senão a janela de perda passa disso |
 
 **O erro mais comum de todos**: definir RTO/RPO num documento e nunca testar contra a arquitetura de backup real — um RTO de 4 horas não vale nada se o restore de verdade leva 48 horas, e isso só se descobre no dia em que precisa, se ninguém nunca tentou restaurar de propósito antes.
 
@@ -627,10 +629,10 @@ Duas métricas definem qualquer plano, e a pergunta certa é sempre em relação
 
 ### 12.1 A Distinção Que Decide Tudo: I/O-Bound vs. CPU-Bound
 
-| Tipo de trabalho | O que consome | Ferramenta certa |
-|---|---|---|
+| Tipo de trabalho                             | O que consome            | Ferramenta certa                                                                                          |
+| -------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------- |
 | **I/O-bound** (esperando rede, disco, banco) | Tempo de espera, não CPU | Concorrência via `async`/`await`, event loop — várias operações "em voo" ao mesmo tempo numa única thread |
-| **CPU-bound** (cálculo pesado de verdade) | CPU de fato | Paralelismo real — múltiplas threads ou processos, cada um usando um núcleo |
+| **CPU-bound** (cálculo pesado de verdade)    | CPU de fato              | Paralelismo real — múltiplas threads ou processos, cada um usando um núcleo                               |
 
 Usar `async`/`await` pra trabalho CPU-bound não ajuda em nada (a CPU já estava ocupada, não esperando) — e usar thread/processo pesado pra trabalho puramente I/O-bound desperdiça recurso à toa. O erro mais comum em código novo é não saber em qual dos dois grupos a operação atual se encaixa antes de escolher a ferramenta.
 
@@ -643,9 +645,9 @@ Isso é falso, e o motivo pelo qual é falso pega até gente experiente de surpr
 // mesmo rodando num único thread — porque o estado real vive no banco,
 // não na memória do processo.
 async function incrementarContador(chave: string) {
-  const atual = await banco.buscar(chave);      // <- await = ponto de interrupção
-  const novoValor = atual.valor + 1;
-  await banco.salvar(chave, novoValor);          // outra chamada pode ter lido o mesmo "atual" aqui
+    const atual = await banco.buscar(chave); // <- await = ponto de interrupção
+    const novoValor = atual.valor + 1;
+    await banco.salvar(chave, novoValor); // outra chamada pode ter lido o mesmo "atual" aqui
 }
 ```
 
@@ -653,11 +655,11 @@ Duas chamadas simultâneas podem ambas ler o mesmo valor antes de qualquer uma e
 
 ### 12.3 Primitivas de Sincronização, Quando Genuinamente Precisar
 
-| Primitiva | Pra quê |
-|---|---|
-| **Mutex** | Garantir que só uma execução por vez toca um recurso |
-| **Semáforo** | Limitar quantas execuções simultâneas são permitidas (ex.: no máximo 5 conexões concorrentes a uma API externa) |
-| **Fila/Canal** (channel, no estilo Go) | Coordenar passagem de dado entre tarefas concorrentes sem estado compartilhado direto |
+| Primitiva                              | Pra quê                                                                                                         |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Mutex**                              | Garantir que só uma execução por vez toca um recurso                                                            |
+| **Semáforo**                           | Limitar quantas execuções simultâneas são permitidas (ex.: no máximo 5 conexões concorrentes a uma API externa) |
+| **Fila/Canal** (channel, no estilo Go) | Coordenar passagem de dado entre tarefas concorrentes sem estado compartilhado direto                           |
 
 ### 12.4 Boas Práticas Que Independem de Linguagem
 
@@ -676,22 +678,22 @@ A frase (atribuída a Phil Karlton: invalidação de cache, nomear coisas, e err
 
 ### 13.2 As Estratégias Principais
 
-| Estratégia | Como funciona | Trade-off |
-|---|---|---|
+| Estratégia                     | Como funciona                                                                                                      | Trade-off                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
 | **Cache-Aside** (lazy loading) | Aplicação checa cache; se não tem, busca na fonte e popula o cache; escrita vai direto na fonte e invalida a chave | Mais comum, mais controle — mas todo caminho de escrita precisa lembrar de invalidar, sem exceção |
-| **Write-Through** | Escrita vai pro cache e pra fonte de verdade de forma síncrona | Consistência máxima, mas escrita fica mais lenta (dois destinos) |
-| **Write-Behind** | Escrita vai pro cache primeiro, gravação na fonte acontece depois, assíncrona | Escrita rápida, mas risco real de perda de dado se o cache cair antes de persistir |
-| **Read-Through** | Camada de cache abstrai a busca — a aplicação nem sabe se veio de cache ou da fonte | Simplifica a aplicação, empurra a complexidade pra camada de cache |
+| **Write-Through**              | Escrita vai pro cache e pra fonte de verdade de forma síncrona                                                     | Consistência máxima, mas escrita fica mais lenta (dois destinos)                                  |
+| **Write-Behind**               | Escrita vai pro cache primeiro, gravação na fonte acontece depois, assíncrona                                      | Escrita rápida, mas risco real de perda de dado se o cache cair antes de persistir                |
+| **Read-Through**               | Camada de cache abstrai a busca — a aplicação nem sabe se veio de cache ou da fonte                                | Simplifica a aplicação, empurra a complexidade pra camada de cache                                |
 
 **A recomendação mais citada por engenheiros que already sofreram com isso em produção**: invalidar (deletar a chave) em vez de atualizar em cache no momento da escrita — invalidação garante que a próxima leitura busca fresco da fonte; atualização em cache pode introduzir uma condição de corrida (Seção 12.2) entre a escrita na fonte e a atualização do cache.
 
 ### 13.3 Problemas Clássicos e Suas Mitigações
 
-| Problema | O que é | Mitigação |
-|---|---|---|
+| Problema                             | O que é                                                                            | Mitigação                                                                                                                                                                                |
+| ------------------------------------ | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Cache stampede / thundering herd** | Uma chave popular expira, muitas requisições simultâneas batem na fonte de uma vez | Lock/coalescência de requisição (só uma busca de verdade, as outras esperam o resultado), jitter no TTL pra não expirar tudo junto, atualização em segundo plano antes de expirar de vez |
-| **Cache sem limite de crescimento** | Memória esgota | Política de expulsão (LRU, LFU) e limite de memória explícito |
-| **Esquecimento de invalidação** | Bug mais comum de todos — alguém escreve sem lembrar de invalidar | Teste automatizado cobrindo o caminho de escrita+leitura, não confiar só em disciplina humana |
+| **Cache sem limite de crescimento**  | Memória esgota                                                                     | Política de expulsão (LRU, LFU) e limite de memória explícito                                                                                                                            |
+| **Esquecimento de invalidação**      | Bug mais comum de todos — alguém escreve sem lembrar de invalidar                  | Teste automatizado cobrindo o caminho de escrita+leitura, não confiar só em disciplina humana                                                                                            |
 
 ### 13.4 Meça Antes de Otimizar
 
@@ -712,12 +714,12 @@ A frase (atribuída a Phil Karlton: invalidação de cache, nomear coisas, e err
 
 ### 14.2 Rate Limiting
 
-| Algoritmo | Como funciona | Limitação |
-|---|---|---|
-| Janela fixa | Conta requisições por minuto/hora num contador simples | Permite pico na borda da janela (99 no fim de um minuto + 100 no início do próximo = 199 em 2 segundos) |
-| Janela deslizante | Conta com timestamp, remove entradas antigas continuamente | Mais preciso, mais caro de computar |
-| Token bucket | Um "balde" acumula token a uma taxa fixa; cada requisição consome um; sem token disponível, rejeita | Permite rajada controlada até a capacidade do balde — o default mais comum pra API pública |
-| Leaky bucket | Requisição entra numa fila que "vaza" numa taxa constante; fila cheia rejeita | Suaviza a saída pra uma taxa perfeitamente constante, mas não absorve rajada legítima — melhor pra proteger um recurso downstream de capacidade fixa (ex.: fila de processamento de pagamento) do que pra expor como limite de API pública |
+| Algoritmo         | Como funciona                                                                                       | Limitação                                                                                                                                                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Janela fixa       | Conta requisições por minuto/hora num contador simples                                              | Permite pico na borda da janela (99 no fim de um minuto + 100 no início do próximo = 199 em 2 segundos)                                                                                                                                    |
+| Janela deslizante | Conta com timestamp, remove entradas antigas continuamente                                          | Mais preciso, mais caro de computar                                                                                                                                                                                                        |
+| Token bucket      | Um "balde" acumula token a uma taxa fixa; cada requisição consome um; sem token disponível, rejeita | Permite rajada controlada até a capacidade do balde — o default mais comum pra API pública                                                                                                                                                 |
+| Leaky bucket      | Requisição entra numa fila que "vaza" numa taxa constante; fila cheia rejeita                       | Suaviza a saída pra uma taxa perfeitamente constante, mas não absorve rajada legítima — melhor pra proteger um recurso downstream de capacidade fixa (ex.: fila de processamento de pagamento) do que pra expor como limite de API pública |
 
 Retornar sempre os headers `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` — o cliente deveria conseguir se adaptar sem adivinhar.
 
@@ -737,10 +739,10 @@ Os três padrões citados na Seção 14.4 merecem tratamento próprio, porque no
 
 **Saga**: uma sequência de transação local, cada uma publicando um evento que dispara a próxima — "reservar voo" → "reservar hotel" → "cobrar cartão" é o exemplo mais citado. Se um passo falha no meio, o saga executa **transação compensatória** pra desfazer o que os passos anteriores já confirmaram (cancelar o hotel, cancelar o voo), em vez de rollback verdadeiro, que não existe através de fronteira de serviço. Duas formas de coordenar:
 
-| Forma | Como funciona | Trade-off |
-|---|---|---|
-| **Coreografia** | Cada serviço escuta evento e decide sozinho o que fazer, sem coordenador central | Sem ponto único de falha, mas o fluxo completo fica implícito, espalhado pela lógica de cada serviço — difícil de visualizar o processo inteiro num só lugar |
-| **Orquestração** | Um serviço coordenador central manda cada passo explicitamente | Fluxo visível e centralizado, mas o orquestrador vira dependência crítica e ponto de acoplamento |
+| Forma            | Como funciona                                                                    | Trade-off                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Coreografia**  | Cada serviço escuta evento e decide sozinho o que fazer, sem coordenador central | Sem ponto único de falha, mas o fluxo completo fica implícito, espalhado pela lógica de cada serviço — difícil de visualizar o processo inteiro num só lugar |
+| **Orquestração** | Um serviço coordenador central manda cada passo explicitamente                   | Fluxo visível e centralizado, mas o orquestrador vira dependência crítica e ponto de acoplamento                                                             |
 
 **Event Sourcing**: em vez de guardar só o estado atual, guarda a sequência completa de evento que levou até ali — o estado atual é derivado, a qualquer momento, reprocessando o histórico. Isso dá auditoria completa "de graça" (todo evento passado continua acessível) e é a base mais comum sobre a qual CQRS é implementado.
 
@@ -791,11 +793,11 @@ O algoritmo por trás da busca rápida em milhões/bilhões de vetor é quase un
 
 **A decisão prática que mais importa pra um projeto com orçamento apertado (Seção 28)**: não é qual banco vetorial "é o melhor" em benchmark — é se vale a pena rodar um banco vetorial **dedicado** ou usar uma extensão sobre o banco relacional que o projeto já tem.
 
-| Opção | Quando faz sentido |
-|---|---|
-| **pgvector** (extensão sobre PostgreSQL) | Recomendação padrão pra quem já roda Postgres e tem até ~50 milhões de vetores — zero infraestrutura nova, join direto com o resto do dado relacional na mesma transação, custo marginal frequentemente próximo de zero se já existe headroom no banco atual |
-| **Qdrant** (dedicado, self-hosted ou cloud) | Escolha mais citada especificamente pra **memória de agente de IA** — namespacing de memória por usuário/sessão, quantização binária que reduz custo de RAM em 75-90%, free tier generoso |
-| **Pinecone** (gerenciado) | Zero operação própria, mas o custo cresce rápido por volume/consulta — normalmente a opção mais cara nas comparações de custo real pra escala pequena/média |
+| Opção                                       | Quando faz sentido                                                                                                                                                                                                                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **pgvector** (extensão sobre PostgreSQL)    | Recomendação padrão pra quem já roda Postgres e tem até ~50 milhões de vetores — zero infraestrutura nova, join direto com o resto do dado relacional na mesma transação, custo marginal frequentemente próximo de zero se já existe headroom no banco atual |
+| **Qdrant** (dedicado, self-hosted ou cloud) | Escolha mais citada especificamente pra **memória de agente de IA** — namespacing de memória por usuário/sessão, quantização binária que reduz custo de RAM em 75-90%, free tier generoso                                                                    |
+| **Pinecone** (gerenciado)                   | Zero operação própria, mas o custo cresce rápido por volume/consulta — normalmente a opção mais cara nas comparações de custo real pra escala pequena/média                                                                                                  |
 
 **Um detalhe que decide mais a qualidade da busca do que a escolha do banco em si**: a estratégia de **chunking** (como o texto original é dividido antes de virar embedding) — um estudo citado com frequência (Vectara, NAACL 2025) mostrou que a configuração de chunking influencia a qualidade de recuperação tanto quanto ou mais que a escolha do modelo de embedding. O padrão mais robusto pra maioria dos casos é dividir por caractere de forma recursiva, em blocos de 400-512 tokens com 10-20% de sobreposição — mas o ponto mais citado como responsável pela maior parte das falhas reais de recuperação é um chunk perder o contexto ("a receita cresceu 3%" sem saber de qual empresa/trimestre): pesquisa da própria Anthropic sobre contextual retrieval mostrou redução significativa de falha de recuperação ao adicionar contexto ao chunk antes de gerar o embedding, com redução ainda maior quando combinado com um passo de reranking depois da busca inicial.
 
@@ -835,26 +837,26 @@ Conecta direto com a categoria A10 da OWASP 2025 (Seção 9.1) — mensagem de e
 
 Doze princípios, publicados originalmente pela Heroku, que continuam sendo a referência prática mais citada pra aplicação bem-comportada em ambiente de nuvem — os mais aplicáveis hoje, independente de stack:
 
-| Fator | Princípio |
-|---|---|
-| Config | Configuração fica em variável de ambiente, nunca hardcoded ou em arquivo versionado |
-| Dependências | Declaradas explicitamente (lockfile), nunca assumidas como "já instaladas no ambiente" |
-| Paridade dev/prod | Ambiente de desenvolvimento o mais parecido possível com produção (mesma versão de banco, mesmo runtime) |
-| Processos sem estado | Processo da aplicação não guarda estado que não sobreviveria a um restart — estado real vai pra banco/cache externo (isso é o que torna a escalabilidade horizontal da Seção 15.5 possível de verdade) |
-| Logs como stream de evento | A aplicação escreve pra saída padrão; o que faz com o log (arquivo, agregador) é responsabilidade de fora do processo, não da aplicação em si |
-| Descartabilidade | Processo pode subir e morrer rápido, sem processo de boot pesado nem shutdown que perde trabalho em andamento sem tentar salvar |
+| Fator                      | Princípio                                                                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Config                     | Configuração fica em variável de ambiente, nunca hardcoded ou em arquivo versionado                                                                                                                    |
+| Dependências               | Declaradas explicitamente (lockfile), nunca assumidas como "já instaladas no ambiente"                                                                                                                 |
+| Paridade dev/prod          | Ambiente de desenvolvimento o mais parecido possível com produção (mesma versão de banco, mesmo runtime)                                                                                               |
+| Processos sem estado       | Processo da aplicação não guarda estado que não sobreviveria a um restart — estado real vai pra banco/cache externo (isso é o que torna a escalabilidade horizontal da Seção 15.5 possível de verdade) |
+| Logs como stream de evento | A aplicação escreve pra saída padrão; o que faz com o log (arquivo, agregador) é responsabilidade de fora do processo, não da aplicação em si                                                          |
+| Descartabilidade           | Processo pode subir e morrer rápido, sem processo de boot pesado nem shutdown que perde trabalho em andamento sem tentar salvar                                                                        |
 
 ### 17.1 Descartabilidade na Prática: Health Checks e Graceful Shutdown
 
 O fator "Descartabilidade" da tabela acima vira concreto através de dois mecanismos que qualquer orquestrador moderno (Kubernetes, e a maioria das PaaS tipo Railway/Render por trás dos panos) espera:
 
-| Verificação | Pergunta que responde | Efeito quando falha |
-|---|---|---|
-| **Liveness** | O processo está vivo/respondendo? | Reinicia o container |
-| **Readiness** | O processo está pronto pra receber tráfego agora? | Remove da rota de tráfego, sem reiniciar |
-| **Startup** | O processo terminou de inicializar? | Atrasa as outras duas checagens até passar |
+| Verificação   | Pergunta que responde                             | Efeito quando falha                        |
+| ------------- | ------------------------------------------------- | ------------------------------------------ |
+| **Liveness**  | O processo está vivo/respondendo?                 | Reinicia o container                       |
+| **Readiness** | O processo está pronto pra receber tráfego agora? | Remove da rota de tráfego, sem reiniciar   |
+| **Startup**   | O processo terminou de inicializar?               | Atrasa as outras duas checagens até passar |
 
-**O erro mais comum**: fazer o *liveness* checar uma dependência externa (banco, fila) — se o banco cair, isso reinicia a aplicação em loop, o que não resolve nada (reiniciar seu processo não conserta o banco de outra empresa) e ainda faz o problema parecer maior do que é. Dependência externa é assunto do *readiness* (tira de tráfego até normalizar) ou de um endpoint de monitoramento separado — nunca do liveness.
+**O erro mais comum**: fazer o _liveness_ checar uma dependência externa (banco, fila) — se o banco cair, isso reinicia a aplicação em loop, o que não resolve nada (reiniciar seu processo não conserta o banco de outra empresa) e ainda faz o problema parecer maior do que é. Dependência externa é assunto do _readiness_ (tira de tráfego até normalizar) ou de um endpoint de monitoramento separado — nunca do liveness.
 
 **Graceful shutdown**: quando o orquestrador decide encerrar uma instância, ele manda um sinal (`SIGTERM`) antes de forçar (`SIGKILL`) — o processo tem uma janela curta pra parar de aceitar requisição nova, terminar o que já estava em andamento, e só então encerrar de fato. Ignorar `SIGTERM` (ou não dar tempo nenhum pra essa janela) é a causa mais comum de requisição perdida durante deploy — não porque o deploy tem bug, mas porque a aplicação nunca teve a chance de desligar direito.
 
@@ -898,11 +900,11 @@ Dependência desatualizada é a fonte mais comum de vulnerabilidade real em prod
 
 SemVer (19.1) e lockfile (19.2) resolvem risco técnico de dependência; licença resolve um risco diferente, **legal**, que fica invisível até virar problema caro:
 
-| Categoria | Licenças típicas | Obrigação |
-|---|---|---|
-| Permissiva | MIT, BSD, Apache 2.0, ISC | Manter aviso de copyright — sem exigir que o próprio código vire aberto |
-| Copyleft fraco | LGPL, MPL | Só a modificação da própria biblioteca precisa ser aberta, não o projeto inteiro que a usa |
-| Copyleft forte | GPL, **AGPL** | Pode obrigar a abrir o código-fonte do projeto inteiro, dependendo de como a dependência foi vinculada |
+| Categoria      | Licenças típicas          | Obrigação                                                                                              |
+| -------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Permissiva     | MIT, BSD, Apache 2.0, ISC | Manter aviso de copyright — sem exigir que o próprio código vire aberto                                |
+| Copyleft fraco | LGPL, MPL                 | Só a modificação da própria biblioteca precisa ser aberta, não o projeto inteiro que a usa             |
+| Copyleft forte | GPL, **AGPL**             | Pode obrigar a abrir o código-fonte do projeto inteiro, dependendo de como a dependência foi vinculada |
 
 **O caso que mais pega gente de surpresa, especialmente em SaaS**: a maioria das licenças copyleft forte só é acionada por **distribuição** do binário — mas a **AGPL** é acionada também pelo simples fato de um usuário acessar o software **pela rede**, sem nenhuma distribuição acontecer. Isso torna AGPL uma categoria de risco à parte especificamente pra quem constrói SaaS: usar uma dependência AGPL no backend de um produto que roda como serviço pode, na leitura mais rígida da licença, obrigar a abrir o código do produto inteiro — o tipo de coisa que só aparece depois, numa due diligence de investimento ou aquisição, exatamente no pior momento possível pra descobrir.
 
@@ -937,17 +939,17 @@ Injeção clássica (SQL injection, XSS — Seção 9.1, categoria A05) explora 
 
 Defesa em camadas, da mais barata pra mais cara — o mesmo princípio de defesa em profundidade da Seção 9.2, aplicado a esse contexto novo:
 
-| Camada | Custo/latência | O que pega |
-|---|---|---|
-| Filtro heurístico (regex/palavra-chave) | Baixíssimo, ~1ms | Ataque óbvio e não ofuscado |
-| Classificador dedicado (modelo pequeno treinado pra isso) | Baixo, 10-30ms | Ataque parafraseado ou levemente ofuscado |
-| Segunda chamada de LLM avaliando só a intenção do input | Alto, dobra custo/latência da chamada original | Ataque sofisticado, reservado pro caso de mais alto risco |
+| Camada                                                    | Custo/latência                                 | O que pega                                                |
+| --------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| Filtro heurístico (regex/palavra-chave)                   | Baixíssimo, ~1ms                               | Ataque óbvio e não ofuscado                               |
+| Classificador dedicado (modelo pequeno treinado pra isso) | Baixo, 10-30ms                                 | Ataque parafraseado ou levemente ofuscado                 |
+| Segunda chamada de LLM avaliando só a intenção do input   | Alto, dobra custo/latência da chamada original | Ataque sofisticado, reservado pro caso de mais alto risco |
 
 Nenhuma camada sozinha resolve — a mesma lógica de bulkhead/circuit breaker (Seção 11) de "nenhuma proteção única deveria ser a única coisa entre o sistema e a falha" se aplica aqui direto. Vale registrar honestamente: pesquisa recente mostra que guardrail baseado em classificador pode ser contornado por ataque adversarial de propósito — isso não é motivo pra não usar a camada, é motivo pra nunca tratá-la como suficiente sozinha.
 
 ### 20.4 Onde Isso se Conecta com o Resto Deste Documento
 
-Nada disso substitui o que já foi dito antes — só estende: circuit breaker e fallback em cadeia (Seção 11.2/11.4) valem pra chamada de LLM externo tanto quanto pra qualquer outra dependência de rede (e, de novo, é o padrão que a Pandora já implementa — Seção 22); a mensagem de erro genérica pro usuário final (Seção 16.3) importa tanto ou mais quando o "erro interno" pode ser a resposta bruta e não-filtrada de um modelo; e observabilidade (Seção 10, incluindo OpenTelemetry na 10.5) precisa registrar não só se a chamada de LLM teve sucesso técnico, mas o *trace* completo de prompt/contexto/resposta — sem isso, debugar por que um agente tomou uma decisão específica é, na prática, impossível.
+Nada disso substitui o que já foi dito antes — só estende: circuit breaker e fallback em cadeia (Seção 11.2/11.4) valem pra chamada de LLM externo tanto quanto pra qualquer outra dependência de rede (e, de novo, é o padrão que a Pandora já implementa — Seção 22); a mensagem de erro genérica pro usuário final (Seção 16.3) importa tanto ou mais quando o "erro interno" pode ser a resposta bruta e não-filtrada de um modelo; e observabilidade (Seção 10, incluindo OpenTelemetry na 10.5) precisa registrar não só se a chamada de LLM teve sucesso técnico, mas o _trace_ completo de prompt/contexto/resposta — sem isso, debugar por que um agente tomou uma decisão específica é, na prática, impossível.
 
 ### 20.5 Human-in-the-Loop: Pausar Pra Aprovação Antes de Agir
 
@@ -973,6 +975,7 @@ Em vez de só listar princípio, isso constrói uma feature do zero — **endpoi
 POST /v1/subscriptions/{id}/cancel
 Idempotency-Key: <uuid gerado pelo cliente>
 ```
+
 `POST` porque cancelamento é uma ação, não substituição de estado completo — mas com chave de idempotência explícita (Seção 11.1/14.1) porque o cliente pode reenviar em caso de timeout, e cancelar duas vezes não pode gerar efeito colateral duplicado (ex.: dois emails de confirmação, ou reembolso duplicado).
 
 ### 21.2 Onde a Lógica Mora (Seção 4.3, Portas e Adaptadores)
@@ -980,26 +983,26 @@ Idempotency-Key: <uuid gerado pelo cliente>
 ```ts
 // Núcleo de domínio — não importa nada de Express, Stripe, ou banco específico
 interface RepositorioAssinatura {
-  buscarPorId(id: string): Promise<Assinatura | null>;
-  salvar(assinatura: Assinatura): Promise<void>;
+    buscarPorId(id: string): Promise<Assinatura | null>;
+    salvar(assinatura: Assinatura): Promise<void>;
 }
 interface ProvedorPagamento {
-  cancelarCobrancaRecorrente(idExterno: string): Promise<void>;
+    cancelarCobrancaRecorrente(idExterno: string): Promise<void>;
 }
 
 async function cancelarAssinatura(
-  id: string,
-  repo: RepositorioAssinatura,
-  pagamento: ProvedorPagamento
+    id: string,
+    repo: RepositorioAssinatura,
+    pagamento: ProvedorPagamento
 ): Promise<Resultado<void, ErroDominio>> {
-  const assinatura = await repo.buscarPorId(id);
-  if (!assinatura) return erro("ASSINATURA_NAO_ENCONTRADA");
-  if (assinatura.status === "cancelada") return sucesso(undefined); // idempotente por natureza do domínio
+    const assinatura = await repo.buscarPorId(id);
+    if (!assinatura) return erro("ASSINATURA_NAO_ENCONTRADA");
+    if (assinatura.status === "cancelada") return sucesso(undefined); // idempotente por natureza do domínio
 
-  await pagamento.cancelarCobrancaRecorrente(assinatura.idExterno);
-  assinatura.status = "cancelada";
-  await repo.salvar(assinatura);
-  return sucesso(undefined);
+    await pagamento.cancelarCobrancaRecorrente(assinatura.idExterno);
+    assinatura.status = "cancelada";
+    await repo.salvar(assinatura);
+    return sucesso(undefined);
 }
 ```
 
@@ -1029,15 +1032,16 @@ logger.info("cancelamento_assinatura_iniciado", { assinaturaId: id, usuarioId })
 logger.info("cancelamento_assinatura_concluido", { assinaturaId: id, duracaoMs });
 metrica.incrementar("assinaturas_canceladas_total");
 ```
+
 Log estruturado (campos nomeados, não string interpolada) — permite consultar "quantos cancelamentos falharam por usuário X" sem parsing de texto livre.
 
 ### 21.8 Testes (Seção 5)
 
-| Tamanho | O que testa aqui |
-|---|---|
-| Small (unidade) | `cancelarAssinatura` com repositório e provedor de pagamento **fake** — testa a lógica de decisão isolada, roda em milissegundos |
+| Tamanho             | O que testa aqui                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Small (unidade)     | `cancelarAssinatura` com repositório e provedor de pagamento **fake** — testa a lógica de decisão isolada, roda em milissegundos                                                                                   |
 | Medium (integração) | O endpoint HTTP completo contra um banco de dados real em container, provedor de pagamento mockado, **incluindo um teste específico de duas chamadas concorrentes com a mesma chave de idempotência** (Seção 21.4) |
-| Large (E2E) | Um teste, não muitos: o fluxo completo contra ambiente de staging real, incluindo o provedor de pagamento em modo sandbox |
+| Large (E2E)         | Um teste, não muitos: o fluxo completo contra ambiente de staging real, incluindo o provedor de pagamento em modo sandbox                                                                                          |
 
 ### 21.9 Git e CI (Seções 6, 8)
 
@@ -1049,6 +1053,7 @@ Cancellation order: external provider first, then local state,
 to avoid marking cancelled locally while still being charged
 if the provider call fails.
 ```
+
 PR pequeno, só essa feature — revisão focada em lógica de negócio e no motivo da ordem de operações (que o corpo do commit já explica, Seção 6.2), não em debate de formatação (já resolvido por linter automatizado). Nenhuma cerimônia de estimativa (Seção 7) precisou acontecer pra essa feature específica ser priorizada e entregue — a decisão de fazer agora veio de conversa direta com quem pediu, não de um ritual de planejamento de sprint.
 
 ### 21.10 O Que Ficou Provado
@@ -1057,9 +1062,7 @@ Uma feature de escopo modesto tocou API design, arquitetura, segurança, concorr
 
 ---
 
-## 22. Aplicação a Projetos Reais
-
-### 22.1 Projeto Pandora
+## 22. Aplicação ao Projeto Pandora
 
 O monorepo TypeScript da Pandora já reflete boa parte deste documento sem ter sido formalizado nesses termos: fallback em cadeia multi-provedor (Seção 11.4), migrations versionadas via Prisma (Seção 15.1), Turborepo como estrutura de monolito modular por pacotes (Seção 4.1) em vez de microsserviços prematuros, e um histórico de revisão que já funciona quase como uma série de postmortems/ADRs informais (Seções 10.4/18.2) — cada entrada registra contexto, causa raiz e decisão, só falta o formato dedicado.
 
@@ -1067,22 +1070,7 @@ O monorepo TypeScript da Pandora já reflete boa parte deste documento sem ter s
 
 **Atualização (Rodada 3)**: com Turborepo já estruturando o monorepo em pacotes (Seção 4.1), contract testing (Seção 5.5) vira relevante no momento em que algum desses pacotes internos passar a ser consumido por mais de um serviço/deploy separado — não faz sentido enquanto tudo builda e deploya junto. E como o pipeline já roda via GitHub Actions com deploy no Railway, DORA metrics (Seção 8.4) são extraíveis hoje sem ferramenta nova: lead time já está implícito no histórico de commit até deploy, e change failure rate só precisa de um jeito consistente de marcar, no changelog, quando uma versão foi revertida ou corrigida às pressas.
 
-### 22.2 Aplicação ao Projeto Estufa 01 (dashboard IoT com controlo de atuadores)
-
-O Estufa 01 (TCC — monitorização e controlo de estufa agrícola) é um bom caso de estudo de como o núcleo deste documento se aplica a um projeto **pequeno, pessoal e full-stack + firmware**, sem exagerar processo:
-
-- **Monolito modular (Seção 4.1)**: `server.js` (dev local) + `api/*.js` (Vercel serverless) partilham `lib/` — fronteiras claras sem decompor em serviços; o exemplo bate na tabela da 4.1 (time de 1 pessoa, produto < 1 ano → monolito modular).
-- **Defesa em profundidade no controlo ativo (Seção 9.2)**: `/api/control` tem três camadas — autenticação (`requireAuthApi`), validação de entrada no servidor (`actuator`/`action` contra allow-list), e isolamento por rede (broker MQTT só alcançável na LAN da estufa). A ausência de rate-limit próprio nessa rota é uma dívida consciente e registrada (BLUEPRINT §14.1), não esquecimento — alinha com a 2.4 (dívida documentada é gerenciável).
-- **Fail-fast e mensagens de erro seguras (Seções 16.1/16.3)**: erros seguem RFC 9457 via `sendProblem()` — o usuário vê "Broker MQTT local indisponível", nunca stack trace ou URI interna; o detalhe vai pro log estruturado.
-- **Stubs honestos (Seção 16.1)**: em Vercel, `/api/control` devolve **503** explícito em vez de fingir sucesso ou falhar com timeout — o frontend trata o caso e mostra mensagem amigável (princípio "falhar graciosamente" do próprio blueprint).
-- **Restrição de arquitetura por ambiente (Seção 28.3, serverless vs. sempre-ativo)**: a decisão de fazer controlo só local não é limitação acidental — serverless não alcança broker MQTT na LAN; registrar isso como não-objetivo (BLUEPRINT §1.4) é o equivalente a um ADR de escopo.
-- **Segredo em ficheiro não versionado (Seção 9.2/9.10)**: o firmware `.ino` (credenciais WiFi) está no `.gitignore` — trade-off aceite: sem versionamento não há histórico nem CI de compilação, risco registrado em "Pendências conhecidas".
-- **MQTT com padrão de tópico hierárquico e QoS 1 (Seção 29.5)**: `fazenda/<estufa>/atuador/<id>/comando`, QoS 1 nos subscribes — comando de atuador não tolera perda (ao contrário de leitura de sensor, QoS 0 aceitável).
-- **Idempotência no atuador (Seção 11.1)**: os handlers do ESP32 são idempotentes por construção — receber `{"command":"ON"}` duas vezes não duplica efeito (relé já estava em ON); e **não re-publicam** no próprio tópico subscrito, evitando loop pub/sub (o bug clássico de quem subscreve o tópico em que publica).
-- **Testes no tamanho certo (Seção 5)**: 38 testes `node:test` em camadas Small/Medium (validadores, errors, resiliência ThingSpeak, rotas HTTP sem DB real) — proporção adequada pra projeto deste porte; o que não se testa (UI do slider, firmware) está consciente, não é dívida silenciosa.
-- **Separação de privilégios entre páginas (Seções 9.2/9.3 — menor privilégio aplicado ao frontend)**: o dashboard público (`dashboard.html`) é **estritamente de leitura** e não carrega o script de comando; o envio de comandos vive exclusivamente em `admin.html` (autenticado). Esconder o botão não é a defesa — `/api/control` continua a exigir `requireAuthApi` — mas remover o código de comando da página pública elimina a superfície de ataque por completo (não há função para invocar a partir do console do browser), o que é defesa em profundidade sobre uma rota que **não** tem rate-limit próprio.
-- **Reuso de código sem sistema de módulos (Seção 3 — DRY onde compensa)**: a extração de `script.js` para `js/sensor.js` (fetch + render, partilhado por dashboard e admin) evita duplicar o mapeamento `field1-8`, mas sem `import/export` — porque o mesmo código corre em browser, Electron e Capacitor, e ESM quebraria o `node --check` e a compatibilidade. O preço pago: tudo vive no escopo global, e um `const`/`function` declarado em dois ficheiros carregados juntos gera `SyntaxError` que **`node --check` não apanha** (cada ficheiro é válido isoladamente). Verificado com um check explícito de colisão de identificadores entre os três ficheiros (sensor/script/control): zero sobreposições. Fica registado como a armadilha real desse padrão — a regra dos três justificou a extração, a falta de módulos só obriga a verificar colisões no build.
-- **Conventional Commits (Seção 6.2)** e histórico de revisão do blueprint funcionando como ADRs retroativos informais (Seção 18.2) — material pronto pra formalizar se o projeto crescer.
+**Atualização (v2.23.0 — memória Qdrant):** a Pandora usa Qdrant como índice semântico reconstruível para L1–L5, mantendo PostgreSQL como fonte de verdade. O indexador agrupa embeddings, limita retries, reindexa no arranque e valida resultados contra o PostgreSQL; filtros impedem mistura entre guilds/utilizadores e expiração devolve ao fallback. Qdrant é externo e opcional: `QDRANT_URL` ausente mantém o sistema funcional com PostgreSQL + cálculo local. Conteúdo de DM nunca é indexado.
 
 ---
 
@@ -1115,15 +1103,15 @@ O Estufa 01 (TCC — monitorização e controlo de estufa agrícola) é um bom c
 
 ## 24. Fontes e Leituras Principais
 
-- Martin, R. C. — *Clean Code*; críticas contemporâneas de engenheiros seniores sobre abstração excessiva e conteúdo datado
+- Martin, R. C. — _Clean Code_; críticas contemporâneas de engenheiros seniores sobre abstração excessiva e conteúdo datado
 - Metz, S. — princípio de que duplicação é mais barata que abstração errada
 - Cunningham, W. — metáfora original de dívida técnica; Fowler, M. — catálogo de refatoração e arquitetura evolutiva ("monolito primeiro", padrão Strangler Fig)
 - Evans, E. — Domain-Driven Design
 - Cockburn, A. — Arquitetura Hexagonal (Portas e Adaptadores)
 - Cohn, M. — Pirâmide de Testes original
-- *Software Engineering at Google* — modelo de tamanho de teste Small/Medium/Large, tensão hermeticidade vs. fidelidade
+- _Software Engineering at Google_ — modelo de tamanho de teste Small/Medium/Large, tensão hermeticidade vs. fidelidade
 - Schwaber, K. e Sutherland, J. — Scrum original; crítica contemporânea de "agile theater" e custo de estimativa por pontos
-- Nygard, M. — *Release It!*, origem do padrão Circuit Breaker
+- Nygard, M. — _Release It!_, origem do padrão Circuit Breaker
 - Google SRE Book — prática de postmortem sem culpa
 - Karlton, P. — "os dois problemas difíceis da ciência da computação" (cache e nomenclatura)
 - Knuth, D. — "otimização prematura é a raiz de todo mal"
@@ -1132,9 +1120,9 @@ O Estufa 01 (TCC — monitorização e controlo de estufa agrícola) é um bom c
 - Conway, M. — Lei de Conway
 - RFC 9457 (Problem Details for HTTP APIs), RFC 10008 (método QUERY)
 - Fielding, R. — dissertação original definindo REST
-- DORA (DevOps Research and Assessment) / Forsgren, N., Humble, J., Kim, G. — *Accelerate*, origem das quatro (hoje cinco) métricas de performance de entrega
+- DORA (DevOps Research and Assessment) / Forsgren, N., Humble, J., Kim, G. — _Accelerate_, origem das quatro (hoje cinco) métricas de performance de entrega
 - CNCF — OpenTelemetry (padrão de observabilidade), Backstage (referência de Internal Developer Platform)
-- Rosenthal, C. e Jones, N. — *Chaos Engineering* (O'Reilly), Principles of Chaos Engineering
+- Rosenthal, C. e Jones, N. — _Chaos Engineering_ (O'Reilly), Principles of Chaos Engineering
 - Pact Foundation — especificação de contract testing consumer-driven
 - CISA / OWASP / SLSA.dev — SBOM (Minimum Elements 2026) e Supply-chain Levels for Software Artifacts
 - Brasil — Lei 13.709/2018 (LGPD), Art. 46; ANPD — orientações de Privacy by Design/Default
@@ -1158,12 +1146,12 @@ Dois desenvolvimentos genuinamente arquiteturais estão mudando frontend em 2026
 
 O consenso que se firmou em 2026, depois de anos de "qual biblioteca de estado usar": a pergunta certa não é "qual ferramenta", é **"qual camada"** — cada tipo de estado tem uma ferramenta que se encaixa nele, e forçar tudo pra uma única ferramenta genérica (o erro clássico da era Redux-pra-tudo) cria complexidade, não reduz:
 
-| Tipo de estado | Exemplo | Ferramenta que se encaixa |
-|---|---|---|
-| UI local, efêmero | Modal aberto/fechado, aba selecionada | `useState`/equivalente local — nada mais é necessário |
-| Estado de servidor (dado remoto) | Resultado de API, lista paginada | TanStack Query ou equivalente — trata cache, loading, erro e revalidação como parte do modelo, não como código manual |
-| Estado de cliente compartilhado entre componentes distantes | Tema, sessão de usuário, sidebar aberta globalmente | Zustand ou Context (só quando o valor muda raramente) |
-| Formulário | Validação, campo tocado/sujo | React Hook Form ou equivalente dedicado |
+| Tipo de estado                                              | Exemplo                                             | Ferramenta que se encaixa                                                                                             |
+| ----------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| UI local, efêmero                                           | Modal aberto/fechado, aba selecionada               | `useState`/equivalente local — nada mais é necessário                                                                 |
+| Estado de servidor (dado remoto)                            | Resultado de API, lista paginada                    | TanStack Query ou equivalente — trata cache, loading, erro e revalidação como parte do modelo, não como código manual |
+| Estado de cliente compartilhado entre componentes distantes | Tema, sessão de usuário, sidebar aberta globalmente | Zustand ou Context (só quando o valor muda raramente)                                                                 |
+| Formulário                                                  | Validação, campo tocado/sujo                        | React Hook Form ou equivalente dedicado                                                                               |
 
 **A armadilha específica do Context que gera bug de "painel não atualiza" ou "atualiza demais"**: Context re-renderiza **todo consumidor** sempre que qualquer parte do valor muda, mesmo que o consumidor só leia uma fatia — pra um valor simples (tema) isso não importa; pra um objeto de estado com muitos campos (status de conexão, várias métricas), colocar tudo num Context só e mudar qualquer campo dispara re-render de todo componente que consome, incluindo os que não usam o campo que mudou. **O padrão de bug mais comum quando um painel de status não reflete o estado real** é justamente estado de servidor/tempo-real (Seção 26) sendo gerenciado como se fosse estado de UI local — um valor que chega de fora (WebSocket, polling) precisa de um mecanismo que sabe re-renderizar quando o dado externo muda, não de um `useState` que só é atualizado se algum evento dentro do próprio componente disparar isso.
 
@@ -1171,11 +1159,11 @@ O consenso que se firmou em 2026, depois de anos de "qual biblioteca de estado u
 
 Google mede experiência real de usuário através de três métricas, medidas no p75 (75º percentil) de usuário real, não em laboratório:
 
-| Métrica | Mede | Meta |
-|---|---|---|
-| **LCP** (Largest Contentful Paint) | Tempo até o maior elemento visível renderizar | < 2,5s |
+| Métrica                             | Mede                                                                                                                              | Meta    |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| **LCP** (Largest Contentful Paint)  | Tempo até o maior elemento visível renderizar                                                                                     | < 2,5s  |
 | **INP** (Interaction to Next Paint) | Latência da pior interação (clique, toque) da sessão inteira — substituiu o antigo FID em 2024, que só media a primeira interação | < 200ms |
-| **CLS** (Cumulative Layout Shift) | Quanto elemento se move na tela depois do carregamento inicial | < 0,1 |
+| **CLS** (Cumulative Layout Shift)   | Quanto elemento se move na tela depois do carregamento inicial                                                                    | < 0,1   |
 
 Corrigir INP normalmente significa cortar trabalho bloqueando a thread principal — dividir tarefa longa em pedaços menores, mover cálculo pesado pra fora do caminho crítico de resposta ao clique — o mesmo princípio de "não bloquear o event loop" já discutido na Seção 12.4, só que aplicado ao thread de UI em vez de ao servidor.
 
@@ -1193,11 +1181,11 @@ O padrão de referência é o **WCAG 2.2**, publicado pelo W3C — 86 critérios
 
 ### 26.1 WebSocket vs. Server-Sent Events (SSE) vs. Long-Polling
 
-| Protocolo | Direção | Quando escolher |
-|---|---|---|
-| WebSocket | Bidirecional, full-duplex | Cliente precisa mandar dado com a mesma frequência que recebe (chat, jogo, colaboração ao vivo) |
-| SSE | Servidor → cliente, unidirecional | Cliente só recebe atualização (feed de notificação, progresso de job, painel de status) — infraestrutura HTTP padrão funciona sem adaptação |
-| Long-polling | Requisição HTTP normal, mantida aberta até ter resposta | Fallback quando nem WebSocket nem SSE estão disponíveis (raro em 2026, mas ainda existe atrás de proxy corporativo restritivo) |
+| Protocolo    | Direção                                                 | Quando escolher                                                                                                                             |
+| ------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| WebSocket    | Bidirecional, full-duplex                               | Cliente precisa mandar dado com a mesma frequência que recebe (chat, jogo, colaboração ao vivo)                                             |
+| SSE          | Servidor → cliente, unidirecional                       | Cliente só recebe atualização (feed de notificação, progresso de job, painel de status) — infraestrutura HTTP padrão funciona sem adaptação |
+| Long-polling | Requisição HTTP normal, mantida aberta até ter resposta | Fallback quando nem WebSocket nem SSE estão disponíveis (raro em 2026, mas ainda existe atrás de proxy corporativo restritivo)              |
 
 SSE tem uma vantagem estrutural fácil de esquecer: reconexão automática do navegador já embutida no protocolo, com header `Last-Event-ID` — o servidor sabe exatamente de onde retomar sem precisar de lógica própria de "onde eu parei". WebSocket não tem esse mecanismo por padrão — é responsabilidade da aplicação implementar.
 
@@ -1207,7 +1195,7 @@ Os mesmos princípios de retry da Seção 11.1 (backoff exponencial com jitter) 
 
 ### 26.3 Escalar Conexão com Estado: o Problema Que REST Não Tem
 
-Uma API REST comum (Seção 14) é stateless — qualquer instância do servidor responde qualquer requisição, o que é exatamente o que torna a escalabilidade horizontal da Seção 15.5 simples. Conexão persistente quebra essa premissa: o cliente A está *fisicamente conectado* a uma instância de servidor específica — se o dado que ele precisa receber chega numa instância diferente, essa instância não tem como entregar direto pro socket do cliente A, que nem está aberto ali.
+Uma API REST comum (Seção 14) é stateless — qualquer instância do servidor responde qualquer requisição, o que é exatamente o que torna a escalabilidade horizontal da Seção 15.5 simples. Conexão persistente quebra essa premissa: o cliente A está _fisicamente conectado_ a uma instância de servidor específica — se o dado que ele precisa receber chega numa instância diferente, essa instância não tem como entregar direto pro socket do cliente A, que nem está aberto ali.
 
 **A solução padrão da indústria**: um backplane de pub/sub (tipicamente Redis) entre as instâncias — cada instância publica evento relevante no canal compartilhado, e cada instância assina os canais que tem cliente conectado interessado, retransmitindo pro socket local. Isso desacopla "onde o evento aconteceu" de "quem precisa recebê-lo".
 
@@ -1243,12 +1231,12 @@ O custo real de i18n não é traduzir string — é retrofitting: um projeto que
 
 Chamada de LLM cobra por token, e diferente de infraestrutura tradicional (onde o teto de custo é aproximadamente previsível pelo número de servidor contratado), um bug ou abuso pode gerar custo que escala com uso de um jeito que só aparece na fatura no fim do mês. Alavancas concretas, em ordem de impacto:
 
-| Alavanca | Como funciona | Onde já se conecta neste documento |
-|---|---|---|
-| Roteamento por tarefa | Modelo barato pra tarefa simples (classificação, extração), modelo caro só quando a tarefa genuinamente exige — a diferença de preço entre tiers frequentemente passa de 10x | Mesma lógica do fallback em cadeia (Seção 11.4), só que o critério de escolha é custo/complexidade da tarefa, não disponibilidade |
-| Cache de prompt | Provedor cobra até 50% menos por conteúdo de prompt repetido (ex.: instrução de sistema fixa) — desde que a estrutura do prompt seja estável o bastante pra bater no cache | Extensão direta do princípio de cache da Seção 13, aplicado a custo em vez de latência |
-| Limite de token de saída | Resposta de IA custa tipicamente ~4x mais por token de saída que de entrada — impor `max_tokens` e formato de saída restrito (JSON, ferramenta) evita resposta verbosa custando sem necessidade | — |
-| Rate limit no seu próprio uso de API externa | O mesmo mecanismo da Seção 14.2, só que invertido: em vez de proteger sua API de abuso de fora, protege seu orçamento de uma chamada em loop/bug interno gerando volume descontrolado contra a API de terceiro que você paga por uso | Seção 14.2 |
+| Alavanca                                     | Como funciona                                                                                                                                                                                                                        | Onde já se conecta neste documento                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Roteamento por tarefa                        | Modelo barato pra tarefa simples (classificação, extração), modelo caro só quando a tarefa genuinamente exige — a diferença de preço entre tiers frequentemente passa de 10x                                                         | Mesma lógica do fallback em cadeia (Seção 11.4), só que o critério de escolha é custo/complexidade da tarefa, não disponibilidade |
+| Cache de prompt                              | Provedor cobra até 50% menos por conteúdo de prompt repetido (ex.: instrução de sistema fixa) — desde que a estrutura do prompt seja estável o bastante pra bater no cache                                                           | Extensão direta do princípio de cache da Seção 13, aplicado a custo em vez de latência                                            |
+| Limite de token de saída                     | Resposta de IA custa tipicamente ~4x mais por token de saída que de entrada — impor `max_tokens` e formato de saída restrito (JSON, ferramenta) evita resposta verbosa custando sem necessidade                                      | —                                                                                                                                 |
+| Rate limit no seu próprio uso de API externa | O mesmo mecanismo da Seção 14.2, só que invertido: em vez de proteger sua API de abuso de fora, protege seu orçamento de uma chamada em loop/bug interno gerando volume descontrolado contra a API de terceiro que você paga por uso | Seção 14.2                                                                                                                        |
 
 ### 28.2 Cache Como Alavanca de Custo, Não Só de Latência
 
@@ -1256,11 +1244,11 @@ A Seção 13 trata cache como resposta pra "está lento" — mas em contexto de 
 
 ### 28.3 Serverless vs. Sempre-Ativo: a Decisão Muda com o Perfil de Tráfego
 
-| Sinal | Aponta pra |
-|---|---|
-| Tráfego esporádico, orientado a evento (webhook, job agendado, processamento assíncrono) | Serverless — paga só pelo que usa, cold start é aceitável quando não é o caminho crítico |
-| Tráfego constante, ou conexão persistente (gateway de Discord, WebSocket — Seção 26) | Sempre-ativo — serverless nesse caso não economiza (a instância efetivamente fica "quente" o tempo todo pra evitar cold start, o que na prática é pagar por hospedagem sempre-ativa com passos extras) |
-| Latência crítica (sub-200ms) | Sempre-ativo, ou concorrência provisionada — mas concorrência provisionada é pagar pela prontidão mesmo sem uso, o que reintroduz parte do custo fixo que serverless prometia eliminar |
+| Sinal                                                                                    | Aponta pra                                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tráfego esporádico, orientado a evento (webhook, job agendado, processamento assíncrono) | Serverless — paga só pelo que usa, cold start é aceitável quando não é o caminho crítico                                                                                                               |
+| Tráfego constante, ou conexão persistente (gateway de Discord, WebSocket — Seção 26)     | Sempre-ativo — serverless nesse caso não economiza (a instância efetivamente fica "quente" o tempo todo pra evitar cold start, o que na prática é pagar por hospedagem sempre-ativa com passos extras) |
+| Latência crítica (sub-200ms)                                                             | Sempre-ativo, ou concorrência provisionada — mas concorrência provisionada é pagar pela prontidão mesmo sem uso, o que reintroduz parte do custo fixo que serverless prometia eliminar                 |
 
 O erro mais comum: escolher serverless pelo modelo de custo sem checar se o perfil de tráfego real se encaixa — um bot de Discord com gateway persistente é exatamente o caso onde serverless não serve, independente de preço por invocação parecer atraente na teoria.
 
@@ -1274,10 +1262,10 @@ O erro mais comum: escolher serverless pelo modelo de custo sem checar se o perf
 
 O termo "tempo real" é usado de forma solta na conversa comum ("chat em tempo real"); em engenharia embarcada tem definição estrita: um sistema de tempo real garante que uma tarefa termina **dentro de um prazo específico**, não que termina rápido em média.
 
-| Tipo | O que significa perder o prazo | Exemplo |
-|---|---|---|
+| Tipo               | O que significa perder o prazo                                             | Exemplo                                           |
+| ------------------ | -------------------------------------------------------------------------- | ------------------------------------------------- |
 | **Hard real-time** | Falha catastrófica — perder o prazo é uma falha do sistema, não degradação | Airbag, marca-passo, controle de motor industrial |
-| **Soft real-time** | Degrada a experiência, não quebra o sistema | Streaming de vídeo, jogo |
+| **Soft real-time** | Degrada a experiência, não quebra o sistema                                | Streaming de vídeo, jogo                          |
 
 Um sistema operacional de propósito geral (Linux/Windows desktop) otimiza pra **throughput médio** e usa escalonamento que prioriza justiça entre processo — exatamente o oposto do que tempo real exige, que é previsibilidade garantida do pior caso, mesmo que o throughput médio seja menor.
 
@@ -1285,10 +1273,10 @@ Um sistema operacional de propósito geral (Linux/Windows desktop) otimiza pra *
 
 Um **RTOS** (Real-Time Operating System — FreeRTOS, Zephyr são as referências dominantes) troca a escalabilidade e a riqueza de recurso de um SO de propósito geral por escalonamento **preemptivo por prioridade** com tempo de resposta garantido. A escolha entre os dois principais:
 
-| RTOS | Perfil |
-|---|---|
-| **FreeRTOS** | Minimalista, footprint pequeno, controle de baixo nível — melhor quando o microcontrolador é genuinamente restrito e o projeto não precisa de pilha de conectividade/segurança pronta |
-| **Zephyr** | Mais completo (conectividade, segurança, portabilidade entre família de chip), mantido pela Linux Foundation — melhor quando o projeto tem requisito além de só escalonamento (rede, atualização segura de firmware, múltiplas placas ao longo do tempo) |
+| RTOS         | Perfil                                                                                                                                                                                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **FreeRTOS** | Minimalista, footprint pequeno, controle de baixo nível — melhor quando o microcontrolador é genuinamente restrito e o projeto não precisa de pilha de conectividade/segurança pronta                                                                    |
+| **Zephyr**   | Mais completo (conectividade, segurança, portabilidade entre família de chip), mantido pela Linux Foundation — melhor quando o projeto tem requisito além de só escalonamento (rede, atualização segura de firmware, múltiplas placas ao longo do tempo) |
 
 ### 29.3 Restrição de Memória: Programar Sem Alocação Dinâmica
 
@@ -1379,10 +1367,10 @@ TLS 1.3 (a versão de referência hoje — TLS 1.0 e 1.1 foram formalmente desco
 
 ### 33.2 Balanceamento de Carga: Camada 4 vs. Camada 7
 
-| Camada | O que enxerga | Uso típico |
-|---|---|---|
-| **L4** (transporte — IP e porta) | Só endereço e porta, nunca o conteúdo HTTP | Mais rápido, cego a conteúdo — protocolo não-HTTP, ou exigência extrema de performance |
-| **L7** (aplicação — entende HTTP) | Path, header, cookie, corpo da requisição | Escolha padrão pra aplicação web — permite roteamento por path (`/api/*` pra um grupo de servidor, `/static/*` pra outro), terminação de TLS, e manipulação de header |
+| Camada                            | O que enxerga                              | Uso típico                                                                                                                                                            |
+| --------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **L4** (transporte — IP e porta)  | Só endereço e porta, nunca o conteúdo HTTP | Mais rápido, cego a conteúdo — protocolo não-HTTP, ou exigência extrema de performance                                                                                |
+| **L7** (aplicação — entende HTTP) | Path, header, cookie, corpo da requisição  | Escolha padrão pra aplicação web — permite roteamento por path (`/api/*` pra um grupo de servidor, `/static/*` pra outro), terminação de TLS, e manipulação de header |
 
 Algoritmo de distribuição, dentro de qualquer uma das camadas: **round-robin** (sequencial, simples, funciona bem com servidor homogêneo), **round-robin ponderado** (servidor com mais capacidade recebe proporcionalmente mais), **least connections** (manda pro servidor com menos conexão ativa agora — melhor quando o tempo de processamento da requisição varia bastante), **IP hash** (mesmo cliente sempre cai no mesmo servidor — a versão de balanceador do problema de sessão fixa da Seção 26.3, com a mesma armadilha).
 
@@ -1434,11 +1422,11 @@ A diferença central: código não degrada sozinho (o mesmo binário se comporta
 
 ### 36.2 As Três Peças Que Fecham o Ciclo
 
-| Peça | Resolve | Por que sem ela dói |
-|---|---|---|
-| **Versionamento de dado** (DVC ou equivalente) | Dataset de treino muda de tamanho de um jeito que Git não foi desenhado pra versionar | Sem isso, reproduzir exatamente o modelo de 3 meses atrás é impossível |
-| **Feature Store** | Repositório central de feature computada, compartilhado entre treino e serviço em produção | Sem isso, o erro mais caro de MLOps: **training/serving skew** — o modelo treinado com uma definição de feature vê uma definição ligeiramente diferente em produção, e erra de um jeito que não aparece em teste offline |
-| **Registro de Modelo** (MLflow ou equivalente) | Fonte única de verdade sobre qual versão de modelo está em produção agora, com metadado de linhagem (dado, métrica, código que gerou) | Desacopla o serviço que serve predição do processo de treino — trocar o modelo em produção vira re-marcar uma tag no registro, não redeploy de código, e rollback é instantâneo pelo mesmo motivo |
+| Peça                                           | Resolve                                                                                                                               | Por que sem ela dói                                                                                                                                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Versionamento de dado** (DVC ou equivalente) | Dataset de treino muda de tamanho de um jeito que Git não foi desenhado pra versionar                                                 | Sem isso, reproduzir exatamente o modelo de 3 meses atrás é impossível                                                                                                                                                   |
+| **Feature Store**                              | Repositório central de feature computada, compartilhado entre treino e serviço em produção                                            | Sem isso, o erro mais caro de MLOps: **training/serving skew** — o modelo treinado com uma definição de feature vê uma definição ligeiramente diferente em produção, e erra de um jeito que não aparece em teste offline |
+| **Registro de Modelo** (MLflow ou equivalente) | Fonte única de verdade sobre qual versão de modelo está em produção agora, com metadado de linhagem (dado, métrica, código que gerou) | Desacopla o serviço que serve predição do processo de treino — trocar o modelo em produção vira re-marcar uma tag no registro, não redeploy de código, e rollback é instantâneo pelo mesmo motivo                        |
 
 **Conexão com este documento**: o mesmo princípio de observabilidade da Seção 10 se aplica, com uma métrica a mais que software tradicional não tem — acurácia/drift do modelo em produção precisa de monitoramento contínuo próprio, porque "o serviço está no ar e respondendo rápido" não significa "o modelo ainda está certo".
 
@@ -1450,11 +1438,11 @@ A diferença central: código não degrada sozinho (o mesmo binário se comporta
 
 ### 37.1 Escolha de Motor: Licença Já é Parte Técnica da Decisão, Não Só Comercial
 
-| Motor | Ponto forte | Licença/custo (2026) |
-|---|---|---|
-| **Unity** | Domina mobile (mais de 70% de share nesse segmento) e é o caminho mais rápido pra 2D/indie em PC — maior comunidade e maior loja de asset | Grátis até US$200 mil de receita, depois assinatura Pro |
-| **Unreal Engine 5** | Referência em fidelidade visual 3D e VR/AR — ferramenta de produção madura pra projeto grande (World Partition, Sequencer) | Grátis até US$1 milhão de receita, depois 5% de royalty — na prática grátis pra maioria dos projetos indie |
-| **Godot** | Posição de licenciamento mais limpa de todas — MIT, sem taxa, sem royalty, sem telemetria, com o código-fonte disponível pra fork | Totalmente gratuito |
+| Motor               | Ponto forte                                                                                                                               | Licença/custo (2026)                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Unity**           | Domina mobile (mais de 70% de share nesse segmento) e é o caminho mais rápido pra 2D/indie em PC — maior comunidade e maior loja de asset | Grátis até US$200 mil de receita, depois assinatura Pro                                                    |
+| **Unreal Engine 5** | Referência em fidelidade visual 3D e VR/AR — ferramenta de produção madura pra projeto grande (World Partition, Sequencer)                | Grátis até US$1 milhão de receita, depois 5% de royalty — na prática grátis pra maioria dos projetos indie |
+| **Godot**           | Posição de licenciamento mais limpa de todas — MIT, sem taxa, sem royalty, sem telemetria, com o código-fonte disponível pra fork         | Totalmente gratuito                                                                                        |
 
 **O episódio que ainda pesa na decisão**: em 2023, a Unity anunciou (e depois recuou) uma taxa cobrada por instalação do jogo, independente de receita — o suficiente pra mudar de forma duradoura como desenvolvedor indie avalia risco de plataforma antes de comprometer um projeto multi-ano a um motor específico. Foi o principal impulsionador do crescimento acelerado do Godot desde então (de ~3% pra 8-10% dos lançamentos novos na Steam em cerca de dois anos) — o mesmo tipo de risco de dependência de licença já discutido na Seção 19.4, só que aplicado à ferramenta de desenvolvimento em si, não a uma biblioteca dentro do projeto.
 
@@ -1501,67 +1489,67 @@ Comando que apaga ou altera de forma irreversível deveria pedir confirmação e
 
 > Este documento acumulou dezenas de sigla ao longo de 39 seções — cada uma é explicada no lugar onde aparece pela primeira vez, mas nem sempre dá pra lembrar onde foi. Ordem alfabética, definição de uma linha, com a seção onde a sigla é explicada em profundidade.
 
-| Sigla | Significado | Onde aprofundar |
-|---|---|---|
-| a11y | Acessibilidade (accessibility — "a" + 11 letras + "y") | 25.4 |
-| ACID | Atomicity, Consistency, Isolation, Durability — garantias de transação de banco | 15.3, 15.7 |
-| ADR | Architecture Decision Record | 18.2 |
-| BFF | Backend-for-Frontend | 14.6 |
-| CAP | Consistência, Disponibilidade, Tolerância a Partição (teorema) | 15.7 |
-| CDN | Content Delivery Network | 33.3 |
-| CI/CD | Continuous Integration / Continuous Deployment | 8 |
-| CLS | Cumulative Layout Shift (Core Web Vitals) | 25.3 |
-| CQRS | Command Query Responsibility Segregation | 14.5 |
-| CSP | Content Security Policy | 32.2 |
-| DDD | Domain-Driven Design | 4.2 |
-| DEK/KEK | Data/Key Encryption Key (envelope encryption) | 9.8 |
-| DevSecOps | Desenvolvimento + Segurança + Operações integrados | 9 |
-| DORA | DevOps Research and Assessment | 8.4 |
-| DRY | Don't Repeat Yourself | 3 |
-| DVC | Data Version Control | 36.2 |
-| ETL/ELT | Extract-Transform-Load / Extract-Load-Transform | 35.1 |
-| GDPR | General Data Protection Regulation (LGPD europeia) | 9.5 |
-| HITL/HOTL | Human-in-the-Loop / Human-on-the-Loop | 20.5 |
-| HMAC | Hash-based Message Authentication Code | 9.7 |
-| HNSW | Hierarchical Navigable Small World (índice de vetor) | 15.6 |
-| IDP | Internal Developer Platform | 4.4 |
-| INP | Interaction to Next Paint (Core Web Vitals) | 25.3 |
-| ISR | Interrupt Service Routine | 29.4 |
-| KISS | Keep It Simple, Stupid | 3 |
-| KMS | Key Management Service | 9.8 |
-| L4/L7 | Camada 4 (transporte) / Camada 7 (aplicação) do modelo OSI | 33.2 |
-| LCP | Largest Contentful Paint (Core Web Vitals) | 25.3 |
-| LGPD | Lei Geral de Proteção de Dados (Brasil) | 9.5 |
-| MISRA | Motor Industry Software Reliability Association (norma de código embarcado) | 29.3 |
-| MLOps | Machine Learning Operations | 36 |
-| MQTT | Message Queuing Telemetry Transport | 29.5 |
-| MTTR | Mean Time to Restore/Repair | 8.4, 10.4 |
-| N+1 | Problema de uma query virar N+1 consultas ao banco | 15.2 |
-| OTLP | OpenTelemetry Protocol | 10.5 |
-| OWASP | Open Web Application Security Project | 9.1 |
-| PACELC | Extensão do CAP incluindo trade-off de latência sem partição | 15.7 |
-| PCI-DSS | Payment Card Industry Data Security Standard | 31.1 |
-| POUR | Perceptível, Operável, Compreensível, Robusto (princípios WCAG) | 25.4 |
-| RAG | Retrieval-Augmented Generation | 15.6, 20.2 |
-| RAGAS | Framework de avaliação de sistema RAG | 20.2 |
-| RPO | Recovery Point Objective | 11.6 |
-| RSC | React Server Components | 25.1 |
-| RTO | Recovery Time Objective | 11.6 |
-| RTOS | Real-Time Operating System | 29.2 |
-| SAQ | Self-Assessment Questionnaire (nível de PCI-DSS) | 31.1 |
-| SBOM | Software Bill of Materials | 9.4 |
-| SemVer | Semantic Versioning | 19.1 |
-| SLA/SLO/SLI | Service Level Agreement / Objective / Indicator | 10.2 |
-| SLSA | Supply-chain Levels for Software Artifacts ("salsa") | 9.4 |
-| SOC 2 | System and Organization Controls 2 | 9.9 |
-| SPDX | Formato aberto de SBOM (Software Package Data Exchange) | 9.4, 19.4 |
-| SRE | Site Reliability Engineering | 10.6 |
-| SSE | Server-Sent Events | 26.1 |
-| SSRF | Server-Side Request Forgery | 9.1 |
-| TDD | Test-Driven Development | 5.4 |
-| TLS/SSL | Transport Layer Security / Secure Sockets Layer (SSL é o antecessor descontinuado) | 33.1 |
-| WCAG | Web Content Accessibility Guidelines | 25.4 |
-| YAGNI | You Aren't Gonna Need It | 3 |
+| Sigla       | Significado                                                                        | Onde aprofundar |
+| ----------- | ---------------------------------------------------------------------------------- | --------------- |
+| a11y        | Acessibilidade (accessibility — "a" + 11 letras + "y")                             | 25.4            |
+| ACID        | Atomicity, Consistency, Isolation, Durability — garantias de transação de banco    | 15.3, 15.7      |
+| ADR         | Architecture Decision Record                                                       | 18.2            |
+| BFF         | Backend-for-Frontend                                                               | 14.6            |
+| CAP         | Consistência, Disponibilidade, Tolerância a Partição (teorema)                     | 15.7            |
+| CDN         | Content Delivery Network                                                           | 33.3            |
+| CI/CD       | Continuous Integration / Continuous Deployment                                     | 8               |
+| CLS         | Cumulative Layout Shift (Core Web Vitals)                                          | 25.3            |
+| CQRS        | Command Query Responsibility Segregation                                           | 14.5            |
+| CSP         | Content Security Policy                                                            | 32.2            |
+| DDD         | Domain-Driven Design                                                               | 4.2             |
+| DEK/KEK     | Data/Key Encryption Key (envelope encryption)                                      | 9.8             |
+| DevSecOps   | Desenvolvimento + Segurança + Operações integrados                                 | 9               |
+| DORA        | DevOps Research and Assessment                                                     | 8.4             |
+| DRY         | Don't Repeat Yourself                                                              | 3               |
+| DVC         | Data Version Control                                                               | 36.2            |
+| ETL/ELT     | Extract-Transform-Load / Extract-Load-Transform                                    | 35.1            |
+| GDPR        | General Data Protection Regulation (LGPD europeia)                                 | 9.5             |
+| HITL/HOTL   | Human-in-the-Loop / Human-on-the-Loop                                              | 20.5            |
+| HMAC        | Hash-based Message Authentication Code                                             | 9.7             |
+| HNSW        | Hierarchical Navigable Small World (índice de vetor)                               | 15.6            |
+| IDP         | Internal Developer Platform                                                        | 4.4             |
+| INP         | Interaction to Next Paint (Core Web Vitals)                                        | 25.3            |
+| ISR         | Interrupt Service Routine                                                          | 29.4            |
+| KISS        | Keep It Simple, Stupid                                                             | 3               |
+| KMS         | Key Management Service                                                             | 9.8             |
+| L4/L7       | Camada 4 (transporte) / Camada 7 (aplicação) do modelo OSI                         | 33.2            |
+| LCP         | Largest Contentful Paint (Core Web Vitals)                                         | 25.3            |
+| LGPD        | Lei Geral de Proteção de Dados (Brasil)                                            | 9.5             |
+| MISRA       | Motor Industry Software Reliability Association (norma de código embarcado)        | 29.3            |
+| MLOps       | Machine Learning Operations                                                        | 36              |
+| MQTT        | Message Queuing Telemetry Transport                                                | 29.5            |
+| MTTR        | Mean Time to Restore/Repair                                                        | 8.4, 10.4       |
+| N+1         | Problema de uma query virar N+1 consultas ao banco                                 | 15.2            |
+| OTLP        | OpenTelemetry Protocol                                                             | 10.5            |
+| OWASP       | Open Web Application Security Project                                              | 9.1             |
+| PACELC      | Extensão do CAP incluindo trade-off de latência sem partição                       | 15.7            |
+| PCI-DSS     | Payment Card Industry Data Security Standard                                       | 31.1            |
+| POUR        | Perceptível, Operável, Compreensível, Robusto (princípios WCAG)                    | 25.4            |
+| RAG         | Retrieval-Augmented Generation                                                     | 15.6, 20.2      |
+| RAGAS       | Framework de avaliação de sistema RAG                                              | 20.2            |
+| RPO         | Recovery Point Objective                                                           | 11.6            |
+| RSC         | React Server Components                                                            | 25.1            |
+| RTO         | Recovery Time Objective                                                            | 11.6            |
+| RTOS        | Real-Time Operating System                                                         | 29.2            |
+| SAQ         | Self-Assessment Questionnaire (nível de PCI-DSS)                                   | 31.1            |
+| SBOM        | Software Bill of Materials                                                         | 9.4             |
+| SemVer      | Semantic Versioning                                                                | 19.1            |
+| SLA/SLO/SLI | Service Level Agreement / Objective / Indicator                                    | 10.2            |
+| SLSA        | Supply-chain Levels for Software Artifacts ("salsa")                               | 9.4             |
+| SOC 2       | System and Organization Controls 2                                                 | 9.9             |
+| SPDX        | Formato aberto de SBOM (Software Package Data Exchange)                            | 9.4, 19.4       |
+| SRE         | Site Reliability Engineering                                                       | 10.6            |
+| SSE         | Server-Sent Events                                                                 | 26.1            |
+| SSRF        | Server-Side Request Forgery                                                        | 9.1             |
+| TDD         | Test-Driven Development                                                            | 5.4             |
+| TLS/SSL     | Transport Layer Security / Secure Sockets Layer (SSL é o antecessor descontinuado) | 33.1            |
+| WCAG        | Web Content Accessibility Guidelines                                               | 25.4            |
+| YAGNI       | You Aren't Gonna Need It                                                           | 3               |
 
 ---
 
@@ -1576,5 +1564,3 @@ Comando que apaga ou altera de forma irreversível deveria pedir confirmação e
 - **v7.0.0** ("Rodada 7") — Teste A/B e experimentação (8.5); gestão operacional de segredo/vazamento em Git (9.10, ligado ao achado real da auditoria do Universal File Converter); MQTT e provisionamento de dispositivo IoT (29.5).
 - **v8.0.0** ("Rodada 8", auditoria de qualidade) — **Correção**: referência cruzada de Saga apontava pra seção errada (agora 14.5, era 15.3). Adicionado: Índice completo navegável (início do documento); consolidação de fontes das rodadas 5-7 (Seção 39); Glossário de siglas (Seção 40); este histórico de versões, movido do cabeçalho pra cá.
 - **v9.0.0** ("Rodada 9") — Verificação direto na fonte de duas afirmações específicas (graduação da OpenTelemetry como projeto CNCF em 21/05/2026, confirmada; caso Shopify de 10/09/2026, confirmado e enriquecido com número exato de melhoria de performance). Adicionado: Mapa Rápido por Tipo de Projeto (0.1) — tabela de "que seção ler" pra 13 arquétipos de projeto diferentes, do zero até onde o núcleo do documento já cobre sozinho.
-- **v9.1.0** ("Rodada 10", verificação de consistência + aplicação real) — **Correção**: texto de escopo e corpo diziam "38 seções" mas o documento tinha 41 (corrigido, com nota de que 39-41 são apêndice). Seção 22 renomeada e reestruturada em subseções: 22.1 Pandora (conteúdo anterior) e **22.2 Estufa 01** (novo) — aplicação do núcleo a um dashboard IoT full-stack + firmware com controlo ativo de atuadores (monolito modular, defesa em profundidade, stubs honestos 503, MQTT QoS/idempotência, dívida técnica documentada).
-- **v9.2.0** ("Rodada 11", refatoração real → lição aplicada) — 22.2 ganhou dois casos novos, extraídos de uma refatoração concreta no Estufa 01 (controlo movido do dashboard público para o painel de admin): **separação de privilégios no frontend** (9.2/9.3 — página pública sem o código de comando, não só sem o botão) e **reuso de código sem sistema de módulos** (Seção 3 — o `SyntaxError` por colisão de `const` globais que `node --check` não apanha). Ambos são armadilhas concretas, não teoria.

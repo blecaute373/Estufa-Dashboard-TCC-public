@@ -1,14 +1,19 @@
 /* ══════════════════════════════════════════
    ESTUFA 01 · control.js — controlo manual de atuadores (admin)
-   Fala com a rota já existente no server.js: POST /api/control
-     body: { actuator: 'vent'|'valve'|'light', action: 'on'|'off'|'auto'|<0-100> }
-   O browser nunca toca no broker MQTT — só o backend (getMqttClient em
-   server.js), que publica nos tópicos fazenda/estufa01/atuador/<id>/comando.
+   POST /api/control   body: { actuator, action }
+     actuator: 'vent' | 'valve' | 'light'
+     action:   'on' | 'off' | 'auto' | <0-100 (duty, só para light)
+
+   O comando NÃO vai direto para a estufa: a Vercel é serverless e não
+   alcança a rede local, então o backend enfileira o comando (ADR-0007) e o
+   ESP32 recolhe-o no próximo poll — aplicação em até ~5 s. Por isso o
+   202 é sucesso e o painel mostra "enfileirado", nunca "entregue".
    Também mantém a monitorização ao vivo do admin: cicloMonitorizar() faz
    polling do feed via buscarUltimo() (/js/sensor.js) a cada INTERVALO_S.
-═══════════════════════════════════════════ */
+   ══════════════════════════════════════════ */
 
 const URL_CONTROL = '/api/control';
+const TIMEOUT_COMANDO_MS = 8000;   // aborta se o servidor não responder (§11)
 let statusTimer = null;
 
 /* ══════════════════════════════════════════
@@ -16,33 +21,42 @@ let statusTimer = null;
 ═══════════════════════════════════════════ */
 async function enviarComando(actuator, action) {
   setBotoesDisabled(actuator, true);
+  // Aborta a requisição se o servidor demorar (timeout em toda chamada
+  // externa — ENGENHARIA §11.1) e limpa o timer no finally.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_COMANDO_MS);
   try {
     const res = await fetch(URL_CONTROL, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ actuator, action }),
+      signal: ctrl.signal,
     });
 
+    // Sessão expirada: volta ao login (o token e httpOnly; é o backend quem diz).
     if (res.status === 401) { window.location.href = '/index.html'; return; }
 
     const payload = await res.json().catch(() => null);
 
-    if (res.status === 503) {
-      mostrarStatus('Broker MQTT local indisponível — comando não entregue.', 'warn');
-      return;
-    }
     if (!res.ok) {
       mostrarStatus(apiErrorMessage(payload, 'Falha ao enviar comando.'), 'warn');
       return;
     }
 
-    mostrarStatus(`Comando enviado: ${actuator} → ${action}`, 'ok');
+    // 202 = enfileirado (ainda não aplicado no relé). O estado real chega pelo
+    // ThingSpeak no ciclo seguinte; aqui mostramos o otimismo já para o clique
+    // não "travar" e o ThingSpeak confirmar/corrigir.
+    mostrarStatus(`Comando enfileirado: ${actuator} → ${action} (o ESP32 aplica em até 5 s)`, 'ok');
     aplicarEstadoOtimista(actuator, action);
   } catch (e) {
-    mostrarStatus('Erro de rede ao enviar comando.', 'warn');
+    const msg = (e && e.name === 'AbortError')
+      ? 'Servidor demorou a responder — comando não confirmado.'
+      : 'Erro de rede ao enviar comando.';
+    mostrarStatus(msg, 'warn');
     console.error('[control] Erro:', e);
   } finally {
+    clearTimeout(timer);
     setBotoesDisabled(actuator, false);
   }
 }
@@ -170,6 +184,7 @@ async function cicloMonitorizar() {
 function iniciarControlo() {
   cicloMonitorizar();
   setInterval(cicloMonitorizar, (typeof INTERVALO_S === 'number' ? INTERVALO_S : 16) * 1000);
+
 }
 
 /* Carregado no fim do <body>: normalmente o DOM já está pronto.

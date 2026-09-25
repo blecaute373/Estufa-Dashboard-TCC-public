@@ -23,11 +23,12 @@ const {
 } = require('./lib/auth');
 const { validateRegister, normalizeLogin, parsePagination, parseResults } = require('./lib/validators');
 const { sendProblem } = require('./lib/errors');
-const { requestId, authLimiter } = require('./lib/middleware');
+const { requestId, authLimiter, controlLimiter } = require('./lib/middleware');
 const { logger, auditLog } = require('./lib/logger');
 const {
   fetchJsonWithRetry, buildLastUrl, buildHistoryUrl,
 } = require('./lib/thingspeak');
+const { montarComando } = require('./lib/control');
 
 const MONGODB_URI = getMongoUri();
 
@@ -41,34 +42,62 @@ const AccessLog  = require('./models/AccessLog');
 
 
 /**
- * Rota /api/control — Proxy MQTT para controle dos atuadores
+ * Rota /api/control — proxy MQTT para controlo dos atuadores (caminho LOCAL).
  *
- * O ESP32 (estufa_unificado) escuta comandos nos tópicos:
- *   fazenda/estufa01/atuador/vent_001/comando   → {command:ON|OFF}
- *   fazenda/estufa01/atuador/valv_001/comando   → {command:ON|OFF}
- *   fazenda/estufa01/atuador/ilum_001/comando   → {duty:0-100}
+ * Este caminho continua válido e é o que dá resposta imediata quando o
+ * `server.js` corre na mesma rede do broker. Na Vercel o comando segue outro
+ * caminho: a fila de `api/control.js` (ADR-0007), porque serverless não
+ * alcança a rede local.
+ *
+ * O ESP32 (estufa45) escuta comandos nos tópicos:
+ *   fazenda/estufa01/atuador/vent_001/comando   → {command:ON|OFF|AUTO}
+ *   fazenda/estufa01/atuador/valv_001/comando   → {command:ON|OFF|AUTO}
+ *   fazenda/estufa01/atuador/ilum_001/comando   → {duty:0-100} ou {command:AUTO}
  *
  * Requer POST com JSON:
- *   { actuator: 'vent'|'valve'|'light', action: 'on'|'off'|number }
- *
- * Funciona apenas no servidor local (broker MQTT na mesma rede).
- * Em Vercel/serverless usa-se conexão WebSocket MQTT direta do frontend.
+ *   { actuator: 'vent'|'valve'|'light', action: 'on'|'off'|'auto'|<0-100> }
  */
 const mqtt = require('mqtt');
 
 const LOCAL_MQTT_BROKER = process.env.LOCAL_MQTT_BROKER || 'mqtt://192.168.100.3:1883';
+const MQTT_CONNECT_TIMEOUT_MS = 2000;
 
+/**
+ * Cliente MQTT ÚNICO, criado sob demanda; o mqtt.js reconecta sozinho
+ * (reconnectPeriod). Não se cria um cliente novo por chamada: a versão
+ * anterior criava um cliente a cada pedido enquanto desconectado, o que
+ * vazava conexões e — pior — handlers `close/error` de clientes antigos
+ * podiam anular o cliente novo (corrida, ENGENHARIA §12.2).
+ */
 let mqttClient = null;
 function getMqttClient() {
   if (!mqttClient) {
-    mqttClient = mqtt.connect(LOCAL_MQTT_BROKER);
-    mqttClient.on('error', () => { mqttClient = null; });
-    mqttClient.on('close', () => { mqttClient = null; });
-  }
-  if (!mqttClient.connected) {
-    mqttClient = mqtt.connect(LOCAL_MQTT_BROKER);
+    mqttClient = mqtt.connect(LOCAL_MQTT_BROKER, {
+      clientId: 'estufa_srv_' + Math.random().toString(16).slice(2, 10),
+      reconnectPeriod: 5000,
+      connectTimeout: 4000,
+    });
+    mqttClient.on('connect', () => logger.info('mqtt_broker_conectado', { broker: LOCAL_MQTT_BROKER }));
+    mqttClient.on('error', (err) => logger.warn('mqtt_broker_erro', { message: err.message }));
   }
   return mqttClient;
+}
+
+/** Espera a ligação ficar pronta sem bloquear indefinidamente (ENGENHARIA §11.1). */
+function aguardarBrokerConectado(client, timeoutMs) {
+  if (client.connected) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const aoConectar = () => { clearTimeout(timer); resolve(true); };
+    const timer = setTimeout(() => { client.removeListener('connect', aoConectar); resolve(false); }, timeoutMs);
+    client.once('connect', aoConectar);
+  });
+}
+
+/** Publica aguardando o callback — o erro é tratado ANTES de responder OK (§16.1). */
+function publicarMqtt(client, topico, mensagem) {
+  return new Promise((resolve, reject) => {
+    client.publish(topico, mensagem, (err) => (err ? reject(err) : resolve()));
+  });
 }
 
 /* ── Helpers DB ── */
@@ -229,48 +258,36 @@ app.get('/api/admin/users', requireAdminApi, async (req, res) => {
 });
 
 
-// ── CONTROL (proxy MQTT local, ver BLUEPRINT.md §1.4 Nao-Objetivos) ──
-app.post('/api/control', requireAuthApi, async (req, res) => {
+// ── CONTROL (caminho LOCAL: publica direto no broker MQTT da rede da estufa).
+// Na Vercel o mesmo contrato é servido pela fila de api/control.js (ADR-0007).
+// Autorização ANTES da lógica + rate-limit próprio (ENGENHARIA §9.2, §14.2).
+app.post('/api/control', requireAuthApi, controlLimiter, async (req, res) => {
   const { actuator, action } = req.body || {};
   if (!actuator || action === undefined)
     return sendProblem(req, res, 'VALIDATION', 'Informe actuator e action.');
-  const topicMap = {
-    vent:  'fazenda/estufa01/atuador/vent_001/comando',
-    valve: 'fazenda/estufa01/atuador/valv_001/comando',
-    light: 'fazenda/estufa01/atuador/ilum_001/comando',
-  };
-  if (!topicMap[actuator])
-    return sendProblem(req, res, 'VALIDATION', 'Actuator invalido.');
 
-  // vent/valve: action 'on' | 'off' | 'auto' → {command: 'ON'|'OFF'|'AUTO'}
-  // light:      action 'auto' → {command:'AUTO'}; caso contrário, número 0-100 → {duty}
-  let payload;
-  if (actuator === 'light') {
-    if (action === 'auto') {
-      payload = { command: 'AUTO' };
-    } else {
-      const duty = Math.max(0, Math.min(100, Number(action)));
-      if (Number.isNaN(duty))
-        return sendProblem(req, res, 'VALIDATION', 'action de light deve ser um numero (duty 0-100) ou "auto".');
-      payload = { duty };
-    }
-  } else {
-    if (action === 'auto') payload = { command: 'AUTO' };
-    else if (action === 'on') payload = { command: 'ON' };
-    else if (action === 'off') payload = { command: 'OFF' };
-    else return sendProblem(req, res, 'VALIDATION', 'action deve ser "on", "off" ou "auto".');
-  }
+  // Contrato (tópico + payload) partilhado com a fila da nuvem — uma regra só.
+  const comando = montarComando(actuator, action);
+  if (comando.erro)
+    return sendProblem(req, res, 'VALIDATION', comando.erro);
 
   try {
     const client = getMqttClient();
-    if (!client.connected)
+    // Espera curta pela ligação: sem ela, o primeiro comando logo após o
+    // broker voltar seria recusado com 502 apesar de o broker já estar de pé.
+    if (!(await aguardarBrokerConectado(client, MQTT_CONNECT_TIMEOUT_MS)))
       return sendProblem(req, res, 'UPSTREAM', 'Broker MQTT local indisponivel. Tente novamente.');
-    client.publish(topicMap[actuator], JSON.stringify(payload), (err) => {
-      if (err)
-        return sendProblem(req, res, 'UPSTREAM', 'Falha ao publicar comando.');
-    });
+
+    // Publish aguardado: antes, o callback podia responder Erro DEPOIS do
+    // res.json({ok:true}), produzindo "Cannot set headers after they are sent".
+    try {
+      await publicarMqtt(client, comando.topico, JSON.stringify(comando.payload));
+    } catch (publishErr) {
+      return sendProblem(req, res, 'UPSTREAM', 'Falha ao publicar comando.', publishErr);
+    }
+
     await log(null, req.user?.username || 'desconhecido', 'control_' + actuator, req, { action });
-    return res.json({ ok: true, actuator, action, payload });
+    return res.json({ ok: true, actuator, action, payload: comando.payload });
   } catch (err) {
     return sendProblem(req, res, 'INTERNAL', 'Erro ao enviar comando.', err);
   }
@@ -288,11 +305,27 @@ app.get('/',               requireAuth, (req, res) => res.sendFile(path.join(__d
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ── START ── */
+/* ── GRACEFUL SHUTDOWN (ENGENHARIA §17.1) ──
+   Fecha a ligação MQTT e o servidor HTTP antes de sair, em vez de o
+   processo morrer a meio de um pedido. */
+let httpServer = null;
+
+function shutdown(sinal) {
+  logger.info('shutdown_solicitado', { sinal });
+  try { if (mqttClient) mqttClient.end(true); } catch { /* já fechado */ }
+  if (!httpServer) { process.exit(0); return; }
+  httpServer.close(() => process.exit(0));
+  // Rede de segurança: não fica pendurado indefinidamente.
+  setTimeout(() => process.exit(1), 5000).unref();
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
 if (require.main === module) {
 mongoose.connect(MONGODB_URI)
   .then(() => {
     logger.info('db_conectado', {});
-    app.listen(PORT, () => {
+    httpServer = app.listen(PORT, () => {
       console.log(`\n🌿 Estufa 01 rodando em http://localhost:${PORT}`);
       console.log(`   Dashboard  → http://localhost:${PORT}/dashboard.html`);
       console.log(`   Login      → http://localhost:${PORT}/index.html`);

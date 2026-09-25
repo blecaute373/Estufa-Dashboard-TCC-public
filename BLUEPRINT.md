@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.4.3 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.5.0 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,30 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.5.0 (24/09/2026) - Controle Remoto so via Vercel (fila de comandos)
+
+`feat(control): controlo de atuadores no site publicado, sem ngrok nem broker externo
+     - ADR-0007: o sentido do comando e invertido — a Vercel e serverless e nao
+       alcanca a rede local, logo quem busca o comando e o ESP32
+       (GET /api/control/pending a cada 5 s, X-Device-Token em tempo constante)
+     - lib/control.js: contrato (actuator, action) -> payload como fonte unica
+       para os 2 caminhos (local MQTT + fila na nuvem)
+     - api/control.js: POST /api/control (admin, 202 queued, auditoria) +
+       GET /api/control/pending (device token, entrega atomica, TTL 5 min)
+     - models/ControlCommand.js: fila com TTL index (limpeza automatica)
+     - firmware estufa45: poll HTTPS (WiFiClientSecure + CA da Vercel), handler
+       dos atuadores espelha o callbackLocal; ThingSpeak e MQTT local intactos
+     - server.js: cliente MQTT unico (elimina vazamento/corrida), espera de
+       ligacao (2 s) e publish aguardado (elimina double-response);
+       controlLimiter 30/min + graceful shutdown SIGINT/SIGTERM
+     - control.js: timeout de fetch (AbortController) + 202 tratado como
+       sucesso; removido o fallback WSS (mqtt.min.js -342 KB, ADR-0006 superado)
+     - sw.js cache estufa-v10; admin.html com a nota da fila atualizada
+docs: ADR-0007 (novo), ADR-0006 marcado como superado, indice ADR e
+      BLUEPRINT 1.5.0 — Registro, Estado Atual, 1.4, 11.1.1, 11.2, bug #11
+test: 50/50 node:test a passar (+8: contrato em lib/control + fila/pending)
+`
 
 ### v1.4.3 (24/09/2026) - QR Aponta para o Download Direto do APK
 
@@ -224,13 +248,15 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.4.3):** Dashboard web com autenticacao, graficos ThingSpeak,
-  **controlo de atuadores AUTO/MANUAL (admin, rede local)**, **cards Dark/Neon**
+- **Versao atual (v1.5.0):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
+  publicado (fila de comandos via Vercel, ADR-0007)**, **cards Dark/Neon**
   e **QR de download do app na tela de login**; PWA, apps mobile (Android) e
   desktop (Electron/Windows).
-- **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local).
+- **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local, opcional).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
-  **controlo de atuadores exige `server.js` local** (Vercel devolve 503 em `/api/control`).
+  **o controlo de atuadores funciona no site publicado** pela fila de comandos
+  (`POST /api/control` → MongoDB → `GET /api/control/pending` pelo ESP32).
 - **Total de commits:** 57 commits (09/05/2026 - 24/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
@@ -290,9 +316,13 @@ a874402 | 09/05/2026 | Initial commit
 8. **Capacitor sync manual.** npx cap sync necessario apos mudancas no frontend; nao ha automatizacao.
 9. **Admin sem link para dashboard.** Pagina admin nao tem link para dashboard (decisao intencional de seguranca).
 10. **Build Android requer Android Studio.** Build nativo requer Android Studio + SDK configurado localmente.
-11. **Controlo de atuadores so local.** `/api/control` devolve 503 no deploy Vercel
-    (serverless nao alcanca o broker MQTT da rede da estufa); o controlo ativo so
-    funciona com `server.js` a correr na mesma rede do ESP32.
+11. ~~**Controlo de atuadores so local.**~~ **RESOLVIDO na v1.5.0 (ADR-0007).**
+    `/api/control` deixou de devolver 503 no deploy Vercel: o comando e
+    enfileirado no MongoDB e recolhido pelo firmware em
+    `GET /api/control/pending` (poll de 5 s). Requisito de Operacao: `DEVICE_TOKEN`
+    tem de existir como Environment Variable na Vercel **e** estar igual no
+    firmware (`API_VERCEL_TOKEN`) — sem isso o endpoint responde 401 (fail-closed)
+    e nenhum comando e aplicado. Latencia de ate ~5 s por desenho.
 
 ---
 

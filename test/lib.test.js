@@ -17,6 +17,7 @@ const {
 } = require('../lib/validators');
 const { problem } = require('../lib/errors');
 const { isTransientError, backoffDelay, buildLastUrl, buildHistoryUrl } = require('../lib/thingspeak');
+const { validarComando, montarComando } = require('../lib/control');
 
 describe('validators (Small)', () => {
   it('aceita registo válido', () => {
@@ -93,5 +94,43 @@ describe('thingspeak resilience (Small)', () => {
       buildHistoryUrl(123, 'KEY', 60),
       'https://api.thingspeak.com/channels/123/feeds.json?api_key=KEY&results=60'
     );
+  });
+});
+
+describe('lib/control — contrato dos comandos (Small)', () => {
+  it('vent/valve: on/off/auto viram {command}', () => {
+    assert.deepEqual(validarComando('vent', 'on'),  { payload: { command: 'ON' } });
+    assert.deepEqual(validarComando('vent', 'off'), { payload: { command: 'OFF' } });
+    assert.deepEqual(validarComando('valve', 'auto'), { payload: { command: 'AUTO' } });
+  });
+
+  it('light: auto vira {command:AUTO}; numero vira {duty} com clamp 0-100', () => {
+    assert.deepEqual(validarComando('light', 'auto'), { payload: { command: 'AUTO' } });
+    assert.deepEqual(validarComando('light', 0),   { payload: { duty: 0 } });
+    assert.deepEqual(validarComando('light', 100), { payload: { duty: 100 } });
+    assert.deepEqual(validarComando('light', 150), { payload: { duty: 100 } });  // clamp acima
+    assert.deepEqual(validarComando('light', -5),  { payload: { duty: 0 } });    // clamp abaixo
+    assert.deepEqual(validarComando('light', '40'), { payload: { duty: 40 } });  // string numérica
+  });
+
+  it('rejeita actuator desconhecido, action inválida e NaN', () => {
+    assert.match(validarComando('fan', 'on').erro, /Actuator/);
+    assert.match(validarComando('vent', 'talvez').erro, /action deve ser/);
+    assert.match(validarComando('light', 'abc').erro, /numero \(duty 0-100\)/);
+  });
+
+  it('montarComando junta o topico MQTT do firmware (contrato unico dos 2 caminhos)', () => {
+    assert.deepEqual(montarComando('vent', 'on'), {
+      topico: 'fazenda/estufa01/atuador/vent_001/comando',
+      payload: { command: 'ON' },
+    });
+    assert.deepEqual(montarComando('valve', 'off'), {
+      topico: 'fazenda/estufa01/atuador/valv_001/comando',
+      payload: { command: 'OFF' },
+    });
+    assert.deepEqual(montarComando('light', 50), {
+      topico: 'fazenda/estufa01/atuador/ilum_001/comando',
+      payload: { duty: 50 },
+    });
   });
 });
