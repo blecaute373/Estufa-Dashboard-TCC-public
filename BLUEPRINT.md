@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.5.0 · **Data:** 24/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.6.0 · **Data:** 25/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +9,36 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.6.0 (25/09/2026) - Fila de comandos em Upstash Redis (arquitetura hibrida)
+
+`feat(control): a fila de comandos sai do MongoDB para o Upstash Redis
+     - ADR-0008: o Redis substitui APENAS o ControlCommand; User e AccessLog
+       continuam no MongoDB (populate/countDocuments/paginacao sem equivalente
+       barato em Redis — e os logs sao o dado que nao se pode perder)
+     - lib/store.js (novo): porta unica para o Redis (LPUSH/LPOP/EXPIRE);
+       o contrato JSON do endpoint NAO mudou, o firmware nao se adaptou
+     - API: GET /pending passa a ser 1 comando (LPOP chave 10) em vez de 2+
+       queries — e atomico, o que elimina a corrida find/updateMany (§12.2)
+     - api/control.js: o comando entra na fila ANTES da auditoria e o poll ja
+       nao chama connectDB() — uma falha do Atlas nao bloqueia mais o
+       controlo da estufa (bolkhead §11.3)
+     - lib/config.js: getRedisConfig() com fail-fast e sem fallback
+     - models/ControlCommand.js: REMOVIDO
+     - firmware estufa45: POLL_COMANDO_MS 5 s -> 10 s
+     (8 640 comandos/dia = 259 200/mes, dentro dos 500K/mes do plano gratis;
+      a 5 s seriam 518 400/mes e estourariam. A 10 s o controlo continua mais
+      responsivo que a telemetria ThingSpeak, que publica a cada ~15 s.)
+     - .env.example/README: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+     - admin.html + js/control.js: textos de "ate ~5 s" corrigidos para "~10 s"
+       (o que o utilizador le na tela tinha de bater certo com o firmware)
+     - sw.js cache estufa-v11
+docs: ADR-0008 (novo), ADR-0007 marcado como superado (fila), indice ADR e
+      BLUEPRINT 1.6.0 — Registro, Estado Atual, 8.1, 11.1.1, 11.2, 14.1, 14.3,
+      16.2, bug #11/#12
+test: 61/61 node:test a passar (+11: entrega atomica sob polls concorrentes,
+      expiracao, limite de 10/poll, autoria, e lib/store em Small)
+`
 
 ### v1.5.0 (24/09/2026) - Controle Remoto so via Vercel (fila de comandos)
 
@@ -248,29 +278,30 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.5.0):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.6.0):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
-  publicado (fila de comandos via Vercel, ADR-0007)**, **cards Dark/Neon**
-  e **QR de download do app na tela de login**; PWA, apps mobile (Android) e
-  desktop (Electron/Windows).
-- **Stack:** Node.js + Express + MongoDB + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local, opcional).
+  publicado (fila de comandos via Vercel + Upstash Redis, ADR-0007/0008)**,
+  **cards Dark/Neon** e **QR de download do app na tela de login**; PWA, apps
+  mobile (Android) e desktop (Electron/Windows).
+- **Stack:** Node.js + Express + MongoDB (User/AccessLog) + Upstash Redis (fila de comandos) + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local, opcional).
 - **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
   **o controlo de atuadores funciona no site publicado** pela fila de comandos
-  (`POST /api/control` → MongoDB → `GET /api/control/pending` pelo ESP32).
-- **Total de commits:** 57 commits (09/05/2026 - 24/09/2026).
+  (`POST /api/control` → Upstash Redis → `GET /api/control/pending` pelo ESP32
+  a cada 10 s).
+- **Total de commits:** 58 commits (09/05/2026 - 25/09/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
   - **Controlo ativo de atuadores com modo AUTO/MANUAL** (ventilador e valvula
-    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO) via `/api/control` +
-    MQTT local — **disponivel apenas no painel de admin** e apenas na rede da
-    estufa (Ver Secao 11.1.1)
+    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO) via `/api/control` —
+    **disponivel no painel de admin tanto na rede local (MQTT) como no site
+    publicado (fila Vercel + Upstash Redis, ADR-0007/0008)**
   - **Monitorizacao ao vivo no admin** (4 sensores + estado dos atuadores +
     status/RSSI), reutilizando `/js/sensor.js` (ciclo de `INTERVALO_S` s)
   - **QR Code de download do app na tela de login** (index.html; geracao local
     com `js/qrcode.min.js`, sem CDN; link configuravel no script)
   - Painel admin com logs de acesso e gerenciamento de usuarios
-  - PWA com Service Worker v9 (cache limpo + network-first)
+  - PWA com Service Worker v11 (cache limpo + network-first)
   - Apps mobile Android via Capacitor + PWABuilder
   - Apps desktop Windows via Electron
   - Sistema de alertas por threshold (temperatura, umidade, etc.)
@@ -295,12 +326,16 @@ a874402 | 09/05/2026 | Initial commit
   - Service worker sem teste automatizado
   - PWABuilder requer hospedagem HTTPS
   - Chart.js dependente de CDN (sem fallback local)
-  - `/api/control` sem rate-limit proprio (protegido por auth + rede local)
+  - **Firmware ainda nao uploaded** (ESP32 sem porta serial) e `API_VERCEL_TOKEN`
+    por preencher em `main.cpp`
+  - **`DEVICE_TOKEN` e as duas `UPSTASH_REDIS_REST_*` por definir no ambiente da
+    Vercel** — sem elas o poll responde 401 e a fila nao enfileira
   - Firmware `.ino` fora do versionamento (gitignored) — sem CI de compilacao
-  - Botao "verificar broker" inexistente — indisponibilidade do broker so aparece
-    apos clique (503)
+  - Botao "verificar broker" inexistente no caminho **local** (a indisponibilidade
+    do broker so aparece apos clique, 502) — no caminho publicado este problema
+    deixou de existir (fila na nuvem, ADR-0007)
 
-- _Ultima atualizacao: 24/09/2026_
+- _Ultima atualizacao: 25/09/2026_
 
 ---
 
@@ -318,11 +353,16 @@ a874402 | 09/05/2026 | Initial commit
 10. **Build Android requer Android Studio.** Build nativo requer Android Studio + SDK configurado localmente.
 11. ~~**Controlo de atuadores so local.**~~ **RESOLVIDO na v1.5.0 (ADR-0007).**
     `/api/control` deixou de devolver 503 no deploy Vercel: o comando e
-    enfileirado no MongoDB e recolhido pelo firmware em
-    `GET /api/control/pending` (poll de 5 s). Requisito de Operacao: `DEVICE_TOKEN`
-    tem de existir como Environment Variable na Vercel **e** estar igual no
-    firmware (`API_VERCEL_TOKEN`) — sem isso o endpoint responde 401 (fail-closed)
-    e nenhum comando e aplicado. Latencia de ate ~5 s por desenho.
+    enfileirado e recolhido pelo firmware em `GET /api/control/pending`.
+    Requisito de Operacao: `DEVICE_TOKEN` tem de existir como Environment
+    Variable na Vercel **e** estar igual no firmware (`API_VERCEL_TOKEN`) — sem
+    isso o endpoint responde 401 (fail-closed) e nenhum comando e aplicado.
+    Latencia de ate ~10 s por desenho (era ~5 s; ver ADR-0008).
+12. **Fila de comandos exige `UPSTASH_REDIS_REST_URL` e
+    `UPSTASH_REDIS_REST_TOKEN` na Vercel (ADR-0008).** Sem as duas, `lib/store.js`
+    falha com mensagem explicita (fail-fast, sem fallback) e
+    `POST /api/control` devolve 500. Criar a base gratuita em
+    https://console.upstash.com. O token **nao** vai para o firmware.
 
 ---
 
@@ -838,9 +878,9 @@ nunca fala com o broker MQTT (quem publica e o `server.js`):
 
 ## 8. PWA e Service Worker
 
-### 8.1 Service Worker v9 (sw.js)
+### 8.1 Service Worker v11 (sw.js)
 
-- **Cache:** `estufa-v9` (versionado — `activate` apaga versoes antigas)
+- **Cache:** `estufa-v11` (versionado — `activate` apaga versoes antigas)
 - **Pre-cache (ASSETS):** CSS modular (10 folhas, incl. control.css), scripts
   (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`,
   `/js/qrcode.min.js`, `/pwa.js`),
@@ -939,7 +979,10 @@ app.whenReady().then(createWindow);
 
 | Variavel | Descricao | Obrigatoria |
 | -------- | --------- | ----------- |
-| MONGODB_URI | URI de conexao MongoDB Atlas | Sim |
+| MONGODB_URI | URI de conexao MongoDB Atlas (User + AccessLog) | Sim |
+| UPSTASH_REDIS_REST_URL | Endpoint REST do Upstash Redis (fila de comandos) | Sim (producao) |
+| UPSTASH_REDIS_REST_TOKEN | Token do Upstash — **so na Vercel, nunca no firmware** | Sim (producao) |
+| DEVICE_TOKEN | Token que o ESP32 envia em `X-Device-Token` (comparado em tempo constante) | Sim (producao) |
 | JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao |
 | TS_API_KEY | API key do ThingSpeak (escrita) | Recomendado |
 | TS_CHANNEL | ID do canal ThingSpeak | Sim |
@@ -964,8 +1007,19 @@ app.whenReady().then(createWindow);
   tambem um numero 0-100 como duty — NaN devolve VALIDATION/400), publica JSON
   no broker MQTT, regista auditoria (`control_<actuator>`) no AccessLog e
   responde `{ ok, actuator, action, payload }`.
-- **Vercel (`api/index.js`):** stub que devolve **503** — o serverless nao alcanca
-  o broker da rede da estufa. O frontend trata 503 com mensagem amigavel.
+- **Vercel (`api/control.js`):** `requireAdminApi` + `controlLimiter` (30/min),
+  valida com o mesmo contrato (`lib/control.js`), enfileira o comando no
+  **Upstash Redis** (`LPUSH` + `EXPIRE 300`, chave `estufa:comandos:<device>`) e
+  responde **`202 {queued:true, id, expires_at}`** — aceite, ainda nao aplicado.
+  Regista auditoria (`control_<actuator>`) no AccessLog, mas **depois** de o
+  comando ja estar na fila e em modo best-effort (§13): uma falha do Atlas nao
+  bloqueia o controlo (bolkhead §11.3).
+  O **ESP32 e quem busca**: `GET /api/control/pending` com `X-Device-Token`
+  comparado em tempo constante, devolve ate 10 comandos e faz `LPOP` (atomico —
+  fecha a corrida `find`/`updateMany` do ADR-0007). Comando nunca recolhido
+  expira aos 5 min. Latencia ate ~10 s. Ver ADR-0008.
+  Sem `DEVICE_TOKEN` na Vercel ⇒ 401 *fail-closed*; sem as duas
+  `UPSTASH_REDIS_REST_*` ⇒ 500 com mensagem explicita (fail-fast).
 - **Topicos MQTT:** `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001/comando`
   payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv) e `{"duty":0-100}` ou
   `{"command":"AUTO"}` (ilum).
@@ -974,9 +1028,10 @@ app.whenReady().then(createWindow);
   / fecha >= 70 %; luz segue o ciclo circadiano do firmware (fotoperiodo, com
   atenuacao por luz natural medida em janela de blackout — apaga >= 5000 lux).
   A UI mostra "Modo: Auto/Manual" (atualizado no clique, sem ack).
-- **Sem ack:** a API confirma apenas a publicacao no broker (`res.json({ok:true})`);
-  o estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos cards
-  quando o feed e atualizado (no admin, a cada `INTERVALO_S` via cicloMonitorizar).
+- **Sem ack:** a API confirma apenas a **aceitacao** do comando (no caminho local,
+  a publicacao no broker; na nuvem, a entrada na fila). O estado real regressa
+  depois pelo ThingSpeak (field5-8) e e refletido nos cards quando o feed e
+  atualizado (no admin, a cada `INTERVALO_S` via cicloMonitorizar).
 
 
 ### 11.3 CI/CD
@@ -1063,8 +1118,9 @@ app.whenReady().then(createWindow);
 - [x] Service Worker com cache seguro
 - [x] Electron com nodeIntegration=false
 - [ ] Dependencias auditadas (npm audit)
-- [x] `/api/control` protegida por `requireAuthApi` + auditoria no AccessLog
-      (sem rate-limit proprio — mitigado por auth + rede local; ver Secao 11.1.1)
+- [x] `/api/control` protegida por `requireAdminApi` + `controlLimiter` (30/min)
+      + `deviceLimiter` (60/min) no poll, e auditoria no AccessLog
+      (ver Secao 11.1.1)
 - [x] Interface de controlo carregada apenas no painel de admin
       (`js/control.js`); o dashboard publico e somente leitura
 
@@ -1088,12 +1144,18 @@ Baseado no Express.js Security Best Practices:
 | JWT_SECRET | Vercel env vars / gerado dinamicamente | ✅ Seguro |
 | THINGSPEAK_API_KEY | Vercel env vars | ✅ Seguro |
 | TS_CHANNEL | Vercel env vars | ✅ Seguro |
+| DEVICE_TOKEN | Vercel env vars **e** `main.cpp` (obrigatorio: e o unico segredo que o firmware conhece) | ✅ Seguro |
+| UPSTASH_REDIS_REST_TOKEN | **So** Vercel env vars — nunca no firmware, nunca no browser | ✅ Seguro |
 
 **Regras de Seguranca:**
 - Nunca commitar arquivos `.env` ou `.jwt_secret`
 - `.env.example` deve conter apenas placeholders, nunca valores reais
 - JWT_SECRET e gerado dinamicamente se nao definido (64 bytes aleatorios)
 - Channel ID e API Key devem ser definidos via variaveis de ambiente
+- `DEVICE_TOKEN` vazio ⇒ *fail-closed*: o poll devolve 401 e nenhum comando
+  chega ao atuador
+- `UPSTASH_REDIS_REST_TOKEN` nunca entra no firmware: o ESP32 so conhece o
+  URL publico da Vercel e o `DEVICE_TOKEN`
 
 ---
 
@@ -1163,14 +1225,25 @@ carregado pelo dashboard e pelo admin).
 Header.Payload.Signature - Header define algoritmo, Payload tem claims (userId, exp), Signature garante integridade.
 
 **Como funciona o controlo ativo de atuadores?**
-O painel de admin (`admin.html`, autenticado) envia POST `/api/control` via
-`public/js/control.js` -> `server.js` publica no broker MQTT local -> o ESP32
-subscreve `fazenda/estufa01/atuador/*/comando` e aciona relé/PWM. O dashboard
-publico **nao** tem botoes de comando. So funciona na rede local da estufa; no
-deploy Vercel o endpoint devolve 503 (consultar Secao 11.1.1 e bug #11).
-Alem do manual (ON/OFF e duty), vent/valv/luz aceitam o modo **AUTO**
-(`action: "auto"` -> `{"command":"AUTO"}`), com o firmware a decidir pelos
-thresholds (ver Secao 11.1.1).
+
+Ha **dois caminhos de entrega** e o que muda e so o transporte — o contrato
+`(actuator, action) -> payload` e o mesmo nos dois (`lib/control.js`, fonte
+unica):
+
+- **Rede local** (`server.js`): o painel de admin (`admin.html`, autenticado)
+  envia `POST /api/control` via `public/js/control.js` -> o `server.js` publica
+  no broker MQTT -> o ESP32, ja subscrito em
+  `fazenda/estufa01/atuador/*/comando`, aciona o rele/PWM de imediato.
+- **Site publicado** (Vercel, ADR-0007/0008): o mesmo `POST /api/control` nao
+  alcanca a LAN, por isso **o sentido do comando e invertido** — o comando e
+  enfileirado no Upstash Redis e e o **ESP32 que o busca** em
+  `GET /api/control/pending` a cada 10 s. Latencia ate ~10 s (sem servico nem
+  processo na rede local).
+
+O dashboard publico **nao** tem botoes de comando. Alem do manual (ON/OFF e
+duty), vent/valv/luz aceitam o modo **AUTO** (`action: "auto"` ->
+`{"command":"AUTO"}`), com o firmware a decidir pelos thresholds (ver Secao
+11.1.1).
 
 **Como sei o estado real apos enviar um comando?**
 A API nao devolve ack do ESP32: confirma apenas a publicacao no broker. O estado

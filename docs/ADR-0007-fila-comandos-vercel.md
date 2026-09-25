@@ -1,6 +1,6 @@
 # ADR-0007 — Controlo remoto de atuadores por fila de comandos na Vercel
 
-- **Status:** aceite
+- **Status:** ~~superado~~ pela parte do armazenamento da fila pelo [ADR-0008](ADR-0008-fila-upstash-redis.md) — a **inversão do sentido do comando e os endpoints mantêm-se**. O `models/ControlCommand.js` foi removido e a fila passou para o Upstash Redis.
 - **Data:** 2026-09-24
 - **Contexto:** o dashboard publicado na Vercel devolvia **503** em `/api/control` por design — a função serverless não alcança o broker MQTT (Mosquitto) na rede local da estufa. O controlo manual só funcionava com o `server.js` a correr na mesma rede do ESP32. O requisito é controlar os atuadores **a partir do site publicado, usando apenas a Vercel** (sem ngrok, sem túnel, sem broker externo). Substitui o [ADR-0006](ADR-0006-controle-remoto-mqtt-wss.md).
 

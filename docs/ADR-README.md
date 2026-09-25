@@ -12,4 +12,5 @@ descartadas*.
 | [0004](ADR-0004-erros-rfc9457.md) | Erros padronizados (RFC 9457) | aceite |
 | [0005](ADR-0005-thingspeak-resiliente.md) | Proxy ThingSpeak com timeout+retry | aceite |
 | [0006](ADR-0006-controle-remoto-mqtt-wss.md) | Controle remoto via MQTT sobre WebSocket | ~~superado~~ pelo 0007 |
-| [0007](ADR-0007-fila-comandos-vercel.md) | Controle remoto por fila de comandos na Vercel | aceite |
+| [0007](ADR-0007-fila-comandos-vercel.md) | Controle remoto por fila de comandos na Vercel | ~~superado~~ (fila) pelo 0008 |
+| [0008](ADR-0008-fila-upstash-redis.md) | Fila de comandos em Upstash Redis (híbrido) | aceite |

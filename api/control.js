@@ -1,15 +1,17 @@
 /**
  * Serverless: /api/control/*
  *
- * Controlo de atuadores 100% Vercel (ADR-0007). A Vercel e serverless e nao
+ * Controlo de atuadores 100% Vercel (ADR-0007 + ADR-0008). A Vercel e serverless e nao
  * alcanca a rede local da estufa, portanto o SENTIDO do comando e invertido:
  *
- *   admin (POST)  -> grava o comando na fila (MongoDB)
+ *   admin (POST)  -> grava o comando na fila (Upstash Redis)
  *   ESP32 (GET)   -> recolhe os comandos pendentes no proximo poll e executa
  *
- * Nao ha ngrok, nem broker externo, nem servico novo: so a Vercel e o
- * MongoDB Atlas que o dashboard ja exigia. Custo: o comando passa a ser
- * aplicado em ate ~5 s (intervalo de poll) em vez de imediato.
+ * Nao ha ngrok, nem broker externo: a fila passou do MongoDB para o Upstash
+ * Redis (ADR-0008), que a) entrega o pop de forma ATOMICA (elimina a corrida
+ * find/updateMany) e b) custa 1 comando por poll — o que torna o plano gratis
+ * viavel. Custo: o comando passa a ser aplicado em ate ~10 s (intervalo de
+ * poll) em vez de imediato.
  *
  * Autorizacao ANTES da logica (§9.2): o comando so e enfileirado por admin
  * autenticado, e so o dispositivo com o token le a fila.
@@ -21,21 +23,19 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 
 const connectDB = require('./db');
-const ControlCommand = require('../models/ControlCommand');
 const AccessLog = require('../models/AccessLog');
 const { requireAdminApi } = require('../lib/auth');
 const { validarComando } = require('../lib/control');
 const { sendProblem } = require('../lib/errors');
 const { requestId, controlLimiter, deviceLimiter } = require('../lib/middleware');
 const { logger, auditLog } = require('../lib/logger');
+const { enfileirarComando, retirarComandos } = require('../lib/store');
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(requestId);
 
-// Comando nunca buscado expira sozinho (5 min) — o TTL index do modelo apaga.
-const COMMAND_TTL_MS = 5 * 60 * 1000;
 const DEVICE_ID = process.env.DEVICE_ID || 'estufa01';
 const MAX_COMMANDS_PER_POLL = 10;
 
@@ -55,6 +55,33 @@ function tokenValido(req) {
   return crypto.timingSafeEqual(a, b);
 }
 
+/**
+ * Trilha de auditoria (`AccessLog` no MongoDB) — deliberadamente
+ * **best-effort e não bloqueante**.
+ *
+ * O caminho crítico dos atuadores não pode depender do MongoDB (ADR-0008,
+ * bolkhead §11.3): se o Atlas estiver em baixo, o comando tem de continuar a
+ * ser entregue ao ESP32. Por isso a auditoria corre DEPOIS de o comando já
+ * estar na fila, e qualquer falha sua é apenas registada em log.
+ */
+async function auditar(req, actuator, action, cmdId) {
+  try {
+    await connectDB();
+    await auditLog(AccessLog, {
+      userId: req.user?.id || null,
+      username: req.user?.username || null,
+      event: 'control_' + actuator,
+      req,
+      details: { action, origem: 'fila_upstash', id: cmdId },
+    });
+  } catch (err) {
+    logger.warn('audit_log_indisponivel', {
+      requestId: req.requestId, actuator,
+      error: err?.message || String(err),
+    });
+  }
+}
+
 /* ── POST /api/control — enfileira o comando (admin) ── */
 app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
   const { actuator, action } = req.body || {};
@@ -67,35 +94,28 @@ app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
     return sendProblem(req, res, 'VALIDATION', validacao.erro);
 
   try {
-    await connectDB();
-    const cmd = await ControlCommand.create({
+    // Fila primeiro: e o caminho critico. `LPUSH` + `EXPIRE` (Lib/store.js).
+    const cmd = await enfileirarComando({
       device: DEVICE_ID,
       actuator,
-      action: String(action),
+      action,
       payload: validacao.payload,
-      user_id: req.user?.id || null,
       username: req.user?.username || null,
-      expires_at: new Date(Date.now() + COMMAND_TTL_MS),
-    });
-
-    // Trilha de auditoria: quem mandou o que (§10.1 / §20.5).
-    await auditLog(AccessLog, {
       userId: req.user?.id || null,
-      username: req.user?.username || null,
-      event: 'control_' + actuator,
-      req,
-      details: { action, origem: 'fila_vercel', id: String(cmd._id) },
     });
 
     logger.info('controlo_enfileirado', {
       requestId: req.requestId, actuator, action, username: req.user?.username || null,
     });
 
+    // Auditoria depois (Mongo) — nunca pode impedir a entrega (§10.1).
+    await auditar(req, actuator, action, cmd.id);
+
     // 202 = aceito para processamento, ainda nao aplicado (§14.1).
     return res.status(202).json({
-      ok: true, queued: true, id: String(cmd._id),
+      ok: true, queued: true, id: cmd.id,
       actuator, action, payload: validacao.payload,
-      expires_at: cmd.expires_at,
+      expires_at: new Date(cmd.expires_at).toISOString(),
     });
   } catch (err) {
     return sendProblem(req, res, 'INTERNAL', 'Erro ao enfileirar comando.', err);
@@ -112,39 +132,31 @@ app.get('/api/control/pending', deviceLimiter, async (req, res) => {
   }
 
   try {
-    await connectDB();
-    const agora = new Date();
-    const pendentes = await ControlCommand.find({
-      device: DEVICE_ID,
-      status: 'pending',
-      expires_at: { $gt: agora },
-    })
-      .sort({ created_at: 1 })
-      .limit(MAX_COMMANDS_PER_POLL)
-      .lean();
+    // `LPOP chave 10`: UMA operacao atomica. A versao anterior lia com
+    // `find()` e marcava com `updateMany()` em separado — entre as duas, um
+    // segundo poll podia recolher os mesmos comandos (ENGENHARIA §12.2).
+    // Nao ha connectDB() aqui: o poll nao toca no MongoDB.
+    const { comandos, expirados } = await retirarComandos(DEVICE_ID, MAX_COMMANDS_PER_POLL);
 
-    if (pendentes.length > 0) {
-      // Marca como entregue na ENTREGA (at-most-once). Como os comandos são
-      // idempotentes (definem estado, não incrementam), uma reentrega seria
-      // inofensiva — por isso dispensa chave de idempotência (§11.1).
-      await ControlCommand.updateMany(
-        { _id: { $in: pendentes.map((c) => c._id) }, status: 'pending' },
-        { $set: { status: 'delivered', delivered_at: agora } }
-      );
+    if (expirados > 0) {
+      // Comando nunca recolhido apos 5 min: descartado (TTL logico, ADR-0008).
+      logger.info('comandos_expirados_descartados', {
+        requestId: req.requestId, device: DEVICE_ID, count: expirados,
+      });
     }
 
-    if (pendentes.length > 0) {
+    if (comandos.length > 0) {
       logger.info('comandos_entregues', {
-        requestId: req.requestId, device: DEVICE_ID, count: pendentes.length,
+        requestId: req.requestId, device: DEVICE_ID, count: comandos.length,
       });
     }
 
     return res.json({
       ok: true,
       device: DEVICE_ID,
-      count: pendentes.length,
-      commands: pendentes.map((c) => ({
-        id: String(c._id),
+      count: comandos.length,
+      commands: comandos.map((c) => ({
+        id: c.id,
         actuator: c.actuator,
         action: c.action,
         payload: c.payload,

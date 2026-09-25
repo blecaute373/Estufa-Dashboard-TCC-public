@@ -18,6 +18,7 @@ const {
 const { problem } = require('../lib/errors');
 const { isTransientError, backoffDelay, buildLastUrl, buildHistoryUrl } = require('../lib/thingspeak');
 const { validarComando, montarComando } = require('../lib/control');
+const { separarValidos, chaveFila, COMMAND_TTL_MS } = require('../lib/store');
 
 describe('validators (Small)', () => {
   it('aceita registo válido', () => {
@@ -132,5 +133,48 @@ describe('lib/control — contrato dos comandos (Small)', () => {
       topico: 'fazenda/estufa01/atuador/ilum_001/comando',
       payload: { duty: 50 },
     });
+  });
+});
+
+describe('lib/store — fila Upstash Redis (Small, ADR-0008)', () => {
+  const agora = 1_000_000_000;
+
+  it('a chave é por dispositivo (a fila não é partilhada entre estufas)', () => {
+    assert.equal(chaveFila('estufa01'), 'estufa:comandos:estufa01');
+    assert.notEqual(chaveFila('estufa01'), chaveFila('estufa02'));
+    assert.equal(chaveFila(undefined), 'estufa:comandos:estufa01', 'default igual ao DEVICE_ID');
+  });
+
+  it('descarta o que já expirou e devolve o resto (substitui o TTL index do Mongo)', () => {
+    const itens = [
+      { id: 'a', expires_at: agora - 1 },     // expirado (1 ms atrás)
+      { id: 'b', expires_at: agora + 1000 },  // válido
+      { id: 'c', expires_at: agora - 1 },
+      { id: 'd', expires_at: agora + 60_000 }, // válido
+    ];
+    const r = separarValidos(itens, agora);
+    assert.deepEqual(r.validos.map((c) => c.id), ['b', 'd']);
+    assert.equal(r.expirados, 2);
+  });
+
+  it('o limite de validade é exactamente o do TTL index antigo (5 min)', () => {
+    assert.equal(COMMAND_TTL_MS, 5 * 60 * 1000);
+  });
+
+  it('fronteira: expira quando expires_at é IGUAL ao instante do poll', () => {
+    const r = separarValidos([{ id: 'x', expires_at: agora }], agora);
+    assert.equal(r.validos.length, 0, 'expires_at <= agora conta como expirado');
+    assert.equal(r.expirados, 1);
+  });
+
+  it('comando sem expires_at é aceite (fila escrita por versão anterior)', () => {
+    const r = separarValidos([{ id: 'antigo' }], agora);
+    assert.equal(r.validos.length, 1, 'não descartar em massa dados sem validade');
+    assert.equal(r.expirados, 0);
+  });
+
+  it('fila vazia devolve listas vazias sem lancar', () => {
+    assert.deepEqual(separarValidos([], agora), { validos: [], expirados: 0 });
+    assert.deepEqual(separarValidos(null, agora), { validos: [], expirados: 0 });
   });
 });

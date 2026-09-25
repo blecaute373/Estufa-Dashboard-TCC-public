@@ -5,9 +5,10 @@
      action:   'on' | 'off' | 'auto' | <0-100 (duty, só para light)
 
    O comando NÃO vai direto para a estufa: a Vercel é serverless e não
-   alcança a rede local, então o backend enfileira o comando (ADR-0007) e o
-   ESP32 recolhe-o no próximo poll — aplicação em até ~5 s. Por isso o
-   202 é sucesso e o painel mostra "enfileirado", nunca "entregue".
+   alcança a rede local, então o backend enfileira o comando na fila do Upstash
+   Redis (ADR-0007/0008) e o ESP32 recolhe-o no próximo poll — aplicação em até
+   ~10 s. Por isso o 202 é sucesso e o painel mostra "enfileirado", nunca
+   "entregue".
    Também mantém a monitorização ao vivo do admin: cicloMonitorizar() faz
    polling do feed via buscarUltimo() (/js/sensor.js) a cada INTERVALO_S.
    ══════════════════════════════════════════ */
@@ -47,7 +48,7 @@ async function enviarComando(actuator, action) {
     // 202 = enfileirado (ainda não aplicado no relé). O estado real chega pelo
     // ThingSpeak no ciclo seguinte; aqui mostramos o otimismo já para o clique
     // não "travar" e o ThingSpeak confirmar/corrigir.
-    mostrarStatus(`Comando enfileirado: ${actuator} → ${action} (o ESP32 aplica em até 5 s)`, 'ok');
+    mostrarStatus(`Comando enfileirado: ${actuator} → ${action} (o ESP32 aplica em até 10 s)`, 'ok');
     aplicarEstadoOtimista(actuator, action);
   } catch (e) {
     const msg = (e && e.name === 'AbortError')

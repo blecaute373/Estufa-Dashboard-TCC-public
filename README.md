@@ -38,13 +38,13 @@ npm test    # Small (validadores/erros/retry, sem I/O) + Medium (HTTP localhost,
 ```
 estufa-dashboard-tcc/
 ├── api/                     # Backend (Vercel serverless functions)
-├── lib/                     # Código partilhado dev/prod (config, auth, errors, validators, middleware, logger, thingspeak)
+├── lib/                     # Código partilhado dev/prod (config, auth, errors, validators, middleware, logger, thingspeak, control, store)
 ├── test/                    # Testes (node:test nativo, sem deps novas)
 ├── docs/                    # ADRs + contrato OpenAPI
 ├── .github/workflows/       # CI (check → test → audit)
 ├── public/                  # Frontend (HTML/CSS/JS)
 ├── mobile/                  # Apps mobile (Capacitor)
-├── models/                  # Schemas MongoDB (Mongoose)
+├── models/                  # Schemas MongoDB (Mongoose): User, AccessLog
 ├── scripts/                 # Scripts de build
 ├── electron-dashboard.js    # App desktop Dashboard
 ├── electron-admin.js        # App desktop Admin
@@ -58,11 +58,20 @@ Copie `.env.example` para `.env` e configure:
 
 ```env
 # MongoDB (obrigatório em produção; dev usa localhost se ausente)
+# -> User + AccessLog (utilizadores, hashes de senha, logs de acesso)
 MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/estufa
+
+# Upstash Redis (obrigatório em produção; base grátis)
+# -> apenas a fila de comandos que o ESP32 busca (ADR-0008)
+UPSTASH_REDIS_REST_URL=https://SEU-ENDPOINT.upstash.io
+UPSTASH_REDIS_REST_TOKEN=SEU_TOKEN
 
 # ThingSpeak (obrigatório para o proxy de dados)
 TS_CHANNEL=SEU_CHANNEL_ID
 TS_API_KEY=SUA_API_KEY
+
+# Token do dispositivo na Vercel (vai também em main.cpp -> API_VERCEL_TOKEN)
+DEVICE_TOKEN=cole-o-mesmo-valor-no-firmware
 
 # JWT (OBRIGATÓRIO em produção — sem fallback; dev gera efémero com aviso)
 JWT_SECRET=gere-com-openssl-rand-hex-64
@@ -72,6 +81,9 @@ PORT=3000
 ```
 
 Gere o segredo com: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+
+> ⚠️ O `UPSTASH_REDIS_REST_TOKEN` **nunca** vai para o firmware nem para o
+> browser. O ESP32 conhece apenas `DEVICE_TOKEN`, que é outra coisa.
 
 ## 🛡️ Segurança
 
@@ -85,11 +97,12 @@ Gere o segredo com: `node -e "console.log(require('crypto').randomBytes(64).toSt
 | Segredo JWT | `JWT_SECRET` obrigatório em produção (fail-fast, nunca volátil) |
 | Bootstrap admin | `POST /api/admin/promote-first` só sem admin existente (+ rate-limit) |
 | Variáveis | `.env` nunca versionado; `.env.example` sem segredos reais |
+| Fila de comandos | Fila isolada no Upstash Redis; `DEVICE_TOKEN` comparado em tempo constante; `UPSTASH_REDIS_REST_TOKEN` só no ambiente da Vercel (nunca no firmware) |
 
 ## 🚀 Deploy (Vercel)
 
 1. Conecte o repositório (Framework preset: Other; Output: `public`).
-2. Configure as envs: `MONGODB_URI`, `TS_CHANNEL`, `TS_API_KEY`, `JWT_SECRET`.
+2. Configure as envs: `MONGODB_URI`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `TS_CHANNEL`, `TS_API_KEY`, `JWT_SECRET`, `DEVICE_TOKEN`.
 3. Cada push/PR roda CI (`npm ci` → `check` → `test` → `audit`).
 4. Valide pós-deploy: `/api/health`, login/logout, dashboard, admin, PWA.
 
