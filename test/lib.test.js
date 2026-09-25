@@ -19,6 +19,7 @@ const { problem } = require('../lib/errors');
 const { isTransientError, backoffDelay, buildLastUrl, buildHistoryUrl } = require('../lib/thingspeak');
 const { validarComando, montarComando } = require('../lib/control');
 const { separarValidos, chaveFila, COMMAND_TTL_MS } = require('../lib/store');
+const { parseRedisUrl } = require('../lib/config');
 
 describe('validators (Small)', () => {
   it('aceita registo válido', () => {
@@ -176,5 +177,69 @@ describe('lib/store — fila Upstash Redis (Small, ADR-0008)', () => {
   it('fila vazia devolve listas vazias sem lancar', () => {
     assert.deepEqual(separarValidos([], agora), { validos: [], expirados: 0 });
     assert.deepEqual(separarValidos(null, agora), { validos: [], expirados: 0 });
+  });
+});
+
+describe('lib/config — REDIS_URL numa string so (Small, ADR-0008)', () => {
+  const HOST = 'https://us1-gato-feliz-12345.upstash.io';
+  const TOKEN = 'AbCdEf0123456789';
+
+  it('formato ?_token= (o que a documentacao da Upstash mostra)', () => {
+    assert.deepEqual(parseRedisUrl(`${HOST}/?_token=${TOKEN}`), { url: HOST, token: TOKEN });
+  });
+
+  it('formato userinfo: token antes do @', () => {
+    assert.deepEqual(parseRedisUrl(`https://${TOKEN}@us1-gato-feliz-12345.upstash.io`), {
+      url: HOST,
+      token: TOKEN,
+    });
+  });
+
+  it('formato userinfo com default:token@', () => {
+    assert.deepEqual(parseRedisUrl(`https://default:${TOKEN}@us1-gato-feliz-12345.upstash.io`), {
+      url: HOST,
+      token: TOKEN,
+    });
+  });
+
+  it('NUNCA devolve o token dentro do url (o SDK envia o header Bearer)', () => {
+    for (const entrada of [
+      `${HOST}/?_token=${TOKEN}`,
+      `https://${TOKEN}@us1-gato-feliz-12345.upstash.io`,
+      `https://default:${TOKEN}@us1-gato-feliz-12345.upstash.io`,
+    ]) {
+      const r = parseRedisUrl(entrada);
+      assert.equal(r.url.includes(TOKEN), false, `token vazou no url: ${r.url}`);
+      assert.equal(r.token, TOKEN);
+    }
+  });
+
+  it('ignora espacos em volta (copiar/colar do console costuma trazer)', () => {
+    assert.deepEqual(parseRedisUrl(`  ${HOST}/?_token=${TOKEN}  `), { url: HOST, token: TOKEN });
+  });
+
+  it('aceita o parametro ?token= sem underscore', () => {
+    assert.deepEqual(parseRedisUrl(`${HOST}/?token=${TOKEN}`), { url: HOST, token: TOKEN });
+  });
+
+  it('URL sem token → erro que diz COMO resolver', () => {
+    assert.throws(() => parseRedisUrl(HOST), /sem token.*\?_token=/s);
+  });
+
+  it('URL de TCP (rediss://) → erro que aponta para o endpoint HTTPS', () => {
+    assert.throws(
+      () => parseRedisUrl(`rediss://default:${TOKEN}@us1-gato-feliz-12345.upstash.io:6379`),
+      /URL de TCP/
+    );
+  });
+
+  it('vazio/ausente → erro com o nome da variavel', () => {
+    assert.throws(() => parseRedisUrl(''), /REDIS_URL/);
+    assert.throws(() => parseRedisUrl(undefined), /REDIS_URL/);
+    assert.throws(() => parseRedisUrl(null), /REDIS_URL/);
+  });
+
+  it('lixo que nao e URL → erro, nunca um token inventado', () => {
+    assert.throws(() => parseRedisUrl('nao-e-um-url'), /REDIS_URL invalida|REDIS_URL/);
   });
 });

@@ -29,7 +29,7 @@ Historico completo de todos os commits do projeto, organizados por versao.
      (8 640 comandos/dia = 259 200/mes, dentro dos 500K/mes do plano gratis;
       a 5 s seriam 518 400/mes e estourariam. A 10 s o controlo continua mais
       responsivo que a telemetria ThingSpeak, que publica a cada ~15 s.)
-     - .env.example/README: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+     - .env.example/README: REDIS_URL (uma unica variavel com endpoint + token)
      - admin.html + js/control.js: textos de "ate ~5 s" corrigidos para "~10 s"
        (o que o utilizador le na tela tinha de bater certo com o firmware)
      - sw.js cache estufa-v11
@@ -328,7 +328,7 @@ a874402 | 09/05/2026 | Initial commit
   - Chart.js dependente de CDN (sem fallback local)
   - **Firmware ainda nao uploaded** (ESP32 sem porta serial) e `API_VERCEL_TOKEN`
     por preencher em `main.cpp`
-  - **`DEVICE_TOKEN` e as duas `UPSTASH_REDIS_REST_*` por definir no ambiente da
+  - **`DEVICE_TOKEN` e a `REDIS_URL` por definir no ambiente da
     Vercel** — sem elas o poll responde 401 e a fila nao enfileira
   - Firmware `.ino` fora do versionamento (gitignored) — sem CI de compilacao
   - Botao "verificar broker" inexistente no caminho **local** (a indisponibilidade
@@ -358,10 +358,10 @@ a874402 | 09/05/2026 | Initial commit
     Variable na Vercel **e** estar igual no firmware (`API_VERCEL_TOKEN`) — sem
     isso o endpoint responde 401 (fail-closed) e nenhum comando e aplicado.
     Latencia de ate ~10 s por desenho (era ~5 s; ver ADR-0008).
-12. **Fila de comandos exige `UPSTASH_REDIS_REST_URL` e
-    `UPSTASH_REDIS_REST_TOKEN` na Vercel (ADR-0008).** Sem as duas, `lib/store.js`
-    falha com mensagem explicita (fail-fast, sem fallback) e
-    `POST /api/control` devolve 500. Criar a base gratuita em
+12. **Fila de comandos exige `REDIS_URL` na Vercel (ADR-0008).** E uma variavel
+    so, com endpoint + token: `https://SEU-ENDPOINT.upstash.io/?_token=SEU_TOKEN`.
+    Sem ela, `lib/store.js` falha com mensagem explicita (fail-fast, sem
+    fallback) e `POST /api/control` devolve 500. Criar a base gratuita em
     https://console.upstash.com. O token **nao** vai para o firmware.
 
 ---
@@ -980,8 +980,7 @@ app.whenReady().then(createWindow);
 | Variavel | Descricao | Obrigatoria |
 | -------- | --------- | ----------- |
 | MONGODB_URI | URI de conexao MongoDB Atlas (User + AccessLog) | Sim |
-| UPSTASH_REDIS_REST_URL | Endpoint REST do Upstash Redis (fila de comandos) | Sim (producao) |
-| UPSTASH_REDIS_REST_TOKEN | Token do Upstash — **so na Vercel, nunca no firmware** | Sim (producao) |
+| REDIS_URL | Upstash Redis numa string so (endpoint + token) — fila de comandos | Sim (producao) |
 | DEVICE_TOKEN | Token que o ESP32 envia em `X-Device-Token` (comparado em tempo constante) | Sim (producao) |
 | JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao |
 | TS_API_KEY | API key do ThingSpeak (escrita) | Recomendado |
@@ -1019,7 +1018,7 @@ app.whenReady().then(createWindow);
   fecha a corrida `find`/`updateMany` do ADR-0007). Comando nunca recolhido
   expira aos 5 min. Latencia ate ~10 s. Ver ADR-0008.
   Sem `DEVICE_TOKEN` na Vercel ⇒ 401 *fail-closed*; sem as duas
-  `UPSTASH_REDIS_REST_*` ⇒ 500 com mensagem explicita (fail-fast).
+  `REDIS_URL` ausente ⇒ 500 com mensagem explicita (fail-fast).
 - **Topicos MQTT:** `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001/comando`
   payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv) e `{"duty":0-100}` ou
   `{"command":"AUTO"}` (ilum).
@@ -1145,7 +1144,7 @@ Baseado no Express.js Security Best Practices:
 | THINGSPEAK_API_KEY | Vercel env vars | ✅ Seguro |
 | TS_CHANNEL | Vercel env vars | ✅ Seguro |
 | DEVICE_TOKEN | Vercel env vars **e** `main.cpp` (obrigatorio: e o unico segredo que o firmware conhece) | ✅ Seguro |
-| UPSTASH_REDIS_REST_TOKEN | **So** Vercel env vars — nunca no firmware, nunca no browser | ✅ Seguro |
+| REDIS_URL | **So** Vercel env vars (endpoint + token) — nunca no firmware, nunca no browser | ✅ Seguro |
 
 **Regras de Seguranca:**
 - Nunca commitar arquivos `.env` ou `.jwt_secret`
@@ -1154,7 +1153,7 @@ Baseado no Express.js Security Best Practices:
 - Channel ID e API Key devem ser definidos via variaveis de ambiente
 - `DEVICE_TOKEN` vazio ⇒ *fail-closed*: o poll devolve 401 e nenhum comando
   chega ao atuador
-- `UPSTASH_REDIS_REST_TOKEN` nunca entra no firmware: o ESP32 so conhece o
+- `REDIS_URL` nunca entra no firmware: o ESP32 so conhece o
   URL publico da Vercel e o `DEVICE_TOKEN`
 
 ---

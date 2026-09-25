@@ -41,7 +41,7 @@ O plano grátis é contado em **comandos**, e o poll é o que o consome. Com `LP
 2. **`models/ControlCommand.js` — removido.** `User` e `AccessLog` ficam no Mongo.
 3. **`api/control.js`** — `POST` faz `LPUSH`+`EXPIRE` e responde `202`; `GET /pending` faz `LPOP` e **já não chama `connectDB()`**.
 4. **Auditoria best-effort (§13):** o comando entra na fila **antes** de a auditoria correr, e a falha do `AccessLog` é só registada em log. Uma falha do Atlas **não bloqueia o controlo da estufa** (bolkhead §11.3) — era o contrário antes, quando `connectDB()` precedia o `create()`.
-5. **`lib/config.js`** — `getRedisConfig()` com *fail-fast* e **sem fallback**: URL e token têm de existir ambos. Sem fallback silencioso, porque um `new Redis({url: null})` só rebentaria no primeiro poll real, em produção, no caminho crítico.
+5. **`lib/config.js`** — `REDIS_URL`: **uma única variável** com endpoint **e** token, que é o que o painel da Upstash/Vercel KV mostra. `parseRedisUrl()` extrai o `{url, token}` que o SDK `@upstash/redis` continua a receber, e aceita os formatos documentados (`?_token=`, `https://TOKEN@host`, `https://default:TOKEN@host`). O token é removido do URL devolvido — o SDK envia o cabeçalho `Authorization: Bearer` e não quer o token duplicado na query string. *Fail-fast* e **sem fallback**: uma variável a menos para alguém errar, e sem ela a fila não funciona logo com mensagem explícita, em vez de rebentar no primeiro poll real com 500 no caminho crítico.
 6. **Firmware:** `POLL_COMANDO_MS` de 5 s → **10 s**. Nada mais muda — o contrato HTTP é idêntico.
 
 ## Alternativas consideradas
@@ -60,4 +60,4 @@ O plano grátis é contado em **comandos**, e o poll é o que o consome. Com `LP
 - **Isolamento de falhas:** o caminho crítico dos atuadores deixou de depender do MongoDB Atlas.
 - **Duas dependências** em vez de uma: aceito, e justificado pela cobertura do caminho crítico — não por preferência estética.
 - **Limites do plano grátis (verificados na documentação):** sem réplicação multi-instância (ponto único de infraestrutura, *não* perda de dados — o Durable Storage escreve em memória **e** disco); *eviction* **desligado por padrão**, ou seja, ao atingir 256 MB as escritas são **rejeitadas** em vez de apagar chaves; base arquivada após 30 dias de inatividade (irrelevante: com poll de 10 s nunca fica inativa).
-- **Segredos:** `UPSTASH_REDIS_REST_TOKEN` vive **só** no ambiente da Vercel. O firmware conhece apenas `DEVICE_TOKEN`.
+- **Segredos:** o token vive dentro de `REDIS_URL`, **só** no ambiente da Vercel. O firmware conhece apenas `DEVICE_TOKEN`.

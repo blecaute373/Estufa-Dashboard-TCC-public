@@ -63,8 +63,8 @@ MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/estufa
 
 # Upstash Redis (obrigatório em produção; base grátis)
 # -> apenas a fila de comandos que o ESP32 busca (ADR-0008)
-UPSTASH_REDIS_REST_URL=https://SEU-ENDPOINT.upstash.io
-UPSTASH_REDIS_REST_TOKEN=SEU_TOKEN
+# -> UMA variável com endpoint + token: https://host/?_token=SEU_TOKEN
+REDIS_URL=https://SEU-ENDPOINT.upstash.io/?_token=SEU_TOKEN
 
 # ThingSpeak (obrigatório para o proxy de dados)
 TS_CHANNEL=SEU_CHANNEL_ID
@@ -82,8 +82,8 @@ PORT=3000
 
 Gere o segredo com: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
 
-> ⚠️ O `UPSTASH_REDIS_REST_TOKEN` **nunca** vai para o firmware nem para o
-> browser. O ESP32 conhece apenas `DEVICE_TOKEN`, que é outra coisa.
+> ⚠️ O `REDIS_URL` **nunca** vai para o firmware nem para o browser. O
+> ESP32 conhece apenas `DEVICE_TOKEN`, que é outra coisa.
 
 ## 🛡️ Segurança
 
@@ -97,12 +97,12 @@ Gere o segredo com: `node -e "console.log(require('crypto').randomBytes(64).toSt
 | Segredo JWT | `JWT_SECRET` obrigatório em produção (fail-fast, nunca volátil) |
 | Bootstrap admin | `POST /api/admin/promote-first` só sem admin existente (+ rate-limit) |
 | Variáveis | `.env` nunca versionado; `.env.example` sem segredos reais |
-| Fila de comandos | Fila isolada no Upstash Redis; `DEVICE_TOKEN` comparado em tempo constante; `UPSTASH_REDIS_REST_TOKEN` só no ambiente da Vercel (nunca no firmware) |
+| Fila de comandos | Fila isolada no Upstash Redis; `DEVICE_TOKEN` comparado em tempo constante; `REDIS_URL` (endpoint + token) só no ambiente da Vercel (nunca no firmware) |
 
 ## 🚀 Deploy (Vercel)
 
 1. Conecte o repositório (Framework preset: Other; Output: `public`).
-2. Configure as envs: `MONGODB_URI`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `TS_CHANNEL`, `TS_API_KEY`, `JWT_SECRET`, `DEVICE_TOKEN`.
+2. Configure as envs: `MONGODB_URI`, `REDIS_URL`, `TS_CHANNEL`, `TS_API_KEY`, `JWT_SECRET`, `DEVICE_TOKEN`.
 3. Cada push/PR roda CI (`npm ci` → `check` → `test` → `audit`).
 4. Valide pós-deploy: `/api/health`, login/logout, dashboard, admin, PWA.
 
