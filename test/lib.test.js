@@ -18,7 +18,8 @@ const {
 const { problem } = require('../lib/errors');
 const { isTransientError, backoffDelay, buildLastUrl, buildHistoryUrl } = require('../lib/thingspeak');
 const { validarComando, montarComando, normalizarDuty } = require('../lib/control');
-const { separarValidos, chaveFila, COMMAND_TTL_MS } = require('../lib/store');
+const { separarValidos, chaveFila, COMMAND_TTL_MS, colapsarPorAtuador } = require('../lib/store');
+const { criarCacheTtl, cacheControlPublico } = require('../lib/cache');
 const { parseRedisUrl } = require('../lib/config');
 
 describe('validators (Small)', () => {
@@ -274,5 +275,111 @@ describe('lib/config — REDIS_URL numa string so (Small, ADR-0008)', () => {
 
   it('lixo que nao e URL → erro, nunca um token inventado', () => {
     assert.throws(() => parseRedisUrl('nao-e-um-url'), /REDIS_URL invalida|REDIS_URL/);
+  });
+});
+
+describe('lib/cache — TTL + coalescência (Small)', () => {
+  it('serve da cache dentro do TTL e volta ao upstream depois de expirar', async () => {
+    let agora = 1000;
+    let chamadas = 0;
+    const cache = criarCacheTtl({ ttlMs: 8000, agora: () => agora });
+    const buscar = async () => { chamadas += 1; return { valor: chamadas }; };
+
+    assert.deepEqual(await cache.obterOuCarregar('k', buscar), { valor: 1 });
+    agora += 7999;   // 1 ms antes de expirar
+    assert.deepEqual(await cache.obterOuCarregar('k', buscar), { valor: 1 }, 'dentro do TTL é cache hit');
+    assert.equal(chamadas, 1, 'não repetiu a ida ao upstream');
+
+    agora += 1;      // 8000 ms: expirou
+    assert.deepEqual(await cache.obterOuCarregar('k', buscar), { valor: 2 });
+    assert.equal(chamadas, 2, 'depois do TTL vai buscar de novo');
+  });
+
+  it('pedidos simultâneos com cache fria partilham UMA ida ao upstream', async () => {
+    let chamadas = 0;
+    let libertar;
+    const bloqueio = new Promise((r) => { libertar = r; });
+    const cache = criarCacheTtl({ ttlMs: 8000 });
+    const buscar = async () => { chamadas += 1; await bloqueio; return 'dado'; };
+
+    const emParalelo = Promise.all([
+      cache.obterOuCarregar('k', buscar),
+      cache.obterOuCarregar('k', buscar),
+      cache.obterOuCarregar('k', buscar),
+    ]);
+    libertar();      // o primeiro fetch ainda está em curso quando os outros chegam
+    assert.deepEqual(await emParalelo, ['dado', 'dado', 'dado']);
+    assert.equal(chamadas, 1, 'coalescência: 3 pedidos, 1 fetch');
+  });
+
+  it('falha NÃO fica em cache (erro transitório não contamina a janela de 8 s)', async () => {
+    let chamadas = 0;
+    const cache = criarCacheTtl({ ttlMs: 8000 });
+    const buscar = async () => {
+      chamadas += 1;
+      if (chamadas === 1) throw new Error('upstream em baixo');
+      return 'ok';
+    };
+
+    await assert.rejects(() => cache.obterOuCarregar('k', buscar), /upstream em baixo/);
+    assert.equal(cache.tamanho(), 0, 'nada foi guardado');
+    assert.equal(await cache.obterOuCarregar('k', buscar), 'ok', 'a tentativa seguinte é limpa');
+    assert.equal(chamadas, 2);
+  });
+
+  it('limite de entradas evicta a mais antiga (memória limitada)', () => {
+    const cache = criarCacheTtl({ ttlMs: 8000, max: 2 });
+    cache.set('a', 1);
+    cache.set('b', 2);
+    cache.set('c', 3);
+    assert.equal(cache.get('a'), undefined, 'a mais antiga saiu');
+    assert.equal(cache.get('b'), 2);
+    assert.equal(cache.get('c'), 3);
+    assert.equal(cache.tamanho(), 2);
+  });
+
+  it('cacheControlPublico segue o TTL em segundos (browser dedupe)', () => {
+    assert.equal(cacheControlPublico(8000), 'public, max-age=8');
+    assert.equal(cacheControlPublico(1500), 'public, max-age=1');
+  });
+});
+
+describe('lib/store — colapso por atuador (Small)', () => {
+  const cmd = (actuator, created_at, action = 'on') => ({ id: `${actuator}-${created_at}`, actuator, action, created_at });
+
+  // A ordem de saída do `LPOP` sobre `LPUSH` é LIFO: o mais novo chega
+  // primeiro. Esta é exactamente a lista que o dispositivo receberia.
+  it('mantém só o comando mais recente de cada atuador', () => {
+    const r = colapsarPorAtuador([
+      cmd('vent', 300, 'off'),
+      cmd('vent', 200, 'on'),
+      cmd('vent', 100, 'off'),
+    ]);
+    assert.equal(r.comandos.length, 1);
+    assert.equal(r.comandos[0].action, 'off', 'o estado final é a última intenção do admin');
+    assert.equal(r.colapsados, 2);
+  });
+
+  it('não toca em atuadores diferentes', () => {
+    const r = colapsarPorAtuador([cmd('vent', 300), cmd('light', 200), cmd('valve', 100)]);
+    assert.equal(r.comandos.length, 3);
+    assert.equal(r.colapsados, 0);
+  });
+
+  it('em empate de created_at fica o primeiro visto (o mais recente, em LIFO)', () => {
+    const r = colapsarPorAtuador([cmd('vent', 100, 'novo'), cmd('vent', 100, 'antigo')]);
+    assert.equal(r.comandos.length, 1);
+    assert.equal(r.comandos[0].action, 'novo');
+  });
+
+  it('comando sem actuator passa tal e qual (nunca descartado em silêncio)', () => {
+    const r = colapsarPorAtuador([{ id: 'x', action: 'on' }, cmd('vent', 10)]);
+    assert.equal(r.comandos.length, 2);
+    assert.equal(r.colapsados, 0);
+  });
+
+  it('lista vazia/null devolve vazio sem lançar', () => {
+    assert.deepEqual(colapsarPorAtuador([]), { comandos: [], colapsados: 0 });
+    assert.deepEqual(colapsarPorAtuador(null), { comandos: [], colapsados: 0 });
   });
 });

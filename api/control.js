@@ -57,12 +57,14 @@ function tokenValido(req) {
 
 /**
  * Trilha de auditoria (`AccessLog` no MongoDB) — deliberadamente
- * **best-effort e não bloqueante**.
+ * **best-effort e fora do caminho crítico**.
  *
  * O caminho crítico dos atuadores não pode depender do MongoDB (ADR-0008,
  * bolkhead §11.3): se o Atlas estiver em baixo, o comando tem de continuar a
  * ser entregue ao ESP32. Por isso a auditoria corre DEPOIS de o comando já
- * estar na fila, e qualquer falha sua é apenas registada em log.
+ * estar na fila **e depois de a resposta 202 sair** — um `connectDB()` em cold
+ * start custava segundos que o utilizador esperava a olhar para o botão, sem
+ * que isso mudasse nada no resultado. Qualquer falha sua é apenas log.
  */
 async function auditar(req, actuator, action, cmdId) {
   try {
@@ -93,9 +95,14 @@ app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
   if (validacao.erro)
     return sendProblem(req, res, 'VALIDATION', validacao.erro);
 
+  // Só a fila está no `try`: a partir do momento em que a resposta 202 sai,
+  // um `sendProblem` no catch daria "headers already sent". Separar as duas
+  // fases é o que torna a resposta e a auditoria independentes.
+  let cmd;
   try {
-    // Fila primeiro: e o caminho critico. `LPUSH` + `EXPIRE` (Lib/store.js).
-    const cmd = await enfileirarComando({
+    // Fila primeiro: é o caminho crítico. `LPUSH` + `EXPIRE` num pipeline só
+    // (lib/store.js) — 1 round trip ao Upstash.
+    cmd = await enfileirarComando({
       device: DEVICE_ID,
       actuator,
       action,
@@ -103,23 +110,27 @@ app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
       username: req.user?.username || null,
       userId: req.user?.id || null,
     });
-
-    logger.info('controlo_enfileirado', {
-      requestId: req.requestId, actuator, action, username: req.user?.username || null,
-    });
-
-    // Auditoria depois (Mongo) — nunca pode impedir a entrega (§10.1).
-    await auditar(req, actuator, action, cmd.id);
-
-    // 202 = aceito para processamento, ainda nao aplicado (§14.1).
-    return res.status(202).json({
-      ok: true, queued: true, id: cmd.id,
-      actuator, action, payload: validacao.payload,
-      expires_at: new Date(cmd.expires_at).toISOString(),
-    });
   } catch (err) {
     return sendProblem(req, res, 'INTERNAL', 'Erro ao enfileirar comando.', err);
   }
+
+  logger.info('controlo_enfileirado', {
+    requestId: req.requestId, actuator, action, username: req.user?.username || null,
+  });
+
+  // 202 = aceite para processamento, ainda não aplicado (§14.1). A resposta sai
+  // ANTES da auditoria: o utilizador não espera pelo MongoDB (o comando já está
+  // na fila e o ESP32 vai buscá-lo dentro de ~10 s, com ou sem log).
+  res.status(202).json({
+    ok: true, queued: true, id: cmd.id,
+    actuator, action, payload: validacao.payload,
+    expires_at: new Date(cmd.expires_at).toISOString(),
+  });
+
+  // Auditoria depois da resposta — nunca pode impedir a entrega (§10.1). Se a
+  // instância serverless for congelada mal responda, o pior caso é perder uma
+  // linha de auditoria (best-effort por desenho), nunca atrasar um comando.
+  await auditar(req, actuator, action, cmd.id);
 });
 
 /* ── GET /api/control/pending — o ESP32 recolhe a fila ── */
@@ -136,12 +147,20 @@ app.get('/api/control/pending', deviceLimiter, async (req, res) => {
     // `find()` e marcava com `updateMany()` em separado — entre as duas, um
     // segundo poll podia recolher os mesmos comandos (ENGENHARIA §12.2).
     // Nao ha connectDB() aqui: o poll nao toca no MongoDB.
-    const { comandos, expirados } = await retirarComandos(DEVICE_ID, MAX_COMMANDS_PER_POLL);
+    const { comandos, expirados, colapsados } = await retirarComandos(DEVICE_ID, MAX_COMMANDS_PER_POLL);
 
     if (expirados > 0) {
       // Comando nunca recolhido apos 5 min: descartado (TTL logico, ADR-0008).
       logger.info('comandos_expirados_descartados', {
         requestId: req.requestId, device: DEVICE_ID, count: expirados,
+      });
+    }
+
+    if (colapsados > 0) {
+      // Vários comandos para o mesmo atuador: só o mais recente seguiu (é o
+      // estado final que o admin pediu) — ver `colapsarPorAtuador` em lib/store.
+      logger.info('comandos_colapsados', {
+        requestId: req.requestId, device: DEVICE_ID, count: colapsados,
       });
     }
 

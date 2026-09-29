@@ -179,3 +179,57 @@ describe('erros de API em JSON, nunca HTML (Medium)', () => {
     }
   });
 });
+
+describe('vercel.json espelha os headers do Express (Medium)', () => {
+  // Na Vercel, quem serve o estático e o `/api/*` é o Edge — o Express só corre
+  // dentro da função serverless. Se o bloco `headers` do vercel.json divergir do
+  // `securityHeaders()` do Express, o MESMO browser recebe headers diferentes
+  // conforme o caminho (página estática vs API). O middleware já dizia "espelham
+  // o bloco do vercel.json"; este teste é o que garante que é verdade.
+  const fs = require('fs');
+  const path = require('path');
+
+  function headersDoExpress() {
+    const { securityHeaders } = require('../lib/middleware');
+    const capturados = new Map();
+    const resFalso = { setHeader: (chave, valor) => capturados.set(chave.toLowerCase(), valor) };
+    securityHeaders()({}, resFalso, () => {});
+    return capturados;
+  }
+
+  function headersDoVercel() {
+    const vercel = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));
+    const bloco = (vercel.headers || []).find((h) => h.source === '/(.*)');
+    assert.ok(bloco, 'vercel.json tem de ter um bloco headers para /(.*)');
+    return new Map(bloco.headers.map((h) => [h.key.toLowerCase(), h.value]));
+  }
+
+  it('cada header de securityHeaders() está no vercel.json com o mesmo valor', () => {
+    const noExpress = headersDoExpress();
+    const noVercel = headersDoVercel();
+
+    assert.ok(noExpress.size >= 4, 'o middleware devia registar os headers base');
+    for (const [chave, valor] of noExpress) {
+      assert.equal(
+        noVercel.get(chave),
+        valor,
+        `header ${chave} divergiu: Express="${valor}" vs vercel.json="${noVercel.get(chave)}"`
+      );
+    }
+  });
+
+  it('HSTS só existe no vercel.json (produção) — em dev o Express não o regista', () => {
+    // Divergência INTENCIONAL e documentada em lib/middleware.js: em
+    // http://localhost o HSTS é ignorado pelo browser, e registá-lo à mesma
+    // seria testar nada. O vercel.json só corre sobre HTTPS.
+    assert.equal(
+      headersDoExpress().has('strict-transport-security'),
+      false,
+      'o Express não deve emitir HSTS fora de produção'
+    );
+    assert.match(
+      headersDoVercel().get('strict-transport-security') || '',
+      /max-age=\d+/
+    );
+  });
+});

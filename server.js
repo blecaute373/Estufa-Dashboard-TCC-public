@@ -28,6 +28,7 @@ const { logger, auditLog } = require('./lib/logger');
 const {
   fetchJsonWithRetry, buildLastUrl, buildHistoryUrl,
 } = require('./lib/thingspeak');
+const { criarCacheTtl, cacheControlPublico, TTL_PADRAO_MS } = require('./lib/cache');
 const { montarComando } = require('./lib/control');
 
 const MONGODB_URI = getMongoUri();
@@ -201,27 +202,34 @@ app.get('/api/auth/status', async (req, res) => {
 });
 
 /* ── THINGSPEAK PROXY (resiliente: timeout + retry, §10) ── */
-app.get('/api/thingspeak/last', async (req, res) => {
-  if (!isThingSpeakConfigured)
-    return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
+// Cache curto partilhado com o caminho serverless (api/thingspeak.js), para os
+// dois ambientes responderem igual: TTL de 8 s + coalescência de pedidos
+// simultâneos. Ver lib/cache.js para o porquê do valor.
+const cacheLeituras = criarCacheTtl({ ttlMs: TTL_PADRAO_MS, max: 8 });
+
+async function responderComCacheThingSpeak(req, res, chave, buscar) {
   try {
-    const data = await fetchJsonWithRetry(buildLastUrl(TS_CHANNEL, TS_API_KEY));
+    const data = await cacheLeituras.obterOuCarregar(chave, buscar);
+    res.setHeader('Cache-Control', cacheControlPublico(TTL_PADRAO_MS));
     return res.json(data);
   } catch (err) {
     return sendProblem(req, res, 'UPSTREAM', 'Falha ao conectar com ThingSpeak. Tente novamente.', err);
   }
+}
+
+app.get('/api/thingspeak/last', async (req, res) => {
+  if (!isThingSpeakConfigured)
+    return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
+  return responderComCacheThingSpeak(req, res, 'last',
+    () => fetchJsonWithRetry(buildLastUrl(TS_CHANNEL, TS_API_KEY)));
 });
 
 app.get('/api/thingspeak/history', async (req, res) => {
   if (!isThingSpeakConfigured)
     return sendProblem(req, res, 'INTERNAL', 'ThingSpeak não configurado.');
   const results = parseResults(req.query);
-  try {
-    const data = await fetchJsonWithRetry(buildHistoryUrl(TS_CHANNEL, TS_API_KEY, results));
-    return res.json(data);
-  } catch (err) {
-    return sendProblem(req, res, 'UPSTREAM', 'Falha ao conectar com ThingSpeak. Tente novamente.', err);
-  }
+  return responderComCacheThingSpeak(req, res, `history:${results}`,
+    () => fetchJsonWithRetry(buildHistoryUrl(TS_CHANNEL, TS_API_KEY, results)));
 });
 
 /* ── ADMIN (autorização antes da lógica, §8.2) ── */
@@ -294,8 +302,13 @@ app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
       return sendProblem(req, res, 'UPSTREAM', 'Falha ao publicar comando.', publishErr);
     }
 
+    // Resposta primeiro, auditoria depois — paridade com o caminho serverless
+    // (api/control.js): o `log()` não pode ser latência no caminho crítico. O
+    // comando já foi publicado no broker; esperar pelo Mongo aqui só atrasava
+    // o utilizador (cold start do Atlas custava segundos).
+    res.json({ ok: true, actuator, action, payload: comando.payload });
     await log(null, req.user?.username || 'desconhecido', 'control_' + actuator, req, { action });
-    return res.json({ ok: true, actuator, action, payload: comando.payload });
+    return;
   } catch (err) {
     return sendProblem(req, res, 'INTERNAL', 'Erro ao enviar comando.', err);
   }
