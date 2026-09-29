@@ -180,6 +180,42 @@ describe('erros de API em JSON, nunca HTML (Medium)', () => {
   });
 });
 
+describe('montagem partilhada das duas entradas (Medium)', () => {
+  // Este é o teste que impede a RE-DUPLICAÇÃO. A app era montada à mão em
+  // `server.js` e em `api/index.js`, cada uma com a sua cópia dos mesmos dez
+  // blocos — e foi assim que `/api/control` divergiu. Agora a montagem vive em
+  // `lib/app.js`; se alguém voltar a copiar middlewares para uma das entradas,
+  // isto falha antes de a divergência chegar a produção.
+  const fs = require('fs');
+  const path = require('path');
+  const ler = (ficheiro) => fs.readFileSync(path.join(__dirname, '..', ficheiro), 'utf8');
+
+  it('as duas entradas usam a montagem comum de lib/app.js', () => {
+    for (const ficheiro of ['server.js', 'api/index.js']) {
+      const src = ler(ficheiro);
+      for (const fn of ['montarBase', 'rotasDePaginas', 'rotaHealth', 'fecharApp']) {
+        assert.match(
+          src,
+          new RegExp(`${fn}\\(app`),
+          `${ficheiro} devia chamar ${fn}(app) de lib/app.js`
+        );
+      }
+    }
+  });
+
+  it('nenhuma entrada remonta base, estáticos ou error handler à mão', () => {
+    for (const ficheiro of ['server.js', 'api/index.js']) {
+      // Ignora linhas de comentário: os comentários citam exatamente estes
+      // padrões ao explicar porque é que a montagem é partilhada.
+      const src = ler(ficheiro).replace(/^\s*\/\/.*$/gm, '');
+      assert.doesNotMatch(src, /app\.set\(\s*'trust proxy'/, `${ficheiro} monta trust proxy fora de lib/app.js`);
+      assert.doesNotMatch(src, /app\.use\(express\.json\(/, `${ficheiro} monta express.json fora de lib/app.js`);
+      assert.doesNotMatch(src, /app\.use\(express\.static\(/, `${ficheiro} monta estáticos fora de lib/app.js`);
+      assert.doesNotMatch(src, /requireAuthPage\(/, `${ficheiro} recria middlewares de página fora de lib/app.js`);
+    }
+  });
+});
+
 describe('vercel.json espelha os headers do Express (Medium)', () => {
   // Na Vercel, quem serve o estático e o `/api/*` é o Edge — o Express só corre
   // dentro da função serverless. Se o bloco `headers` do vercel.json divergir do

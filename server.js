@@ -11,7 +11,6 @@ require('dotenv').config();
 const express      = require('express');
 const mongoose     = require('mongoose');
 const bcrypt       = require('bcryptjs');
-const cookieParser = require('cookie-parser');
 const path         = require('path');
 
 const {
@@ -19,16 +18,16 @@ const {
 } = require('./lib/config');
 const {
   signToken, setAuthCookie, clearAuthCookie, requireAuthApi, requireAdminApi,
-  requireAuthPage, requireAdminPage,
 } = require('./lib/auth');
 const { validateRegister, normalizeLogin, parsePagination, parseResults } = require('./lib/validators');
 const { sendProblem } = require('./lib/errors');
-const { requestId, securityHeaders, authLimiter, controlLimiter } = require('./lib/middleware');
+const { authLimiter, controlLimiter } = require('./lib/middleware');
 const { logger, auditLog } = require('./lib/logger');
 const {
   fetchJsonWithRetry, buildLastUrl, buildHistoryUrl,
 } = require('./lib/thingspeak');
 const { criarCacheTtl, cacheControlPublico, TTL_PADRAO_MS } = require('./lib/cache');
+const { montarBase, rotasDePaginas, rotaHealth, fecharApp } = require('./lib/app');
 const { montarComando } = require('./lib/control');
 
 const MONGODB_URI = getMongoUri();
@@ -108,16 +107,13 @@ async function log(userId, username, event, req, details = null) {
 
 /* ── APP ── */
 const app = express();
-app.set('trust proxy', 1);
-// `requestId` ANTES de `express.json()` — ver o comentário equivalente em
-// api/index.js: sem esta ordem, JSON malformado sai com requestId null.
-app.use(requestId);
-app.use(express.json({ limit: '32kb' }));
-app.use(cookieParser());
-app.use(securityHeaders());
+const DIR_PUBLICO = path.join(__dirname, 'public');
 
-const requireAuth = requireAuthPage('/index.html');
-const requireAdminPageMw = requireAdminPage('/index.html', '/dashboard.html?error=restrito');
+// trust proxy + requestId + json 32kb + cookies + headers de segurança: a
+// montagem é PARTILHADA com a entrada serverless (lib/app.js), para os dois
+// ambientes não divergirem — foi exatamente o que aconteceu quando cada
+// ficheiro tinha a sua cópia (ver test/parity.test.js e ADR-0003).
+montarBase(app);
 
 /* ── AUTH ROUTES ── */
 app.post('/api/auth/register', authLimiter, async (req, res) => {
@@ -315,32 +311,18 @@ app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
 });
 
 /* ── HEALTH (para CI/monitoramento, §9.2) ── */
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, uptime: process.uptime(), thingspeak: isThingSpeakConfigured });
-});
+rotaHealth(app);
 
 /* ── PAGES ── */
-app.get('/dashboard.html', requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
-app.get('/admin.html',     requireAdminPageMw, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/',               requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
+// Páginas: login público, dashboard/admin com sessão — a mesma lista e os
+// mesmos middlewares que a entrada serverless (lib/app.js).
+rotasDePaginas(app, DIR_PUBLICO);
 
-// Rota de API inexistente → 404 em JSON, espelhado em api/index.js. Sem isto o
-// `static` + o 404 do Express responderiam HTML, e o cliente tentaria res.json()
-// sobre um corpo que não é JSON (paridade verificada em test/parity.test.js).
-app.use('/api', (req, res) => {
-  sendProblem(req, res, 'NOT_FOUND', 'Endpoint inexistente.');
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Error handler final (mesma normalização RFC 9457 do serverless): sem isto,
-// JSON malformado devolvia a página HTML de erro do Express, com stack em dev.
-app.use((err, req, res, next) => {
-  const isBadJson = err?.type === 'entity.parse.failed' || err instanceof SyntaxError;
-  const code = isBadJson ? 'VALIDATION' : 'INTERNAL';
-  const publicDetail = isBadJson ? 'Corpo JSON inválido.' : 'Erro interno. Tente novamente.';
-  return sendProblem(req, res, code, publicDetail, err);
-});
+// Fecho: 404 JSON de /api → estáticos → error handler. Sem fallback de página:
+// localmente o HTML é servido pelo `static`, e um caminho desconhecido deve
+// devolver 404; na Vercel há fallback, porque o Edge não serve HTML (ver
+// lib/app.js).
+fecharApp(app, { dirPublico: DIR_PUBLICO });
 
 /* ── START ── */
 /* ── GRACEFUL SHUTDOWN (ENGENHARIA §17.1) ──
