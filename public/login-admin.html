@@ -69,64 +69,8 @@
 
   </div>
 </main>
-<script>
-/* ── PARTICLES ─ */
-(function () {
-  const box = document.getElementById('particles');
-  if (!box) return;
-  for (let i = 0; i < 14; i++) {
-    const p = document.createElement('span');
-    p.className = 'particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.bottom = '-10px';
-    p.style.animationDelay = (Math.random() * 12) + 's';
-    p.style.animationDuration = (10 + Math.random() * 12) + 's';
-    box.appendChild(p);
-  }
-})();
-
-function peekPass(id, btn) {
-  const el = document.getElementById(id);
-  el.type = el.type === 'password' ? 'text' : 'password';
-  btn.textContent = el.type === 'password' ? '👁' : '🙈';
-}
-
-async function doLogin() {
-  const btn = document.getElementById('btnLogin');
-  const msg = document.getElementById('loginMsg');
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  if (!user || !pass) return showMsg(msg, 'error', 'Preencha todos os campos.');
-  setLoading(btn, true);
-  clearMsgs();
-  try {
-    const r = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, password: pass }),
-    });
-    const d = await r.json();
-    if (r.ok) {
-      if (!d.is_admin) { showMsg(msg, 'error', 'Acesso negado. Esta conta não é administradora.'); return; }
-      if (d.token) localStorage.setItem('estufa_token', d.token);
-      showMsg(msg, 'success', '✓ Bem-vindo, ' + d.username + '!');
-      setTimeout(() => window.location.href = '/admin.html', 900);
-    } else {
-      showMsg(msg, 'error', d.detail || d.title || d.error || 'Erro ao entrar.');
-    }
-  } catch {
-    showMsg(msg, 'error', 'Sem conexão com o servidor.');
-  } finally {
-    setLoading(btn, false);
-  }
-}
-
-function setLoading(btn, on) { btn.disabled = on; btn.classList.toggle('loading', on); }
-function showMsg(el, type, text) { el.className = 'msg ' + type + ' show'; el.textContent = text; }
-function clearMsgs() { document.querySelectorAll('.msg').forEach(el => el.classList.remove('show')); }
-
-document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-</script>
+<script src="/js/auth-comum.js"></script>
+<script src="/js/login-admin.js"></script>
 <script src="/js/theme.js"></script>
 <script src="/pwa.js"></script>
 </body>

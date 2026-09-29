@@ -52,6 +52,15 @@ describe('paginas publicas servidas com os novos CSS', () => {
       assert.ok(html.includes('/js/theme.js'), 'deveria carregar theme.js');
       assert.ok(html.includes('/pwa.js'), 'deveria carregar pwa.js');
 
+      // F4: nenhum script de página inline. A única exceção é o bootstrap do
+      // tema, que TEM de correr antes do primeiro paint para não haver flash
+      // de tema errado — esse fica inline de propósito.
+      const blocos = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+        .map((m) => m[1].trim())
+        .filter((b) => b.length > 0);
+      assert.equal(blocos.length, 1, `${page} deveria ter só o bootstrap de tema inline`);
+      assert.match(blocos[0], /estufa_theme/, 'o único script inline devia ser o bootstrap do tema');
+
       const refs = [...html.matchAll(/(?:href|src)="(\/[^"]+)"/g)].map((m) => m[1]);
       assert.ok(refs.length >= 6, `poucos refs locais em ${page}: ${refs.length}`);
       for (const ref of refs) {
