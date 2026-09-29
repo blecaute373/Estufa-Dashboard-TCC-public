@@ -88,13 +88,13 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     user.last_login = new Date();
 
-    if (!user.is_admin) {
-      const totalUsers = await User.countDocuments();
-      if (totalUsers === 1) {
-        user.is_admin = true;
-      }
-    }
-
+    // NÃO há promoção automática a admin aqui. A versão anterior fazia
+    // `if (totalUsers === 1) user.is_admin = true` no login, o que dava
+    // admin a qualquer utilizador que fosse o único na base — uma porta
+    // aberta se a conta admin fosse apagada, e um terceiro bootstrap
+    // implícito (para além dos dois legítimos: primeiro registo e
+    // POST /api/admin/promote-first, este último já com strictLimiter e
+    // verificação de que não existe admin). A promoção é sempre explícita.
     await user.save();
     await log(user._id, user.username, 'login', req);
     logger.info('auth_login', { requestId: req.requestId, username: user.username });
@@ -135,5 +135,3 @@ app.get('/api/auth/status', async (req, res) => {
 
 /* ── Export ── */
 module.exports = app;
-module.exports.requireAdminApi = requireAdminApi;
-module.exports.requireAuthApi = requireAuthApi;

@@ -23,7 +23,7 @@ const {
 } = require('./lib/auth');
 const { validateRegister, normalizeLogin, parsePagination, parseResults } = require('./lib/validators');
 const { sendProblem } = require('./lib/errors');
-const { requestId, authLimiter, controlLimiter } = require('./lib/middleware');
+const { requestId, securityHeaders, authLimiter, controlLimiter } = require('./lib/middleware');
 const { logger, auditLog } = require('./lib/logger');
 const {
   fetchJsonWithRetry, buildLastUrl, buildHistoryUrl,
@@ -108,9 +108,12 @@ async function log(userId, username, event, req, details = null) {
 /* ── APP ── */
 const app = express();
 app.set('trust proxy', 1);
-app.use(express.json());
-app.use(cookieParser());
+// `requestId` ANTES de `express.json()` — ver o comentário equivalente em
+// api/index.js: sem esta ordem, JSON malformado sai com requestId null.
 app.use(requestId);
+app.use(express.json({ limit: '32kb' }));
+app.use(cookieParser());
+app.use(securityHeaders());
 
 const requireAuth = requireAuthPage('/index.html');
 const requireAdminPageMw = requireAdminPage('/index.html', '/dashboard.html?error=restrito');
@@ -160,10 +163,9 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       return sendProblem(req, res, 'UNAUTHENTICATED', 'Usuário ou senha incorretos.');
     }
     user.last_login = new Date();
-    if (!user.is_admin) {
-      const totalUsers = await User.countDocuments();
-      if (totalUsers === 1) user.is_admin = true;
-    }
+    // Sem promoção automática a admin (ver o comentário equivalente em
+    // api/auth.js). Os dois bootstraps legítimos são: primeiro registo e
+    // POST /api/admin/promote-first.
     await user.save();
     await log(user._id, user.username, 'login', req);
     logger.info('auth_login', { requestId: req.requestId, username: user.username });
@@ -261,7 +263,13 @@ app.get('/api/admin/users', requireAdminApi, async (req, res) => {
 // ── CONTROL (caminho LOCAL: publica direto no broker MQTT da rede da estufa).
 // Na Vercel o mesmo contrato é servido pela fila de api/control.js (ADR-0007).
 // Autorização ANTES da lógica + rate-limit próprio (ENGENHARIA §9.2, §14.2).
-app.post('/api/control', requireAuthApi, controlLimiter, async (req, res) => {
+//
+// `requireAdminApi` e NÃO `requireAuthApi`: este endpoint aciona relés físicos.
+// A rota serverless (`api/control.js:86`) já exigia admin desde o ADR-0007 — este
+// caminho local aceitava qualquer utilizador autenticado, ou seja, o caminho
+// MENOS restrito era o de produção. Paridade de autorização entre dev e prod
+// é o requisito do ADR-0003, e aqui estava violado.
+app.post('/api/control', requireAdminApi, controlLimiter, async (req, res) => {
   const { actuator, action } = req.body || {};
   if (!actuator || action === undefined)
     return sendProblem(req, res, 'VALIDATION', 'Informe actuator e action.');
@@ -302,7 +310,24 @@ app.get('/api/health', (req, res) => {
 app.get('/dashboard.html', requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/admin.html',     requireAdminPageMw, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/',               requireAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
+
+// Rota de API inexistente → 404 em JSON, espelhado em api/index.js. Sem isto o
+// `static` + o 404 do Express responderiam HTML, e o cliente tentaria res.json()
+// sobre um corpo que não é JSON (paridade verificada em test/parity.test.js).
+app.use('/api', (req, res) => {
+  sendProblem(req, res, 'NOT_FOUND', 'Endpoint inexistente.');
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Error handler final (mesma normalização RFC 9457 do serverless): sem isto,
+// JSON malformado devolvia a página HTML de erro do Express, com stack em dev.
+app.use((err, req, res, next) => {
+  const isBadJson = err?.type === 'entity.parse.failed' || err instanceof SyntaxError;
+  const code = isBadJson ? 'VALIDATION' : 'INTERNAL';
+  const publicDetail = isBadJson ? 'Corpo JSON inválido.' : 'Erro interno. Tente novamente.';
+  return sendProblem(req, res, code, publicDetail, err);
+});
 
 /* ── START ── */
 /* ── GRACEFUL SHUTDOWN (ENGENHARIA §17.1) ──

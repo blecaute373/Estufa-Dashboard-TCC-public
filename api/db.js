@@ -23,6 +23,15 @@ async function connectDB() {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 30000,
     });
+    // Uma promessa rejeitada fica envenenada: sem isto, `cached.promise`
+    // guardaria a falha para sempre e TODAS as tentativas seguintes lançariam
+    // a mesma exceção, mesmo depois de a rede voltar. Numa instância serverless
+    // isso é quase irrelevante (a instância morre), mas em `server.js` — um
+    // processo de vida longa — significava que uma falha de arranque no Mongo
+    // deixava a app morta para sempre, sem forma de recuperar sem reiniciar.
+    cached.promise.catch(() => {
+      cached.promise = null;
+    });
   }
 
   cached.conn = await cached.promise;
