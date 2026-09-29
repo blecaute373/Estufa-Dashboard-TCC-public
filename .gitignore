@@ -1,6 +1,8 @@
 ﻿# Dependencies
 node_modules/
-# npm lockfile SEMPRE versionado (ENGENHARIA §16.2) — linha package-lock.json removida de propósito (build reprodutível)
+# npm lockfile SEMPRE versionado (ENGENHARIA §16.2 "Build e Dependências"):
+# `npm ci` em CI exige package-lock.json, e sem ele o build deixa de ser
+# reprodutível. NUNCA adicionar `package-lock.json` abaixo.
 yarn.lock
 pnpm-lock.yaml
 bun.lock
@@ -23,7 +25,10 @@ bun.lockb
 *.pfx
 
 # Local database files
-cookies.txt  # sessão curl local — nunca versionar
+# Regra numa linha, comentário noutra: o Git NÃO aceita comentário inline numa
+# regra de ignore — `cookies.txt  # texto` casa com o nome inteiro e nunca
+# ignora nada. Foi exatamente o que deixou o ficheiro versionado.
+cookies.txt
 estufa.db
 *.sqlite
 *.sqlite3
@@ -59,6 +64,7 @@ mobile/*/package-lock.json
 # IDE and editor files
 .vscode/
 .idea/
+*.code-workspace
 *.swp
 *.swo
 *~
