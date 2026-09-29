@@ -17,7 +17,7 @@ const {
 } = require('../lib/validators');
 const { problem } = require('../lib/errors');
 const { isTransientError, backoffDelay, buildLastUrl, buildHistoryUrl } = require('../lib/thingspeak');
-const { validarComando, montarComando } = require('../lib/control');
+const { validarComando, montarComando, normalizarDuty } = require('../lib/control');
 const { separarValidos, chaveFila, COMMAND_TTL_MS } = require('../lib/store');
 const { parseRedisUrl } = require('../lib/config');
 
@@ -119,6 +119,39 @@ describe('lib/control — contrato dos comandos (Small)', () => {
     assert.match(validarComando('fan', 'on').erro, /Actuator/);
     assert.match(validarComando('vent', 'talvez').erro, /action deve ser/);
     assert.match(validarComando('light', 'abc').erro, /numero \(duty 0-100\)/);
+  });
+
+  // Regressão: `Number(action)` convertia em duty válido valores que o
+  // utilizador nunca pediu, e o comando chegava ao firmware como {duty: 0}.
+  // Cada valor abaixo passava a validação antiga e era entregue ao relé.
+  it('rejeita coerções implícitas do JS que viravam duty 0/1 sem erro', () => {
+    for (const action of [[], true, false, null, {}, [5], '50px', '1e3', '0x10', '+50', ' 50 ']) {
+      assert.equal(
+        validarComando('light', action).erro !== undefined,
+        true,
+        `esperava rejeitar ${JSON.stringify(action)} (${typeof action})`
+      );
+    }
+  });
+
+  it('rejeita NaN e Infinity como duty', () => {
+    assert.equal(validarComando('light', NaN).erro !== undefined, true);
+    assert.equal(validarComando('light', Infinity).erro !== undefined, true);
+    assert.equal(validarComando('light', -Infinity).erro !== undefined, true);
+  });
+
+  it('normalizarDuty aceita o que é legitimo e recusa o resto', () => {
+    assert.equal(normalizarDuty(0), 0);
+    assert.equal(normalizarDuty(75), 75);
+    assert.equal(normalizarDuty(150), 150);      // clamp é feito noutro sitio
+    assert.equal(normalizarDuty('75'), 75);
+    assert.equal(normalizarDuty('7.5'), 7.5);
+    assert.equal(normalizarDuty(''), null);
+    assert.equal(normalizarDuty('abc'), null);
+    assert.equal(normalizarDuty(null), null);
+    assert.equal(normalizarDuty(undefined), null);
+    assert.equal(normalizarDuty([]), null);
+    assert.equal(normalizarDuty(true), null);
   });
 
   it('montarComando junta o topico MQTT do firmware (contrato unico dos 2 caminhos)', () => {
