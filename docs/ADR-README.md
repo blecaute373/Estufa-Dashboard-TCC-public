@@ -1,4 +1,4 @@
-# ADRs — Architecture Decision Records (ENGENHARIA §15.2)
+# ADRs — Architecture Decision Records (ENGENHARIA §18.2)
 
 Índice de decisões arquiteturais. Cada ADR regista **contexto, opções,
 decisão e consequências** — sobretudo *por que as alternativas foram
@@ -13,3 +13,4 @@ descartadas*.
 | [0005](ADR-0005-thingspeak-resiliente.md) | Proxy ThingSpeak com timeout+retry | aceite |
 | [0006](ADR-0006-controle-remoto-mqtt-wss.md) | Controle remoto via MQTT sobre WebSocket | ~~superado~~ pelo 0007 |
 | [0007](ADR-0007-fila-comandos-vercel.md) | Controle remoto por fila de comandos na Vercel | aceite |
+| [0008](ADR-0008-registo-de-sistema.md) | Registo de sistema (SystemLog) + ponte logger→Mongo | aceite |

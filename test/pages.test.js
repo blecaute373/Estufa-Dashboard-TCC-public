@@ -21,11 +21,15 @@ before(async () => {
   mongoose.connect = async () => ({});
   const userStub = { findOne: async () => null, findById: () => ({ select: async () => null }), countDocuments: async () => 0 };
   const logStub = { create: async () => ({}), find: () => ({ populate: () => ({ sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => [] }) }) }) }) }) };
+  // O SystemLog tem de ser interceptado também (ver http.test.js): sem isto o
+  // Mongoose real bloqueia 10 s por registo em buffering.
+  const sysLogStub = { create: async () => ({}) };
 
   const origRequire = Module.prototype.require;
   Module.prototype.require = function (id) {
     if (id.endsWith('models/User') || id === './models/User') return userStub;
     if (id.endsWith('models/AccessLog') || id === './models/AccessLog') return logStub;
+    if (id.endsWith('models/SystemLog') || id === './models/SystemLog') return sysLogStub;
     return origRequire.apply(this, arguments);
   };
   app = origRequire.call(module, '../server.js');

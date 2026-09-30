@@ -27,11 +27,16 @@ before(async () => {
   // Models exigem schemas registados — usa stubs por cima dos requires.
   const userStub = { findOne: async () => null, findById: () => ({ select: async () => null }), countDocuments: async () => 0 };
   const logStub = { create: async () => ({}), find: () => ({ populate: () => ({ sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => [] }) }) }) }) }) };
+  // O SystemLog tem de ser interceptado também: o `server.js` liga-o à ponte
+  // logger→Mongo no arranque, e o Mongoose real passaria 10 s em *buffering*
+  // por cada registo (bufferCommands só é desligado em `api/db.js`).
+  const sysLogStub = { create: async () => ({}) };
 
   const origRequire = Module.prototype.require;
   Module.prototype.require = function (id) {
     if (id.endsWith('models/User') || id === './models/User') return userStub;
     if (id.endsWith('models/AccessLog') || id === './models/AccessLog') return logStub;
+    if (id.endsWith('models/SystemLog') || id === './models/SystemLog') return sysLogStub;
     return origRequire.apply(this, arguments);
   };
 

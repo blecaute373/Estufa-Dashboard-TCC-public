@@ -937,21 +937,34 @@ app.whenReady().then(createWindow);
 
 ### 11.2 Variaveis de Ambiente
 
-| Variavel | Descricao | Obrigatoria |
-| -------- | --------- | ----------- |
-| MONGODB_URI | URI de conexao MongoDB Atlas | Sim |
-| JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao |
-| TS_API_KEY | API key do ThingSpeak (escrita) | Recomendado |
-| TS_CHANNEL | ID do canal ThingSpeak | Sim |
+| Variavel | Descricao | Obrigatoria | Default |
+| -------- | --------- | ----------- | ------- |
+| MONGODB_URI | URI de conexao MongoDB Atlas | Sim | — |
+| JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao | efemereo (dev) |
+| TS_API_KEY | API key do ThingSpeak (escrita) | Recomendado | — |
+| TS_CHANNEL | ID do canal ThingSpeak | Sim | — |
 | APP_URL | URL base para apps Electron/Mobile | Nao (default: localhost) |
-| PORT | Porta do servidor local | Nao (default: 3000) |
-| NODE_ENV | production/development | Nao |
+| PORT | Porta do servidor local | Nao | 3000 |
+| NODE_ENV | production/development | Nao | development |
+| MONGODB_LOG_ENABLED | Persistencia do `SystemLog` em Mongo (`false` = so stdout + memoria) | Nao | ligado (`true`) |
+| LOCAL_MQTT_BROKER | URL do broker MQTT local (controlo de atuadores e recolha de estado em `server.js`) | Nao | `mqtt://192.168.100.3:1883` |
+| DEVICE_TOKEN | Token do dispositivo (fila de comandos na Vercel, ADR-0007). Sem ele `/api/control/pending` responde 401 (fail-closed) | **Sim** (controlo remoto) | — |
+| DEVICE_ID | Identificador do dispositivo (tem de coincidir com `ID_ESTUFA` no firmware) | **Sim** (controlo remoto) | `estufa01` |
 
 **Nota:** As variaveis `TS_API_KEY` e `TS_CHANNEL` sao usadas pelo backend para comunicacao com a API do ThingSpeak. O `JWT_SECRET` e gerado dinamicamente usando `crypto.randomBytes(64)` se nao definido.
 
-| Variavel | Descricao | Obrigatoria |
-| -------- | --------- | ----------- |
-| LOCAL_MQTT_BROKER | URL do broker MQTT local (controlo de atuadores em `server.js`) | Nao (default: `mqtt://192.168.100.3:1883`) |
+> **Registo de sistema (`SystemLog`)**: `lib/syslog.js` guarda sempre em
+> memoria (ring buffer de 500) e escreve em stdout; a persistencia em Mongo
+> passa por uma ponte instalada em `lib/logbridge.js`
+> (`attachSystemLog({ create })`). `MONGODB_LOG_ENABLED=false` desliga apenas a
+> persistencia — util como kill-switch em incidente. A ponte e **idempotente**:
+> pode ser chamada por varios modulos sem duplicar registos.
+>
+> **Distincao entre os dois logs:** o `AccessLog` e auditoria (escrita pelo
+> servidor, fiavel, inclui `control_*`); o `SystemLog` e diagnostico
+> (cresce muito mais rapido, TTL 30 dias, e pode conter `source: 'esp'` — que
+> chega por MQTT por um broker **sem autenticacao** e portanto **nao e
+> autoritativo**; ver ADR-0008).
 
 ### 11.1.1 Controlo de Atuadores (`/api/control`)
 

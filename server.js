@@ -25,12 +25,20 @@ const { validateRegister, normalizeLogin, parsePagination, parseResults } = requ
 const { sendProblem } = require('./lib/errors');
 const { requestId, authLimiter, controlLimiter } = require('./lib/middleware');
 const { logger, auditLog } = require('./lib/logger');
+const { attachSystemLog } = require('./lib/logbridge');
 const {
   fetchJsonWithRetry, buildLastUrl, buildHistoryUrl,
 } = require('./lib/thingspeak');
 const { montarComando } = require('./lib/control');
 
 const MONGODB_URI = getMongoUri();
+
+// Ponte logger → SystemLog (§10.1). Registada ANTES das rotas para que os
+// eventos de arranque também fiquem registados. Até o Mongo estar ligado, a
+// escrita falha de forma silenciosa e o registo vive só em memória — o que é
+// exactamente o comportamento desejado (fail-soft, §16.2).
+const SystemLog = require('./models/SystemLog');
+attachSystemLog({ create: (record) => SystemLog.create(record) });
 
 if (!isThingSpeakConfigured) {
   logger.warn('thingspeak_nao_configurado', { hint: 'Defina TS_CHANNEL no .env' });
@@ -322,8 +330,11 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 if (require.main === module) {
-mongoose.connect(MONGODB_URI)
-  .then(() => {
+  // `bufferCommands: false` — igual a `api/db.js`. Sem isto, um `SystemLog.create()`
+  // emitido antes da ligação (ex.: evento de arranque) fica em *buffering* durante
+  // 10 s e só depois falha. Um log não deve conseguir atrasar o arranque (§16.2).
+  mongoose.connect(MONGODB_URI, { bufferCommands: false })
+    .then(() => {
     logger.info('db_conectado', {});
     httpServer = app.listen(PORT, () => {
       console.log(`\n🌿 Estufa 01 rodando em http://localhost:${PORT}`);
@@ -333,7 +344,7 @@ mongoose.connect(MONGODB_URI)
       console.log(`   ThingSpeak proxy ativo (canal ${TS_CHANNEL})\n`);
     });
   })
-  .catch(err => {
+    .catch(err => {
     logger.error('db_erro_conexao', { message: err.message });
     console.error('Certifique-se de que o MongoDB está rodando ou ajuste MONGODB_URI no .env');
     process.exit(1);

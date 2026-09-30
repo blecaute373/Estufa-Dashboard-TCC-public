@@ -16,6 +16,10 @@ const { parsePagination } = require('../lib/validators');
 const { sendProblem } = require('../lib/errors');
 const { requestId, strictLimiter } = require('../lib/middleware');
 const { logger } = require('../lib/logger');
+const { attachSystemLog } = require('../lib/logbridge');
+
+const SystemLog = require('../models/SystemLog');
+attachSystemLog({ create: (record) => SystemLog.create(record) });
 
 const app = express();
 app.use(express.json());
