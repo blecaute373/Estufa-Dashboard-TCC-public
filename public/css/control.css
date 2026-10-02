@@ -245,3 +245,100 @@
 .live-note .sys-value.ok     { color: var(--state-neon, var(--green)); }
 .live-note .sys-value.warn   { color: var(--amber); }
 .live-note .sys-value.danger { color: var(--red); }
+
+/* ── BROKER MQTT LOCAL (painel de configuração) ─────────── */
+.broker-panel {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 6px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.broker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.broker-field { display: flex; flex-direction: column; gap: 6px; }
+.broker-field span {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.broker-field input {
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 11px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  outline: none;
+}
+.broker-field input:focus { border-color: var(--border-2); }
+.broker-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  padding-bottom: 8px;
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+.broker-check input { width: 16px; height: 16px; accent-color: var(--green); }
+.broker-check small { color: var(--muted); }
+.broker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.broker-erro {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  color: var(--red);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.broker-erro.show { opacity: 1; }
+.broker-note {
+  margin: 10px 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.broker-note code {
+  font-family: var(--mono);
+  background: var(--inset);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+/* ── INTERRUPTOR GERAL DA AUTOMAÇÃO (pausar / retomar) ──── */
+.global-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: 16px;
+  padding: 16px;
+  margin: 14px 0 0;
+}
+.global-info { flex: 1 1 320px; }
+.global-name { font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.global-hint { margin: 0 0 8px; font-size: 0.74rem; color: var(--muted); line-height: 1.5; }
+.global-actions { display: flex; gap: 10px; flex: 0 0 auto; }
+.global-actions .ctrl-btn { width: auto; padding: 9px 16px; }
+@media (max-width: 520px) {
+  .global-actions { width: 100%; }
+  .global-actions .ctrl-btn { flex: 1; }
+}

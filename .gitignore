@@ -33,8 +33,19 @@ estufa.db
 *.sqlite
 *.sqlite3
 
-# Firmware ESP32 (contem credenciais WiFi/ThingSpeak) - nunca versionar
+# Firmware ESP32 (contem credenciais WiFi/ThingSpeak/DEVICE_TOKEN) - nunca versionar
 *.ino
+# Projeto PlatformIO do firmware: ignora-se o diretorio INTEIRO porque
+# `src/main.cpp` tem as mesmas credenciais do .ino (WiFi, ThingSpeak, e o token
+# do dispositivo). Versiona-lo foi exactamente o que a v1.1.0 teve de reverter
+# ("security: remove leaked secrets") — a regra passa a ser uma so.
+# Consequencia: `include/secrets.h.example` tambem fica fora do Git; ele existe
+# no disco local como modelo. (Nao se usa `!` para o re-incluir: o Git nao
+# re-inclui ficheiro dentro de um diretorio excluido.)
+260929-*/
+# Segredos locais do firmware (token do dispositivo, ADR-0007/0008).
+include/secrets.h
+**/include/secrets.h
 
 # Build outputs
 dist/
@@ -121,3 +132,5 @@ jspm_packages/
 
 # Stores VSCode versions used for VSCode VS Code extensions
 .vscode-test/
+.vercel
+.env*

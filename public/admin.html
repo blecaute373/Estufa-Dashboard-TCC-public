@@ -80,6 +80,42 @@
     <span class="live-note" id="kpiUpdated">aguardando feed…</span>
   </div>
 
+  <!-- ═══════════ BROKER MQTT LOCAL (LAN) ═══════════ -->
+  <div class="section-label">🔌 Broker MQTT local <span class="count-chip">rede da estufa</span></div>
+  <div class="broker-panel">
+    <div class="broker-grid">
+      <label class="broker-field">
+        <span>IP / host</span>
+        <input type="text" id="brokerHost" placeholder="192.168.0.6" autocomplete="off">
+      </label>
+      <label class="broker-field">
+        <span>Porta (WebSocket)</span>
+        <input type="number" id="brokerPort" min="1" max="65535" value="9001" inputmode="numeric">
+      </label>
+      <label class="broker-field">
+        <span>Caminho</span>
+        <input type="text" id="brokerPath" value="/mqtt" autocomplete="off">
+      </label>
+      <label class="broker-check">
+        <input type="checkbox" id="brokerTls">
+        <span>TLS / WSS <small>(obrigatório com o painel em HTTPS)</small></span>
+      </label>
+    </div>
+    <div class="broker-actions">
+      <span class="status-pill off" id="brokerPill"><span class="s-dot"></span><span id="brokerStatusText">Desligado</span></span>
+      <button class="btn-ghost" type="button" id="btnBrokerConectar">Ligar</button>
+      <button class="btn-ghost" type="button" id="btnBrokerDesconectar" disabled>Desligar</button>
+      <button class="btn-ghost" type="button" id="btnBrokerSalvar">Guardar</button>
+    </div>
+    <p class="broker-erro" id="brokerErro"></p>
+    <p class="broker-note">
+      Ligado ao broker, os comandos saem direto daqui para o ESP32 (imediato). Sem
+      ligação, seguem pela fila da Vercel (até ~10 s). O broker precisa do listener
+      WebSocket ativo — Mosquitto: <code>listener 9001</code> +
+      <code>protocol websockets</code>.
+    </p>
+  </div>
+
   <!-- ═══════════ CONTROLO MANUAL DE ATUADORES ═══════════ -->
   <div class="section-label">🎛 Controlo de Atuadores <span class="count-chip">requer login</span></div>
   <div class="actuator-grid">
@@ -169,6 +205,23 @@
     </div>
 
   </div>
+  <!-- Interruptor geral da automação (tópico global_001) -->
+  <div class="global-card">
+    <div class="global-info">
+      <div class="global-name">Automação da estufa <span class="act-gpio">Tópico global_001</span></div>
+      <p class="global-hint">
+        <strong>Pausar</strong> congela ventilação, irrigação e iluminação automáticas
+        — os relés ficam no estado em que estão. <strong>Retomar</strong> devolve o
+        controlo à automação (AUTO).
+      </p>
+      <div class="act-mode">Modo: <span class="mode-value" id="modoGlobal">Automático</span></div>
+    </div>
+    <div class="global-actions">
+      <button class="ctrl-btn ctrl-off" type="button" id="btnPausarGlobal">Pausar automação</button>
+      <button class="ctrl-btn ctrl-auto" type="button" id="btnRetomarGlobal">Retomar (AUTO)</button>
+    </div>
+  </div>
+
   <div class="ctrl-status-msg" id="ctrlStatusMsg"></div>
   <p class="live-note" style="margin-top:8px">
     ⚠ O comando é enfileirado no painel e aplicado pelo ESP32 no próximo ciclo
@@ -277,6 +330,10 @@
 <script src="/pwa.js"></script>
 <!-- sensor.js: fetch/render partilhado (monitorização read-only) -->
 <script src="/js/sensor.js"></script>
+<!-- mqtt.min.js: cliente MQTT vendorizado (sem CDN) — carregado sob demanda pelo SW -->
+<script src="/js/mqtt.min.js"></script>
+<!-- mqtt-gateway.js: MQTT direto do navegador (LAN) — tem de vir ANTES do control.js -->
+<script src="/js/mqtt-gateway.js"></script>
 <!-- control.js: comando manual (on/off/auto + luz auto/manual) + cicloMonitorizar() da faixa ao vivo -->
 <script src="/js/control.js"></script>
 </body>

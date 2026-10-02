@@ -59,8 +59,19 @@ const AccessLog  = require('./models/AccessLog');
  */
 const mqtt = require('mqtt');
 
-const LOCAL_MQTT_BROKER = process.env.LOCAL_MQTT_BROKER || 'mqtt://192.168.100.3:1883';
+const LOCAL_MQTT_BROKER = process.env.LOCAL_MQTT_BROKER || 'mqtt://192.168.0.6:1883';
 const MQTT_CONNECT_TIMEOUT_MS = 2000;
+
+// PORQUÊ AVISAR: o valor por defeito é o broker da estufa *atual*, mas a
+// estufa muda de rede. Sem `LOCAL_MQTT_BROKER` no `.env`, um comando de
+// atuador falha com 502 e o sintoma ("o relé não reage") parece um bug de
+// código quando é só o IP — por isso o aviso é explícito no arranque.
+if (!process.env.LOCAL_MQTT_BROKER) {
+  logger.warn('local_mqtt_broker_por_defeito', {
+    broker: LOCAL_MQTT_BROKER,
+    hint: 'LOCAL_MQTT_BROKER não definido no .env — a usar o broker por defeito.',
+  });
+}
 
 /**
  * Cliente MQTT ÚNICO, criado sob demanda; o mqtt.js reconecta sozinho

@@ -1,0 +1,43 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  .vercelignore — o que NÃO vai no bundle do deploy (§9.2)
+#
+#  PORQUÊ ISTO EXISTE: sem este ficheiro, a Vercel CLI envia a pasta inteira
+#  do projeto — incluindo `.env` (com DEVICE_TOKEN/REDIS_URL/JWT_SECRET) e a
+#  pasta do firmware (WiFi, ThingSpeak, token). O deploy é criado e
+#  ARMAZENADO no lado da Vercel; um segredo que viaja ali deve ser tratado
+#  como exposto. O `.gitignore` não protege isto: são mecanismos diferentes
+#  (um tira do Git, este tira do deploy) — a mesma classe de erro da v1.1.0.
+# ══════════════════════════════════════════════════════════════════════════
+
+# Segredos locais — nunca, em nenhuma circunstância
+.env
+.env.*
+!.env.example
+
+# Firmware PlatformIO: WiFi, ThingSpeak e DEVICE_TOKEN em texto simples
+260929-*/
+
+# Diagnóstico e testes (não fazem parte do runtime do site)
+test/
+scripts/
+!scripts/make-admin.js
+
+# Documentação (não é servida por nenhuma rota)
+docs/
+*.md
+
+# Resíduos de sessão (ficheiros .txt de diagnóstico na raiz)
+*.txt
+*.log
+
+# Dependências e artefactos de build (a Vercel instala as suas)
+node_modules/
+mobile/*/node_modules/
+release/
+dist/
+build/
+
+# Metadados locais
+.git/
+.vercel/
+.vscode/

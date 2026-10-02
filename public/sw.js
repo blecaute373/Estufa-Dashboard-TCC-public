@@ -2,7 +2,7 @@
  * Service Worker — Estufa 01 PWA
  * Cacheia assets estáticos para funcionamento offline básico
  */
-const CACHE = 'estufa-v12';
+const CACHE = 'estufa-v13';
 /* Apenas assets públicos: páginas protegidas (/ , /dashboard.html, /admin.html)
    ficam a cargo do network-first em tempo de execução, para não gravar
    a página de login sob a chave de outra rota. */
@@ -23,6 +23,10 @@ const ASSETS = [
   '/js/theme.js',
   '/js/sensor.js',
   '/js/control.js',
+  /* Broker MQTT direto do navegador (LAN). O mqtt.min.js (342 KB) NÃO entra no
+     pre-cache de propósito — é grande e só o admin usa; o network-first do
+     handler de fetch cacheia-o na primeira utilização. */
+  '/js/mqtt-gateway.js',
   '/js/qrcode.min.js',
   /* autenticação (extraídos do HTML inline na v1.7 — F4) */
   '/js/auth-comum.js',

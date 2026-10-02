@@ -20,8 +20,36 @@ let statusTimer = null;
 /* ══════════════════════════════════════════
    ENVIO DE COMANDO
 ═══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   ENVIO DE COMANDO — dois caminhos, um contrato
+   1) BROKER LOCAL (LAN): se o painel estiver aberto na rede da estufa e a
+      ligação ao broker estiver de pé, publica direto (mqtt-gateway.js) —
+      resposta imediata, sem fila nem Vercel.
+   2) FILA (Vercel + Upstash): funciona de qualquer rede (site publicado);
+      aplicação em até ~10 s.
+   O caminho 1 falha → cai no 2 automaticamente (falha graciosamente, §1.3).
+═══════════════════════════════════════════ */
 async function enviarComando(actuator, action) {
   setBotoesDisabled(actuator, true);
+  try {
+    if (typeof brokerLigado === 'function' && brokerLigado()) {
+      const r = await brokerPublicar(actuator, action);
+      if (r.ok) {
+        mostrarStatus(`Enviado ao broker local: ${actuator} → ${action}`, 'ok');
+        aplicarEstadoOtimista(actuator, action);
+        return;
+      }
+      // Publicação falhou: não aborta — tenta a fila antes de reportar erro.
+      mostrarStatus(`Broker local falhou (${r.erro}) — a usar a fila…`, 'warn');
+    }
+    await enviarComandoPelaFila(actuator, action);
+  } finally {
+    setBotoesDisabled(actuator, false);
+  }
+}
+
+/* Caminho da fila (comportamento anterior, inalterado). */
+async function enviarComandoPelaFila(actuator, action) {
   // Aborta a requisição se o servidor demorar (timeout em toda chamada
   // externa — ENGENHARIA §11.1) e limpa o timer no finally.
   const ctrl = new AbortController();
@@ -58,7 +86,6 @@ async function enviarComando(actuator, action) {
     console.error('[control] Erro:', e);
   } finally {
     clearTimeout(timer);
-    setBotoesDisabled(actuator, false);
   }
 }
 
@@ -190,8 +217,139 @@ function iniciarControlo() {
 
 /* Carregado no fim do <body>: normalmente o DOM já está pronto.
    O fallback cobre o caso de ser carregado no <head> com defer/async. */
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', iniciarControlo);
-} else {
+/* ══════════════════════════════════════════
+   BROKER LOCAL (LAN) — configuração + estado da ligação
+   O IP/porta são do utilizador porque a estufa muda de rede; ficam guardados
+   por navegador (localStorage, via mqtt-gateway.js). O estado é pintado num
+   pill separado do pill do ThingSpeak — são coisas diferentes.
+═══════════════════════════════════════════ */
+const BROKER_ESTADO_UI = {
+  off:        ['off',     'Desligado'],
+  connecting: ['loading', 'A ligar…'],
+  on:         ['online',  'Ligado'],
+  error:      ['offline', 'Erro'],
+};
+
+function pintarBrokerEstado(estado, erro) {
+  const pill = document.getElementById('brokerPill');
+  const txt  = document.getElementById('brokerStatusText');
+  const btnC = document.getElementById('btnBrokerConectar');
+  const btnD = document.getElementById('btnBrokerDesconectar');
+  const info = document.getElementById('brokerErro');
+
+  const par = BROKER_ESTADO_UI[estado] || BROKER_ESTADO_UI.off;
+  if (pill) pill.className = 'status-pill ' + par[0];
+  if (txt)  txt.textContent = par[1];
+  if (btnC) btnC.disabled = (estado === 'connecting' || estado === 'on');
+  if (btnD) btnD.disabled = (estado === 'off');
+  if (info) {
+    info.textContent = erro ? ('⚠ ' + erro) : '';
+    info.classList.toggle('show', Boolean(erro));
+  }
+}
+
+function valorDe(id, fallback) {
+  const el = document.getElementById(id);
+  return el ? el.value : fallback;
+}
+
+function lerBrokerForm() {
+  const tls = document.getElementById('brokerTls');
+  return {
+    host: valorDe('brokerHost', ''),
+    port: valorDe('brokerPort', 9001),
+    path: valorDe('brokerPath', '/mqtt'),
+    tls:  Boolean(tls && tls.checked),
+  };
+}
+
+function preencherBrokerForm() {
+  const cfg = brokerConfig();
+  const h = document.getElementById('brokerHost');
+  const p = document.getElementById('brokerPort');
+  const pa = document.getElementById('brokerPath');
+  const t = document.getElementById('brokerTls');
+  if (h) h.value = cfg.host;
+  if (p) p.value = cfg.port;
+  if (pa) pa.value = cfg.path;
+  if (t) t.checked = cfg.tls;
+}
+
+function iniciarBroker() {
+  if (typeof brokerConectar !== 'function') return;   // gateway não carregou
+
+  preencherBrokerForm();
+  brokerOnStatus(pintarBrokerEstado);
+  pintarBrokerEstado(brokerEstadoAtual(), '');
+
+  const btnC = document.getElementById('btnBrokerConectar');
+  const btnD = document.getElementById('btnBrokerDesconectar');
+  const btnS = document.getElementById('btnBrokerSalvar');
+
+  if (btnS) {
+    btnS.addEventListener('click', () => {
+      brokerSalvarConfig(lerBrokerForm());
+      mostrarStatus('Configuração do broker guardada neste navegador.', 'ok');
+    });
+  }
+  if (btnC) {
+    btnC.addEventListener('click', async () => {
+      const r = await brokerConectar(lerBrokerForm());
+      mostrarStatus(
+        r.ok ? 'Ligado ao broker local — os comandos passam a ser diretos.'
+             : 'Não foi possível ligar: ' + r.erro,
+        r.ok ? 'ok' : 'warn'
+      );
+    });
+  }
+  if (btnD) {
+    btnD.addEventListener('click', () => {
+      brokerDesconectar();
+      mostrarStatus('Broker local desligado — os comandos voltam a usar a fila.', 'warn');
+    });
+  }
+
+  // Se já houver host guardado, tenta ligar sozinho ao abrir o painel. A falha
+  // é silenciosa (volta a 'off'): não vale um alerta em cada abertura de página.
+  if (brokerConfig().host) brokerConectar().then((r) => { if (!r.ok) pintarBrokerEstado('off', ''); });
+}
+
+/* ══════════════════════════════════════════
+   PAUSA GLOBAL DA AUTOMAÇÃO — Pausar / Retomar
+   "Pausar" congela toda a lógica automática no firmware (relés mantêm-se no
+   estado atual); "Retomar" (AUTO) devolve o controlo à automação. Vai para o
+   tópico global_001, pelo mesmo caminho (broker local ou fila).
+═══════════════════════════════════════════ */
+function marcarModoGlobal(modo) {
+  const el = document.getElementById('modoGlobal');
+  if (el) el.textContent = (modo === 'pausado') ? 'Pausado' : 'Automático';
+}
+
+const btnPausarGlobal  = document.getElementById('btnPausarGlobal');
+const btnRetomarGlobal = document.getElementById('btnRetomarGlobal');
+
+if (btnPausarGlobal) {
+  btnPausarGlobal.addEventListener('click', () => {
+    marcarModoGlobal('pausado');
+    enviarComando('global', 'pause');
+  });
+}
+if (btnRetomarGlobal) {
+  btnRetomarGlobal.addEventListener('click', () => {
+    marcarModoGlobal('auto');
+    enviarComando('global', 'auto');
+  });
+}
+
+function iniciarAdmin() {
   iniciarControlo();
+  iniciarBroker();
+}
+
+/* Carregado no fim do <body>: normalmente o DOM já está pronto.
+   O fallback cobre o caso de ser carregado no <head> com defer/async. */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciarAdmin);
+} else {
+  iniciarAdmin();
 }
