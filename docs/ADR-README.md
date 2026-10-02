@@ -14,3 +14,5 @@ descartadas*.
 | [0006](ADR-0006-controle-remoto-mqtt-wss.md) | Controle remoto via MQTT sobre WebSocket | ~~superado~~ pelo 0007 |
 | [0007](ADR-0007-fila-comandos-vercel.md) | Controle remoto por fila de comandos na Vercel | ~~superado~~ (fila) pelo 0008 |
 | [0008](ADR-0008-fila-upstash-redis.md) | Fila de comandos em Upstash Redis (híbrido) | aceite |
+| [0009](ADR-0009-app-partilhado.md) | Uma única montagem Express para dev e produção (+ cache de leitura TTL) | aceite |
+| [0010](ADR-0010-mongodb-atlas-producao.md) | MongoDB Atlas em produção: cluster, utilizador com privilégio mínimo e diagnóstico | aceite |

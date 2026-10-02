@@ -39,8 +39,10 @@ O plano grátis é contado em **comandos**, e o poll é o que o consome. Com `LP
    - `LPOP chave 10` — **uma** operação atómica, fecha a corrida do `find`/`updateMany`.
    - **Retenção (§9.5):** um LIST não tem TTL por elemento, portanto a validade viaja **dentro do payload** (`expires_at`) e é verificada no pop — mesma semântica exacta do TTL index. O `EXPIRE 300` na chave é apenas rede de segurança (fila abandonada pelo dispositivo durante dias).
 2. **`models/ControlCommand.js` — removido.** `User` e `AccessLog` ficam no Mongo.
-3. **`api/control.js`** — `POST` faz `LPUSH`+`EXPIRE` e responde `202`; `GET /pending` faz `LPOP` e **já não chama `connectDB()`**.
-4. **Auditoria best-effort (§13):** o comando entra na fila **antes** de a auditoria correr, e a falha do `AccessLog` é só registada em log. Uma falha do Atlas **não bloqueia o controlo da estufa** (bolkhead §11.3) — era o contrário antes, quando `connectDB()` precedia o `create()`.
+3. **`api/control.js`** — `POST` enfileira com **pipeline** (`LPUSH`+`EXPIRE` numa
+   única viagem de rede) e responde `202`; `GET /pending` faz `LPOP` e
+   **já não chama `connectDB()`**.
+4. **Auditoria best-effort (§13):** o comando entra na fila **antes** de a auditoria correr, e a falha do `AccessLog` é só registada em log. Uma falha do Atlas **não bloqueia o controlo da estufa** (bolkhead §11.3) — era o contrário antes, quando `connectDB()` precedia o `create()`. Desde a v1.7.0 a auditoria corre **depois de a resposta `202` ter saído** (`res.on('finish')`), pelo que nem a latência do Atlas aparece mais no `POST`.
 5. **`lib/config.js`** — `REDIS_URL`: **uma única variável** com endpoint **e** token, que é o que o painel da Upstash/Vercel KV mostra. `parseRedisUrl()` extrai o `{url, token}` que o SDK `@upstash/redis` continua a receber, e aceita os formatos documentados (`?_token=`, `https://TOKEN@host`, `https://default:TOKEN@host`). O token é removido do URL devolvido — o SDK envia o cabeçalho `Authorization: Bearer` e não quer o token duplicado na query string. *Fail-fast* e **sem fallback**: uma variável a menos para alguém errar, e sem ela a fila não funciona logo com mensagem explícita, em vez de rebentar no primeiro poll real com 500 no caminho crítico.
 6. **Firmware:** `POLL_COMANDO_MS` de 5 s → **10 s**. Nada mais muda — o contrato HTTP é idêntico.
 
@@ -61,3 +63,221 @@ O plano grátis é contado em **comandos**, e o poll é o que o consome. Com `LP
 - **Duas dependências** em vez de uma: aceito, e justificado pela cobertura do caminho crítico — não por preferência estética.
 - **Limites do plano grátis (verificados na documentação):** sem réplicação multi-instância (ponto único de infraestrutura, *não* perda de dados — o Durable Storage escreve em memória **e** disco); *eviction* **desligado por padrão**, ou seja, ao atingir 256 MB as escritas são **rejeitadas** em vez de apagar chaves; base arquivada após 30 dias de inatividade (irrelevante: com poll de 10 s nunca fica inativa).
 - **Segredos:** o token vive dentro de `REDIS_URL`, **só** no ambiente da Vercel. O firmware conhece apenas `DEVICE_TOKEN`.
+
+
+---
+
+## Aditivo (v1.7.0, 2026-09-29) — três decisões de caminho
+
+Estas três não mudam a arquitetura: tiram latência e comportamento-surpresa do
+caminho que este ADR já descrevia. Ficam aqui porque alteram o que o código faz.
+
+### 1. `LPUSH` + `EXPIRE` numa pipeline
+
+Eram **duas** chamadas de rede por comando, quando o `EXPIRE` só serve de rede de
+segurança para uma fila abandonada. `lib/store.js` agora usa a pipeline do SDK
+(`client.pipeline()`) e devolve `{ ok: false, erro: 'redis_unavailable' }` se a
+escrita falhar — em vez de deixar a exceção subir, o que produzia **500 sem
+mensagem** no `POST /api/control` (a `erroInterno()` lê `err.message`, e o erro do
+Upstash não dizia o que faltava). *Consequência:* metade dos round-trips no `POST`
+e um 502 com mensagem acionável quando falta `REDIS_URL`.
+
+### 2. Colapso por atuador antes de enfileirar (último clique vence)
+
+`retirarComandos()` entrega até 10 comandos **por ordem de chegada**. Se o
+utilizador clicar `ligar → desligar → ligar` no ventilador enquanto o ESP32 não
+vai à fila, o firmware executa os três e **para no estado do clique mais antigo**
+— o `LPOP` entrega o mais velho primeiro. A UI mostrava "comando enviado" três
+vezes e a estufa ficava no estado errado, sem que nada o denunciasse.
+
+`lib/store.js` ganhou `colapsarPorAtuador()`: para cada `(dispositivo, atuador)`
+fica **apenas o comando mais recente** do lote (mantendo os `auto` por serem
+modo, não estado). *Consequência:* o `202 {queued:true}` passa a significar
+"este é o comando vigente deste atuador", não "vai ser executado". O `id`
+colapsado continua no AccessLog. A UI mantém os 5 s de bloqueio por atuador, que
+são o desenho original do polling.
+
+> ⚠️ **Armadilha que este helper evita:** a lista é `LPUSH`, logo o pop devolve o
+> **mais recente primeiro** (LIFO). Colapsar sem **inverter o lote primeiro**
+> escolheria o comando **mais antigo** de cada atuador — o oposto do pretendido,
+> e silencioso. Está coberto por teste em `test/lib.test.js`.
+
+### 3. Auditoria fora do caminho crítico
+
+O `202` é enviado antes de o `AccessLog` ser escrito (`res.on('finish')`). O `202`
+significa "na fila", e a fila já estava confirmada antes disso. *Consequência:* um
+Atlas lento ou em manutenção deixa de aparecer na latência do clique do admin; e o
+`setImmediate` do teste da entrada local passou a esperar **duas** voltas do event
+loop (uma para a resposta sair, outra para a auditoria começar).
+
+---
+
+## Aditivo (v1.7.1, 2026-10-01) — token ausente deixa de ser uma falha silenciosa
+
+**Sintoma reportado:** "o acionamento manual dos relés pelo dashboard não funciona".
+O painel devolvia `202 {queued:true}` (comando enfileirado) e **o relé nunca
+mudava**. Nada no servidor falhava: a fila recebia o comando e o `LPOP` estava
+correto. O defeito estava **a montante**, do lado do dispositivo.
+
+### Causa raiz
+
+`src/main.cpp` tinha o token do dispositivo como um **placeholder vazio**:
+
+```cpp
+const char* API_VERCEL_TOKEN = "";   // <-- OBRIGATORIO: cole o seu token
+```
+
+Como `prepararHttpsVercel()` faz `if (strlen(API_VERCEL_TOKEN) < 16) return false;`,
+com o token vazio o `pollComandosVercel()` **retornava imediatamente** e o ESP32
+**nunca chamava** `GET /api/control/pending`. Os comandos ficavam na fila até
+expirarem aos 5 min (`expires_at`) e o atuador nunca era acionado.
+
+O que tornou isto caro de diagnosticar não foi o bug — foi o **silêncio**: um token
+vazio **compila sem qualquer aviso**, e o único sinal era uma linha de `Serial` que
+ninguém vê sem consola ligada. O painel dizia "sucesso" e o hardware não se mexia.
+
+### Decisão
+
+1. **O token sai do código versionado** (ENGENHARIA §9.2) e passa a ser injetado
+   por um ficheiro **local**, ignorado pelo Git:
+   - `include/secrets.h.example` (versionado, com instruções) →
+   - `include/secrets.h` (local, com `#define API_VERCEL_TOKEN "..."`).
+
+   `main.cpp` usa `#if __has_include("secrets.h")`, portanto **sem** o ficheiro o
+   projeto continua a compilar — apenas com o token vazio.
+
+2. **O modo de falha passa a ser visível no BUILD**, não só na consola série:
+
+   ```cpp
+   #ifndef API_VERCEL_TOKEN
+     #warning "API_VERCEL_TOKEN ausente: o ESP32 NAO vai buscar comandos da fila..."
+     const char* API_VERCEL_TOKEN = "";
+   #endif
+   ```
+
+   *Consequência:* recompilar sem o `secrets.h` produz um `-Wcpp` no log do
+   PlatformIO (confirmado no build: `src/main.cpp:113:4: warning: #warning ...`).
+   A avaria deixa de ser invisível.
+
+3. **O aviso de arranque ficou acionável** (diz o que falta e como corrigir), em
+   vez do antigo `"AVISO: API_VERCEL_TOKEN vazio"` sem instrução.
+
+4. **`server.js` (caminho local):** o broker por omissão passou a coincidir com o
+   `.env.example` (`mqtt://192.168.0.6:1883`; era `192.168.100.3`) e, se
+   `LOCAL_MQTT_BROKER` não estiver definido, o arranque **regista um aviso** — o
+   mesmo sintoma ("o relé não reage") tem duas causas possíveis (token na nuvem,
+   IP do broker no local) e o utilizador passa a ver qual delas está ativa.
+
+### Alternativas descartadas
+
+- **Deixar o placeholder e confiar na disciplina** — foi exatamente o que falhou.
+  O custo de corrigir isto é um `#warning`; o custo de o não ter é um TCC em que o
+  hardware não responde e o código "parece" certo.
+- **Token com valor por omissão no código** — segredo versionado (§9.2). Fora.
+
+## Aditivo (v1.7.2, 2026-10-02) — os DOIS segredos, lado a lado
+
+A v1.7.1 tratou o token **ausente**. O passo seguinte em campo foi trocar os
+**segredos** entre si: o token do Upstash foi colado em `API_VERCEL_TOKEN`
+(firmware) e o `REDIS_URL` ficou com o endpoint sozinho. Cada um quebra uma
+metade diferente do caminho, e nenhum dos dois falha de forma óbvia:
+
+| Variável | Onde vive | Valor | Se estiver errada |
+| --- | --- | --- | --- |
+| `DEVICE_TOKEN` (Vercel) **e** `API_VERCEL_TOKEN` (firmware) | os dois lados, **iguais** | string longa que o autor gera (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) | `GET /api/control/pending` → **401** fail-closed; o ESP32 nunca aplica nada |
+| `REDIS_URL` (só Vercel) | apenas ambiente da Vercel | `https://HOST.upstash.io/?_token=<TOKEN-UPSTASH>` | `parseRedisUrl()` lança logo *"REDIS_URL sem token"*; `POST /api/control` falha e nada entra na fila |
+
+**Porque é que o endpoint sozinho não serve (verificado, não suposto):**
+`https://SEU-ENDPOINT.upstash.io` **sem** `?_token=` faz o `lib/config.js`
+lançar `[config] REDIS_URL sem token...` — o token tem de estar *na própria
+string*, porque é o único sítio de onde é extraído. `test/lib.test.js` já cobre
+este caso ("URL sem token → erro que diz COMO resolver").
+
+**E o token tem de ser o REST token, não a password TCP (confirmado em campo, 02/10/2026):**
+uma base Upstash expõe **dois segredos diferentes** — a password da ligação
+`redis://` (TCP, uma string curta tipo `0ic14fz...`) e o **REST token** usado
+pelo endpoint HTTPS (começa por `AX`, mais longo). A password TCP **passa** a
+validação sintáctica do `parseRedisUrl`, e o `SET` chega a sair — mas o Upstash
+responde **`WRONGPASS invalid or missing auth token`**. Nenhum teste de formato
+distingue os dois casos; só um round-trip real distingue, que é exactamente o
+que `npm run check:control` faz (`SET`/`GET`/`DEL` de uma chave de diagnóstico
+com TTL de 60 s — 3 comandos do plano grátis, contra horas a depurar o sítio
+errado).
+
+**O erro que mais engana:** o token do Upstash *parece* um token válido (36
+caracteres alfanuméricos, sem espaços) e cola-se em `API_VERCEL_TOKEN` sem
+levantar suspeita em build nem em arranque. O resultado é o pior tipo de falha:
+o painel devolve `202 {queued:true}`, o comando entra na fila, e o relé não se
+mexe. Duas defesas novas:
+
+1. **Firmware:** `tokenPareceUpstash()` — heurística de forma (30–40 caracteres
+   `[a-z0-9]`, o perfil do token REST da Upstash, contra os 64 hex do
+   `DEVICE_TOKEN` recomendado) imprime aviso explícito no arranque. É uma
+   heurística e está escrita como tal: **avisa, não bloqueia**.
+2. **Mensagem de 401** no poll deixou de ser ambígua — nomeia as duas causas
+   (token diferente entre os lados / token do Upstash colado no sítio errado).
+
+**Nota de segurança (§9.2/§9.10):** o token ficou hardcoded no `main.cpp`, que é
+um ficheiro versionável. O `.gitignore` passou a excluir o **diretório inteiro**
+do projeto PlatformIO (`260929-*/`) — o `main.cpp` tem as mesmas credenciais do
+`.ino` (WiFi, ThingSpeak, token), e foi esse padrão que a v1.1.0 teve de reverter
+com `security: remove leaked secrets`. A alternativa sem segredo no código
+continua disponível: `include/secrets.h` (ignorado), lido por
+`#if __has_include("secrets.h")`.
+
+### Como verificar (checklist)
+
+**Deploy de 02/10/2026 — resultado FINAL medido no site publicado** (não inferido;
+cada linha é um pedido real, antes → depois de configurar as variáveis):
+
+| Pedido | Antes | Depois |
+|---|---|---|
+| `GET /api/health` | 200 | **200** `{"ok":true,"thingspeak":true}` |
+| `GET /api/control/pending` **sem** token | 401 | **401** (fail-closed) |
+| `GET /api/control/pending` **com** token | 500 | **200** `{"ok":true,"count":0}` |
+| `GET /api/thingspeak/last` | 502 | **200** com dados reais (`27.40 °C`) |
+| `POST /api/control` | 401 | **202** `{"ok":true,"queued":true,"id":"c6378c0e-…"}` |
+| `POST /api/auth/login` | 500 | **200** `{"ok":true,"is_admin":true}` |
+
+**Prova ponta-a-ponta da fila** (o que interessa para o acionamento manual) —
+enfileirar pelo MESMO `lib/store.js` que a Vercel usa, e buscar pelo endpoint
+público, que é o que o ESP32 faz:
+
+```
+1_ENFILEIRADO  id=f33b8e4e-…  payload={"command":"ON"}
+2_POLL         status=200 count=1
+2_IDS_IGUAIS   true      ← o dispositivo recebe o MESMO id e payload
+3_SEGUNDO_POLL count=0   ← at-most-once: não entrega duas vezes
+```
+
+Um comando deixado na fila além dos 5 min foi **descartado** no poll seguinte
+(`count:0`, chave removida) — o TTL lógico funciona, tal como desenhado.
+
+O que isto prova: o **transporte** está correcto (o ESP32 alcança o endpoint
+publicamente, sem bloqueio de Deployment Protection) e a **fila** entrega e não
+duplica. O que faltava era apenas **configuração** — e cada variável em falta
+falhava num sítio diferente, que é precisamente por que as três se diagnosticam
+em segundos com pedidos reais em vez de leitura de código.
+
+> **Lição operacional do deploy:** os `vercel --prod` ficavam **`Blocked`** — o
+> processo do CLI era morto a meio de "Building…" quando uma nova sessão de
+> terminal arrancava, e a Vercel não conclui o deployment. O que funciona é
+> **`vercel redeploy <url> --no-wait --non-interactive`**: a criação acontece do
+> lado do servidor e o CLI devolve imediatamente, sem depender de manter o
+> processo vivo. (O `redeploy` não aceita `--yes`; a lista de opções válidas
+> termina em `--no-wait`, `--non-interactive`, `--target`.)
+
+> **Dois projetos com o mesmo nome-base.** `dashboardestufaiot.vercel.app`
+> responde noutra conta (a do colega de TCC) e o firmware apontava para lá. Este
+> deploy ficou em `dashboardestufaiot-omega.vercel.app` e o firmware foi movido
+> para esse host — **ambos os lados têm de apontar para o mesmo projeto**, senão
+> o painel enfileira num lado e o poll vai buscar ao outro (o sintoma volta a ser
+> "202 no painel, relé parado", sem nenhum erro em sítio nenhum).
+
+| Elo | Verificação |
+|---|---|
+| Vercel env | `REDIS_URL` (Upstash REST, com `?_token=`) presente — sem ela o `POST /api/control` responde `502 redis_unavailable` |
+| Vercel env | `DEVICE_TOKEN` presente — sem ela o `GET /pending` responde `401` (fail-closed) |
+| Firmware | `include/secrets.h` criado e `API_VERCEL_TOKEN` = **uso o mesmo valor** de `DEVICE_TOKEN` |
+| Firmware | build sem o `#warning` acima; serial com `[VERCEL] Poll de comandos ativo (fila OK).` |
+| Local (LAN) | `server.js` na mesma rede do Mosquitto: `LOCAL_MQTT_BROKER` correto e `mqtt_broker_conectado` no log |
