@@ -34,34 +34,41 @@ function unwrapList(payload) {
 }
 
 async function loadLogs() {
+  const tb = () => document.getElementById('logsTbody');
   try {
     const r = await fetch('/api/admin/logs?limit=200', { credentials: 'same-origin' });
-    if (r.status === 401) { window.location.href = '/index.html'; return; }
-    const payload = await r.json();
-    if (!r.ok) {
-      logsTbody.innerHTML = `<tr><td colspan="6" class="no-data">${apiErrorMessage(payload, 'Erro ao carregar')}</td></tr>`;
+    if (r.status === 401 || r.status === 403) { window.location.href = '/index.html'; return; }
+    let payload = null;
+    try { payload = await r.json(); } catch { payload = null; }
+    if (!r.ok || !payload) {
+      tb().innerHTML = `<tr><td colspan="6" class="no-data">${apiErrorMessage(payload, 'Erro ao carregar (' + r.status + ')')}</td></tr>`;
       return;
     }
     allLogs = unwrapList(payload);
     renderLogs(allLogs);
     computeStats(allLogs);
   } catch {
-    logsTbody.innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>';
+    tb().innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>';
   }
 }
 
 async function loadUsers() {
+  const tb = () => document.getElementById('usersTbody');
   try {
     const r = await fetch('/api/admin/users', { credentials: 'same-origin' });
-    if (r.status === 401) { window.location.href = '/index.html'; return; }
-    const payload = await r.json();
+    if (r.status === 401 || r.status === 403) { window.location.href = '/index.html'; return; }
+    let payload = null;
+    try { payload = await r.json(); } catch { payload = null; }
+    if (!r.ok || !payload) {
+      tb().innerHTML = `<tr><td colspan="6" class="no-data">${apiErrorMessage(payload, 'Erro ao carregar') + ' (' + r.status + ')'}</td></tr>`;
+      return;
+    }
     const users = unwrapList(payload);
     document.getElementById('statUsers').textContent = users.length;
-    const tb = document.getElementById('usersTbody');
-    if (!users.length) { tb.innerHTML = '<tr><td colspan="6" class="no-data">Nenhum usuário</td></tr>'; return; }
-    tb.innerHTML = users.map(u => `
+    if (!users.length) { tb().innerHTML = '<tr><td colspan="6" class="no-data">Nenhum usuário</td></tr>'; return; }
+    tb().innerHTML = users.map(u => `
       <tr>
-        <td>${u.id}</td>
+        <td>${u.id ?? u._id ?? '—'}</td>
         <td>${u.username}</td>
         <td>${u.email}</td>
         <td class="${u.is_active ? 'u-active' : 'u-inactive'}">${u.is_active ? '● Ativo' : '○ Inativo'}</td>
@@ -70,7 +77,7 @@ async function loadUsers() {
       </tr>
     `).join('');
   } catch {
-    document.getElementById('usersTbody').innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>';
+    tb().innerHTML = '<tr><td colspan="6" class="no-data">Erro ao carregar</td></tr>';
   }
 }
 
@@ -80,8 +87,8 @@ function renderLogs(logs) {
   tb.innerHTML = logs.map(l => {
     const evClass = `ev-${l.event}`;
     const evTxt = evLabels[l.event] || l.event;
-    const details = l.details ? JSON.parse(l.details) : null;
-    const detTxt = details?.reason ? `(${details.reason})` : '—';
+    const details = parseDetails(l.details);
+    const detTxt = details?.reason ? `(${details.reason})` : (details?.role ? `(${details.role})` : (details?.action ? `(${details.action})` : '—'));
     return `
       <tr>
         <td>${fmt(l.created_at)}</td>
@@ -93,7 +100,13 @@ function renderLogs(logs) {
       </tr>
     `;
   }).join('');
+}
 
+function parseDetails(raw) {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch { return { reason: String(raw).slice(0, 120) }; }
+}
 function computeStats(logs) {
   const logins = logs.filter(l => l.event === 'login').length;
   const failed = logs.filter(l => l.event === 'failed_login').length;
@@ -178,6 +191,4 @@ function searchLogs(term) {
     );
   }
   renderLogs(list);
-}
-
 }

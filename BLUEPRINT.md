@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.6.4 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.6.5 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (remote `mine`)
 >
@@ -13,6 +13,31 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.6.5 (02/10/2026) - Fix: log de eventos preso em "Carregando…"
+
+`fix(admin): public/js/admin.js tinha SyntaxError que impedia o ficheiro
+     inteiro de executar — faltava o `}` de fecho de `renderLogs()` (a funcao
+     seguinte, `computeStats()`, ficava aninhada dentro dela) e sobrava um `}`
+     a mais no fim do ficheiro que fechava o `<script>` como invalido. Com o
+     parse a falhar, `loadAll()` nunca corria: nem logs nem usuarios carregavam
+     e a tabela ficava eternamente em "Carregando…", mesmo com a API a
+     responder 200
+     - `parseDetails()` (novo): `l.details` chega como string JSON, mas podia
+       chegar como objeto ou texto nao-JSON — o `JSON.parse` direto quebrava a
+       renderizacao da linha inteira; agora ha fallback seguro
+     - `loadLogs()`/`loadUsers()`: passam a tratar tambem 403 como "sem sessao
+       admin" (redirect), mostram o status HTTP real na mensagem de erro em vez
+       de "Erro ao carregar" generico, e usam `getElementById` em vez de global
+       implicita do id (mais robusto)
+     - coluna `#` da tabela de usuarios passa a `u.id ?? u._id` (o backend
+       devolve `_id` do Mongoose; antes mostrava `undefined`)
+     - sw.js cache estufa-v13 -> v14 (forca o browser a buscar o admin.js novo;
+       sem bump, o PWA continuava a servir o ficheiro com SyntaxError do cache)
+test: `node --check public/js/admin.js` exit 0 (antes exit 1 com
+      `SyntaxError: Unexpected token '}'`), `npm run check` exit 0,
+      112/112 node:test a passar, 0 falhas
+`
 
 ### v1.6.4 (02/10/2026) - URL de producao, rotulo de autoria e publicacao nos dois repositorios
 
