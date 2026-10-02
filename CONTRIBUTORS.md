@@ -6,10 +6,11 @@ implicitamente transferido de uma pessoa para outra.
 
 ## Autores
 
-### Deivisson Lino Campos dos Santos Junior — co-autor
+### Deivisson Lino Campos dos Santos Junior — autor da camada de hardware e dados
+(co-autor do sistema web)
 - GitHub: [@blecaute373](https://github.com/blecaute373)
 - Fork: [blecaute373/Estufa-Dashboard-TCC](https://github.com/blecaute373/Estufa-Dashboard-TCC) (remote `mine`)
-- **Origem do sistema (camada de hardware e de dados):**
+- **Camada de hardware e de dados:**
   - **Firmware ESP32 em C++** — autor do código do dispositivo
     (`sketch_apr13a.ino` → hoje `260929-*/src/main.cpp`), incluindo a
     **integração com a API do ThingSpeak no próprio firmware** (publicação da

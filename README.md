@@ -120,7 +120,7 @@ Gere o segredo com: `node -e "console.log(require('crypto').randomBytes(64).toSt
 ## 🚀 Deploy (Vercel)
 
 1. Conecte o repositório (Framework preset: Other; Output: `public`).
-2. Configure as envs: `MONGODB_URI`, `REDIS_URL`, `TS_CHANNEL`, `TS_API_KEY`, `JWT_SECRET`, `DEVICE_TOKEN`.
+2. Configure as **7** envs: `MONGODB_URI`, `REDIS_URL`, `TS_CHANNEL`, `TS_API_KEY`, `JWT_SECRET`, `DEVICE_TOKEN`, `DEVICE_ID`.
 3. Cada push/PR roda CI (`npm ci` → `check` → `test` → `audit`).
 4. Valide pós-deploy: `/api/health`, login/logout, dashboard, admin, PWA.
 
@@ -137,9 +137,24 @@ Veja [README-APPS.md](README-APPS.md) para detalhes.
 
 ## 🌐 URLs de Produção
 
-- **Dashboard:** https://dashboardestufaiot.vercel.app/login-dashboard.html
-- **Admin:** https://dashboardestufaiot.vercel.app/login-admin.html
-- **Site principal:** https://dashboardestufaiot.vercel.app
+Deploy em produção do **autor da camada de hardware e dados** (conta Vercel
+`deivisson1`, CLI `blecaute373`):
+
+- **Dashboard:** https://dashboardestufaiot-omega.vercel.app/login-dashboard.html
+- **Admin:** https://dashboardestufaiot-omega.vercel.app/login-admin.html
+- **Site principal:** https://dashboardestufaiot-omega.vercel.app
+- **Health check:** https://dashboardestufaiot-omega.vercel.app/api/health
+
+**Env vars configuradas neste deploy: 7/7** — `DEVICE_TOKEN`, `DEVICE_ID`,
+`JWT_SECRET`, `TS_CHANNEL`, `REDIS_URL`, `TS_API_KEY`, `MONGODB_URI`.
+
+> ⚠️ **Não confundir com `https://dashboardestufaiot.vercel.app`** — esse domínio é
+> um **projeto Vercel diferente, noutra conta** (ligado ao repositório `origin`).
+> Os dois partilham o mesmo nome-base, mas as env vars e a **fila de comandos
+> vivem em projetos separados**. Painel e firmware têm de apontar para o **mesmo**
+> projeto: se o `GET /api/control/pending` buscar a fila de um lado e os comandos
+> forem enfileirados no outro, o sintoma é sempre o mesmo — `POST /api/control`
+> devolve **202** e o relé não se move.
 
 ## 👥 Autores
 
@@ -147,7 +162,7 @@ Projeto acadêmico de TCC desenvolvido em **co-autoria**:
 
 | Autor | Papel | GitHub |
 |-------|-------|--------|
-| **Deivisson Lino Campos dos Santos Junior** | Co-autor · **origem do sistema**: firmware ESP32 em C++ com a integração ThingSpeak, dashboard original "as is" calibrado, stack Node-RED + InfluxDB + Grafana · **sistema web**: fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador fim-a-fim, MongoDB Atlas em produção (ADR-0010), app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` | [@blecaute373](https://github.com/blecaute373) |
+| **Deivisson Lino Campos dos Santos Junior** | **Autor da camada de hardware e dados** · firmware ESP32 em C++ com a integração ThingSpeak, dashboard original "as is" calibrado, stack Node-RED + InfluxDB + Grafana · **co-autor do sistema web**: fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador fim-a-fim, MongoDB Atlas em produção (ADR-0010), app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` | [@blecaute373](https://github.com/blecaute373) |
 | **Matheus Garbin** | Autor do sistema web · reestruturação em camadas a partir da versão "as is", sistema de login/autenticação JWT, painel de admin, apps mobile/desktop, deploy Vercel | [@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte) |
 
 Ver [CONTRIBUTORS.md](CONTRIBUTORS.md) para a repartição detalhada (por camada,
@@ -160,11 +175,13 @@ que originou o projeto e é a prova da autoria do firmware — está preservada 
 | Repositório | Papel |
 |-------------|-------|
 | [matheusbritogarbin-byte/Estufa-Dashboard-TCC](https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC) | Original (remote `origin`) |
-| [blecaute373/Estufa-Dashboard-TCC](https://github.com/blecaute373/Estufa-Dashboard-TCC) | Fork do co-autor (remote `mine`) |
+| [blecaute373/Estufa-Dashboard-TCC](https://github.com/blecaute373/Estufa-Dashboard-TCC) | Fork do autor da camada de hardware e dados (remote `mine`) |
+
+Os dois remotes recebem os mesmos commits — o trabalho é publicado dos dois lados:
 
 ```bash
-# Enviar para o fork do co-autor
-git push mine main
+git push mine main     # fork próprio
+git push origin main   # repositório original (fast-forward, sem reescrita)
 ```
 
 ## 📄 Licença

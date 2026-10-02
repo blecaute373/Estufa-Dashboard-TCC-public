@@ -1,10 +1,10 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.6.3 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.6.4 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (remote `mine`)
 >
-> **Autores:** **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — autor da **camada de origem** (firmware ESP32 em C++, integração ThingSpeak no firmware, dashboard "as is" calibrado, stack Node-RED/InfluxDB/Grafana) e **co-autor do sistema web** · Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor do **sistema web** (reestruturação em camadas, login/JWT, painel admin, apps, deploy). Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md); versão original preservada em [legacy/](legacy/README.md).
+> **Autores:** **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — **autor da camada de hardware e dados** (firmware ESP32 em C++, integração ThingSpeak no firmware, dashboard "as is" calibrado, stack Node-RED/InfluxDB/Grafana) e **co-autor do sistema web** · Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor do **sistema web** (reestruturação em camadas, login/JWT, painel admin, apps, deploy). Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md); versão original preservada em [legacy/](legacy/README.md).
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -13,6 +13,37 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.6.4 (02/10/2026) - URL de producao, rotulo de autoria e publicacao nos dois repositorios
+
+`docs: URL de producao corrigida no README — apontava para a implantacao ERRADA
+     - As "URLs de Producao" apontavam para dashboardestufaiot.vercel.app, que e
+       um projeto Vercel DIFERENTE, noutra conta (a do repo `origin`). Quem
+       seguisse o README chegava a um sistema onde este autor nao tem acesso
+       administrativo — ou seja, o painel de admin (onde vive o botao do rele)
+       ficava inalcancavel
+     - Passa a apontar para dashboardestufaiot-omega.vercel.app (conta
+       `deivisson1` / CLI `blecaute373`), com o health check e as 7/7 env vars
+       registadas
+     - Acrescentado o aviso dos DOIS projetos com o mesmo nome-base: painel e
+       firmware tem de apontar para o MESMO projeto, senao o pending busca a
+       fila de um lado e os comandos ficam no outro. Sintoma: 202 no painel e
+       rele parado (o modo de falha mais enganador do projeto)
+     - Mesma correcao no bloco "Estado Atual" deste documento, onde o campo
+       Deploy tambem citava o dominio alheio
+docs: rotulo de autoria ajustado a pedido do proprio autor
+     - Deivisson Lino Campos dos Santos Junior passa a "AUTOR DA CAMADA DE
+       HARDWARE E DADOS" (e co-autor do sistema web) no README, no
+       CONTRIBUTORS.md e no cabecalho deste documento. Antes dizia "camada de
+       origem", que e mais vago e menos fiel ao que efetivamente fez
+chore(git): publicacao nos DOIS repositorios, autorizada pelo autor
+     - push para `mine` (blecaute373/Estufa-Dashboard-TCC) e para `origin`
+       (matheusbritogarbin-byte/Estufa-Dashboard-TCC)
+     - o push para `origin` e FAST-FORWARD (`git merge-base --is-ancestor
+       origin/main HEAD` -> verdadeiro): nao ha reescrita de historico nem
+       force-push, e os commits anteriores do outro autor ficam intactos
+     - README ganha a secao de repositorios com os dois `git push` documentados
+`
 
 ### v1.6.3 (02/10/2026) - Proveniencia da camada de origem e correcao de creditos
 
@@ -374,13 +405,16 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.6.3):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.6.4):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
   publicado (fila de comandos via Vercel + Upstash Redis, ADR-0007/0008)**,
   **cards Dark/Neon** e **QR de download do app na tela de login**; PWA, apps
   mobile (Android) e desktop (Electron/Windows).
 - **Stack:** Node.js + Express + MongoDB (User/AccessLog) + Upstash Redis (fila de comandos) + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local, opcional).
-- **Deploy:** Vercel (serverless functions) com dominio customizado (dashboardestufaiot.vercel.app);
+- **Deploy:** Vercel (serverless functions) com dominio customizado
+  (**dashboardestufaiot-omega.vercel.app** — conta `deivisson1`, do autor da
+  camada de hardware e dados; **nao** confundir com `dashboardestufaiot.vercel.app`,
+  que e um projeto diferente noutra conta);
   **o controlo de atuadores funciona no site publicado** pela fila de comandos
   (`POST /api/control` → Upstash Redis → `GET /api/control/pending` pelo ESP32
   a cada 10 s).
