@@ -147,10 +147,13 @@ Projeto acadêmico de TCC desenvolvido em **co-autoria**:
 
 | Autor | Papel | GitHub |
 |-------|-------|--------|
-| **Matheus Garbin** | Autor original · arquitetura base, autenticação, deploy | [@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte) |
-| **Deivisson Lino Campos dos Santos Junior** | Co-autor · fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador, MongoDB Atlas em produção (ADR-0010), firmware ESP32 com token injetado, app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` | [@blecaute373](https://github.com/blecaute373) |
+| **Deivisson Lino Campos dos Santos Junior** | Co-autor · **origem do sistema**: firmware ESP32 em C++ com a integração ThingSpeak, dashboard original "as is" calibrado, stack Node-RED + InfluxDB + Grafana · **sistema web**: fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador fim-a-fim, MongoDB Atlas em produção (ADR-0010), app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` | [@blecaute373](https://github.com/blecaute373) |
+| **Matheus Garbin** | Autor do sistema web · reestruturação em camadas a partir da versão "as is", sistema de login/autenticação JWT, painel de admin, apps mobile/desktop, deploy Vercel | [@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte) |
 
-Ver [CONTRIBUTORS.md](CONTRIBUTORS.md) para a repartição detalhada das contribuições.
+Ver [CONTRIBUTORS.md](CONTRIBUTORS.md) para a repartição detalhada (por camada,
+com tabela de verificabilidade). A versão original e monolítica do dashboard —
+que originou o projeto e é a prova da autoria do firmware — está preservada em
+[`legacy/`](legacy/README.md).
 
 ### Repositórios
 

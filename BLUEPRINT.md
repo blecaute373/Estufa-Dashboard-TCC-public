@@ -1,10 +1,10 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.6.2 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.6.3 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (remote `mine`)
 >
-> **Autores:** Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor original · **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — co-autor. Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md).
+> **Autores:** **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — autor da **camada de origem** (firmware ESP32 em C++, integração ThingSpeak no firmware, dashboard "as is" calibrado, stack Node-RED/InfluxDB/Grafana) e **co-autor do sistema web** · Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor do **sistema web** (reestruturação em camadas, login/JWT, painel admin, apps, deploy). Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md); versão original preservada em [legacy/](legacy/README.md).
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -13,6 +13,42 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.6.3 (02/10/2026) - Proveniencia da camada de origem e correcao de creditos
+
+`docs: creditos corrigidos — a v1.6.2 creditava mal a ORIGEM do projeto
+     - Deivisson Lino Campos dos Santos Junior (@blecaute373) e o autor da
+       CAMADA DE ORIGEM: firmware ESP32 em C++ (sketch_apr13a.ino), integracao
+       com a API do ThingSpeak DENTRO do firmware, a versao "as is" do dashboard
+       (monolitica — CSS, JS, ThingSpeak e as chaves de API num so HTML, porem
+       ja calibrada para o hardware) e a stack de dados Node-RED + InfluxDB +
+       Grafana
+     - A v1.6.2 dizia "Matheus Garbin — autor original ... proxy ThingSpeak":
+       o proxy ATUAL (ADR-0005) e dele, mas a integracao ThingSpeak ORIGINAL,
+       escrita em C++ no firmware, e do Deivisson. A atribuicao passa a ser por
+       CAMADA (hardware/dados vs. sistema web) em vez de por ficheiro
+     - Matheus Garbin passa a "autor do sistema web": formatou e reorganizou a
+       versao "as is" em camadas, incorporou o login/autenticacao JWT, criou o
+       painel de admin e conduziu as correcoes documentadas (v0.1.0 -> v1.6.1)
+docs: legacy/ (NOVO) — a versao "as is" fica versionada como registro de
+      proveniencia:
+     - legacy/dashboard_estufa_original.html: o dashboard original, SANITIZADO
+       (a chave de API do ThingSpeak embutida no HTML foi trocada por um
+       placeholder — uma credencial commitada e uma credencial comprometida,
+       §9.10; a chave antiga nao e a de producao, mas era uma credencial real)
+     - legacy/README.md: explica por que existe e registra a PROVA da autoria
+       do firmware — a linha 740 do original diz "thresholds do master
+       (sketch_apr13a.ino)" e replica os SEIS valores que o §11.1.1 deste
+       documento atribui ao firmware (vent >=30/<=26 C, valvula <=40/>=70 %),
+       alem do INTERVALO_S = 16 do ciclo de telemetria
+     - os limites de calibracao VIAJARAM do firmware para esta documentacao: e o
+       rastro que liga a autoria ao artefato
+docs: CONTRIBUTORS.md reescrito — reparticao por CAMADA + tabela de
+      verificabilidade + nota explicando por que o git log NAO cobre a camada de
+      origem: artefato que existia antes de passar pelo Git nao aparece no
+      historico (o 1.º commit e literalmente "Tira o numero thinkspeak", o
+      proprio ato de sanitizar a versao original para poder publica-la)
+`
 
 ### v1.6.2 (02/10/2026) - Creditos de co-autoria e importacao do repositorio
 
@@ -338,7 +374,7 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.6.1):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.6.3):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
   publicado (fila de comandos via Vercel + Upstash Redis, ADR-0007/0008)**,
   **cards Dark/Neon** e **QR de download do app na tela de login**; PWA, apps
@@ -806,6 +842,7 @@ estufa-dashboard-tcc/
 |-- cookies.txt                # Cookies para testes (se aplicavel)
 |-- BLUEPRINT.md               # Este documento
 |-- README.md                  # Documentacao basica
+|-- legacy/                    # Versao original ("as is") do dashboard — registro de proveniencia (nao e runtime)
 |-- README-APPS.md             # Documentacao de apps mobile/desktop
 `
 
@@ -1577,6 +1614,7 @@ estufa-dashboard-tcc/
 |-- .gitignore               # Regras de exclusao do git
 |-- BLUEPRINT.md             # Este documento
 |-- README.md                # Documentacao basica
+|-- legacy/                  # Versao original ("as is") — proveniencia
 |-- README-APPS.md           # Documentacao de apps mobile/desktop
 `
 

@@ -26,6 +26,11 @@ scripts/
 docs/
 *.md
 
+# Versão original ("as is") do dashboard — registro de proveniência, não é
+# runtime. O CLAUDE.md/ENGENHARIA.md já ficam de fora por `*.md`; este ficheiro
+# é .html e precisa da regra explícita, senão viaja no bundle do deploy.
+legacy/
+
 # Resíduos de sessão (ficheiros .txt de diagnóstico na raiz)
 *.txt
 *.log
