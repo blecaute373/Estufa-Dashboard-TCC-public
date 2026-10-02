@@ -143,14 +143,26 @@ Veja [README-APPS.md](README-APPS.md) para detalhes.
 
 ## 👥 Autores
 
-Projeto acadêmico de TCC desenvolvido em co-autoria:
+Projeto acadêmico de TCC desenvolvido em **co-autoria**:
 
-| Autor | Papel |
-|-------|-------|
-| **Matheus Garbin** ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) | Autor original · arquitetura base, autenticação, deploy |
-| **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) | Co-autor · fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador, MongoDB Atlas em produção (ADR-0010), firmware ESP32 com token injetado, app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` |
+| Autor | Papel | GitHub |
+|-------|-------|--------|
+| **Matheus Garbin** | Autor original · arquitetura base, autenticação, deploy | [@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte) |
+| **Deivisson Lino Campos dos Santos Junior** | Co-autor · fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador, MongoDB Atlas em produção (ADR-0010), firmware ESP32 com token injetado, app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` | [@blecaute373](https://github.com/blecaute373) |
 
 Ver [CONTRIBUTORS.md](CONTRIBUTORS.md) para a repartição detalhada das contribuições.
+
+### Repositórios
+
+| Repositório | Papel |
+|-------------|-------|
+| [matheusbritogarbin-byte/Estufa-Dashboard-TCC](https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC) | Original (remote `origin`) |
+| [blecaute373/Estufa-Dashboard-TCC](https://github.com/blecaute373/Estufa-Dashboard-TCC) | Fork do co-autor (remote `mine`) |
+
+```bash
+# Enviar para o fork do co-autor
+git push mine main
+```
 
 ## 📄 Licença
 

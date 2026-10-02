@@ -2,6 +2,8 @@
 
 > **Versão:** 1.6.2 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
+> **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (remote `mine`)
+>
 > **Autores:** Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor original · **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — co-autor. Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md).
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
@@ -25,7 +27,18 @@ Historico completo de todos os commits do projeto, organizados por versao.
      - Cabeçalho do BLUEPRINT passa a listar os dois autores
 fix: README tinha as seccoes "Apps", "URLs de Producao" e "Licenca" DUPLICADAS
      (coladas duas vezes no mesmo ficheiro) — removida a copia
-chore: preparacao da importacao para a conta GitHub do co-autor
+chore(git): repositorio importado para a conta do co-autor
+     - Fork de matheusbritogarbin-byte/Estufa-Dashboard-TCC criado em
+       blecaute373/Estufa-Dashboard-TCC (privado, com o vinculo "forked from"
+       preservado); remote `mine` configurado no clone local
+     - push concluido: 12 commits enviados (9 do autor original que ainda nao
+       estavam no GitHub + 3 do co-autor) -> f9e786a..d88a8b0
+     - As 3 autorias do co-autor usam
+       274110085+blecaute373@users.noreply.github.com, o que faz o GitHub
+       liga-las a conta @blecaute373; a lista de contributors do repositorio
+       passa a mostrar blecaute373 (antes so aparecia o autor original)
+     - O historico pre-existente do autor original NAO foi reescrito: os seus
+       67 commits mantem os autores originais intactos
 
 ### v1.6.1 (02/10/2026) - MongoDB Atlas em producao: cadeia de controlo completa
 

@@ -18,6 +18,7 @@ implicitamente transferido de uma pessoa para outra.
 
 ### Deivisson Lino Campos dos Santos Junior — co-autor
 - GitHub: [@blecaute373](https://github.com/blecaute373)
+- Fork: [blecaute373/Estufa-Dashboard-TCC](https://github.com/blecaute373/Estufa-Dashboard-TCC) (remote `mine`)
 - **Contribuição:**
   - **Fila de comandos em Upstash Redis** (ADR-0008) — migração da fila do
     MongoDB para o Upstash, com `REDIS_URL` numa única string e garantia de
