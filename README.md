@@ -33,6 +33,24 @@ Acesse http://localhost:3000 (login em `/index.html`).
 npm test    # Small (validadores/erros/retry, sem I/O) + Medium (HTTP localhost, sem DB real)
 ```
 
+## 🔍 Diagnóstico (precisa de rede e credenciais reais)
+
+Os dois scripts abaixo ficam **fora** do `npm run check` de propósito: `check` e
+`test` são herméticos por desenho, e estes exigem rede, credenciais e um serviço
+a responder.
+
+```bash
+npm run check:control   # cadeia do acionamento manual (ADR-0007/0008):
+                        # REDIS_URL com round-trip real ao Upstash, DEVICE_TOKEN,
+                        # token do firmware vs o da Vercel
+npm run check:mongo     # ligação ao MongoDB Atlas (bug #13 / ADR-0010):
+                        # formato da URI (offline), ping, leitura das coleções
+                        # reais e ESCRITA numa coleção descartável
+```
+
+Ambos imprimem a URI/token **mascarados** — um diagnóstico que loga o segredo
+inteiro é ele próprio o incidente.
+
 ## 📁 Estrutura do Projeto
 
 ```
@@ -123,24 +141,16 @@ Veja [README-APPS.md](README-APPS.md) para detalhes.
 - **Admin:** https://dashboardestufaiot.vercel.app/login-admin.html
 - **Site principal:** https://dashboardestufaiot.vercel.app
 
-## 📄 Licença
+## 👥 Autores
 
-Projeto acadêmico - TCC
+Projeto acadêmico de TCC desenvolvido em co-autoria:
 
-## 📱 Apps
+| Autor | Papel |
+|-------|-------|
+| **Matheus Garbin** ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) | Autor original · arquitetura base, autenticação, deploy |
+| **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) | Co-autor · fila de comandos (Upstash Redis, ADR-0008), controle remoto do atuador, MongoDB Atlas em produção (ADR-0010), firmware ESP32 com token injetado, app partilhada (ADR-0009), diagnóstico `check:control`/`check:mongo` |
 
-- **Web:** Dashboard responsivo com gráficos Chart.js
-- **PWA:** Instalável com Service Worker v2
-- **Mobile:** APK Android via Capacitor
-- **Desktop:** Instalador Windows via Electron
-
-Veja [README-APPS.md](README-APPS.md) para detalhes.
-
-## 🌐 URLs de Produção
-
-- **Dashboard:** https://dashboardestufaiot.vercel.app/login-dashboard.html
-- **Admin:** https://dashboardestufaiot.vercel.app/login-admin.html
-- **Site principal:** https://dashboardestufaiot.vercel.app
+Ver [CONTRIBUTORS.md](CONTRIBUTORS.md) para a repartição detalhada das contribuições.
 
 ## 📄 Licença
 

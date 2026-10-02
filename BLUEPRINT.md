@@ -1,6 +1,8 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.6.0 · **Data:** 25/09/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.6.2 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+>
+> **Autores:** Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor original · **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — co-autor. Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md).
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -9,6 +11,51 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.6.2 (02/10/2026) - Creditos de co-autoria e importacao do repositorio
+
+`docs: Deivisson Lino Campos dos Santos Junior (@blecaute373) reconhecido como
+        CO-AUTOR do projeto
+     - README ganha a seccao "Autores" com a reparticao de papeis; os creditos
+       do autor original (Matheus Garbin) sao preservados integralmente
+     - CONTRIBUTORS.md (NOVO): reparticao detalhada, commit a commit, entre o
+       autor original e o co-autor — nenhuma contribuicao e reatribuida
+     - package.json: campos "author" e "contributors" (o projeto nao tinha
+       metadata de autoria nenhuma)
+     - Cabeçalho do BLUEPRINT passa a listar os dois autores
+fix: README tinha as seccoes "Apps", "URLs de Producao" e "Licenca" DUPLICADAS
+     (coladas duas vezes no mesmo ficheiro) — removida a copia
+chore: preparacao da importacao para a conta GitHub do co-autor
+
+### v1.6.1 (02/10/2026) - MongoDB Atlas em producao: cadeia de controlo completa
+
+`fix(deploy): MONGODB_URI configurada — o bug #13 fechou e a cadeia ficou completa
+     - Cria o utilizador de BD estufa_vercel com role readWrite@estufa (nao
+       readWriteAnyDatabase: a app so toca em User e AccessLog — least privilege,
+       ENGENHARIA §9.2)
+     - A credencial antiga NAO era recuperavel: o Atlas nunca devolve passwords
+       existentes e o valor real saiu do historico do Git na v1.1.0
+     - API/db.js + lib/config.js fazem fail-fast, portanto sem MONGODB_URI o
+       POST /api/auth/login devolvia 500 e o painel de admin (onde vive o botao
+       do rele) ficava inalcancavel — a fila funcionava, o caminho humano nao
+     - scripts/check-mongo.js (NOVO) + npm run check:mongo: separa formato da
+       URI (offline), ping autenticado, leitura das colecoes reais e ESCRITA
+       numa colecao descartavel; imprime a URI sempre mascarada (um diagnostico
+       que loga a URI inteira e ele proprio o incidente)
+     - Fora do npm run check, tal como o check:control: precisa de rede e
+       credenciais reais; check/test sao hermeticos por desenho (§5.2)
+     - script carrega .env e .env.local (o CLI da Vercel escreve o segundo)
+docs: ADR-0010 (novo) — cluster, utilizador minimo, trade-off do 0.0.0.0/0 na
+      Access List, e o metodo (o Atlas CLI existe, so nao esta no PATH); indice
+      ADR; ADR-0008 (tabela de verificacao: login 500 -> 200); BLUEPRINT 1.6.1 —
+      Registro, Estado Atual, 11.2, 12, 14.1, 14.3, bug #13 fechado
+test: verificacao por pedidos HTTP REAIS no site publicado (nao inspecao de
+      codigo): register 200 is_admin:true, login 200, admin/users 200 e 401 sem
+      token, admin/logs 200, control 202 -> pending 200 com o MESMO id ->
+      2.º poll count:0, thingspeak 200
+test: 112/112 node:test a passar, 0 falhas (24 suites); `npm run check` e
+      `npm run check:mongo` com exit 0
+`
 
 ### v1.6.0 (25/09/2026) - Fila de comandos em Upstash Redis (arquitetura hibrida)
 
@@ -278,7 +325,7 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.6.0):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.6.1):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
   publicado (fila de comandos via Vercel + Upstash Redis, ADR-0007/0008)**,
   **cards Dark/Neon** e **QR de download do app na tela de login**; PWA, apps
@@ -326,16 +373,80 @@ a874402 | 09/05/2026 | Initial commit
   - Service worker sem teste automatizado
   - PWABuilder requer hospedagem HTTPS
   - Chart.js dependente de CDN (sem fallback local)
-  - **Firmware ainda nao uploaded** (ESP32 sem porta serial) e `API_VERCEL_TOKEN`
-    por preencher em `main.cpp`
-  - **`DEVICE_TOKEN` e a `REDIS_URL` por definir no ambiente da
-    Vercel** — sem elas o poll responde 401 e a fila nao enfileira
-  - Firmware `.ino` fora do versionamento (gitignored) — sem CI de compilacao
+  - **Firmware ainda nao uploaded** (ESP32 sem porta serial). `API_VERCEL_TOKEN`
+    **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — build a passar.
+  - **Falta o REST TOKEN do Upstash.** O endpoint
+    `https://loyal-stag-44345.upstash.io` esta confirmado (responde), mas falta
+    o token REST (o que comeca por `AX`, na seccao "REST API" do console). A
+    password da ligacao TCP **nao serve**: o teste real devolveu
+    `WRONGPASS invalid or missing auth token` (ver bug #12).
+  - **`DEVICE_TOKEN` e a `REDIS_URL` por definir no ambiente da Vercel** — sem
+    elas o poll responde 401 e a fila nao enfileira. O `.env` local ja tem os
+    dois preenchidos, mas isso **nao** chega: as env vars da Vercel sao por
+    ambiente e tem de ser configuradas la.
+  - Firmware fora do versionamento — a pasta PlatformIO (`260929-*/`) passou a
+    ser ignorada pelo Git, porque `src/main.cpp` tem WiFi/ThingSpeak/DEVICE_TOKEN
+  - **Deploy do site (02/10/2026):** o projeto `dashboardestufaiot` foi criado na
+    conta Vercel `deivisson1` (CLI `blecaute373`) e esta **no ar** em
+    `https://dashboardestufaiot-omega.vercel.app` (alias de producao).
+    **Env vars configuradas: 7/7** (`DEVICE_TOKEN`, `DEVICE_ID`, `JWT_SECRET`,
+    `TS_CHANNEL`, `REDIS_URL`, `TS_API_KEY`, `MONGODB_URI`). O bug #13 fechou.
+  - **A cadeia de controlo esta COMPLETA ponta-a-ponta (02/10/2026)** — do clique
+    no painel ate ao comando sair da fila, tudo provado com **pedidos HTTP reais**
+    no site publicado (nao por inspecao de codigo):
+    `POST /api/auth/register` → **200** com `is_admin:true` (o 1.º registo nasce
+    admin, `api/auth.js:45`) → `POST /api/auth/login` → **200** (antes **500**) →
+    `GET /api/admin/users` → **200** com token e **401** sem token →
+    `POST /api/control` → **202** → `GET /api/control/pending` com
+    `X-Device-Token` → **200** com o **MESMO `id`** → 2.º poll → **`count:0`**
+    (at-most-once). Ou seja: **o botao do rele ja e alcancavel por um humano**, e
+    o comando chega ao outro lado intacto.
+  - **Base de dados de producao (novo, ADR-0010):** cluster Atlas `Cluster63224`
+    (MongoDB 8.0.34), base `estufa`, utilizador dedicado **`estufa_vercel`** com
+    role **`readWrite@estufa`** — e nao `readWriteAnyDatabase`, porque a app so
+    toca em `User` e `AccessLog` (least privilege, ENGENHARIA §9.2). O
+    `0.0.0.0/0` da Access List e um **trade-off assumido**: as instancias
+    serverless da Vercel saem de IPs dinamicos e nao sao allow-listaveis.
+  - **Diagnostico da base: `npm run check:mongo`** — separa os quatro elos que
+    falham em sitios diferentes (formato da URI offline, ping autenticado,
+    leitura das colecoes reais, ESCRITA numa colecao descartavel) e imprime a
+    URI sempre mascarada.
+  - **Metodo que custou uma sessao (registado para nao repetir):** o MongoDB
+    Atlas CLI **existe** nesta maquina
+    (`C:\Program Files (x86)\MongoDB Atlas CLI\atlas.exe`) mas **nao esta no
+    `PATH`** — `where.exe atlas` falha e `Test-Path $env:APPDATA\.atlas` da
+    `False`, o que levou a concluir "nao ha CLI" quando o CLI estava
+    **autenticado** e o cluster **ja existia**. *"Nao encontrei a ferramenta"* e
+    *"a ferramenta nao existe"* sao conclusoes diferentes.
+  - **A cadeia de comandos foi provada PONTA-A-PONTA no site publicado
+    (02/10/2026), com pedidos reais** — nao por inspecao de codigo:
+    `enfileirarComando()` → `GET /api/control/pending` devolveu o MESMO `id` e o
+    mesmo payload (`{"command":"ON"}`); um segundo poll veio **vazio**
+    (entrega at-most-once); e um comando expirado foi descartado (TTL logico
+    de 5 min a funcionar). O acionamento manual esta operacional.
+  - **`GET /api/thingspeak/last` passou a 200 com dados reais** (`27.40 °C`,
+    umidade do ar `66.50`).
+  - **Licao operacional do deploy:** todos os `vercel --prod` corriam bem no
+    build mas ficavam **`Blocked`** — o processo do CLI era morto (por uma
+    sessao/terminal novo) a meio de "Building…", e a Vercel nao conclui o
+    deployment. O que funciona e **`vercel redeploy <url> --no-wait
+    --non-interactive`**: a criacao acontece no servidor e o CLI devolve logo.
+    Evita tambem o `--yes`, que o `redeploy` nao aceita.
+  - **ATENCAO — dois projetos Vercel com o mesmo nome-base.** O dominio
+    `dashboardestufaiot.vercel.app` esta **vivo noutra conta** (a do colega de
+    TCC, onde o repo tem origem) e o firmware apontava para la. O firmware foi
+    passado para o dominio desta conta (`...-omega`), porque foi **aqui** que as
+    env vars ficaram. Os DOIS lados (painel e firmware) tem de apontar para o
+    MESMO projeto: se o poll for para um projeto e a fila estiver no outro, o
+    sintoma e o de sempre — 202 no painel e rele parado.
+  - **Diagnostico da cadeia: `npm run check:control`** — verifica os 4 elos
+    (REDIS_URL com round-trip real ao Upstash, DEVICE_TOKEN, token do firmware
+    vs DEVICE_TOKEN, e a heuristica "parece token do Upstash")
   - Botao "verificar broker" inexistente no caminho **local** (a indisponibilidade
     do broker so aparece apos clique, 502) — no caminho publicado este problema
     deixou de existir (fila na nuvem, ADR-0007)
 
-- _Ultima atualizacao: 25/09/2026_
+- _Ultima atualizacao: 02/10/2026_
 
 ---
 
@@ -363,6 +474,68 @@ a874402 | 09/05/2026 | Initial commit
     Sem ela, `lib/store.js` falha com mensagem explicita (fail-fast, sem
     fallback) e `POST /api/control` devolve 500. Criar a base gratuita em
     https://console.upstash.com. O token **nao** vai para o firmware.
+    **Duas armadilhas confirmadas em campo (02/10/2026):**
+    - o **endpoint sozinho nao serve** — `lib/config.js` falha logo com
+      "REDIS_URL sem token" (o token tem de estar na propria string);
+    - o token tem de ser o **REST token** (comeca por `AX`, na seccao "REST API"
+      do console). A **password da ligacao TCP** (string mais curta, tipo
+      `0ic14fz...`) passa a validacao sintactica mas o Upstash responde
+      **`WRONGPASS invalid or missing auth token`** no primeiro comando real.
+    Verificar os dois casos com **`npm run check:control`** (faz um round-trip
+    real: `SET`/`GET`/`DEL` de uma chave de diagnostico).
+
+13. ~~**`MONGODB_URI` por definir no projeto Vercel.**~~ **RESOLVIDO em 02/10/2026
+    (ADR-0010).** Era o ultimo elo em falta: com **6 das 7** variaveis
+    configuradas, o mongoose tentava `mongodb://localhost:27017/estufa` (que nao
+    existe na Vercel) e o `POST /api/auth/login` devolvia **500** — comprovado com
+    pedido real. Sem login nao se chegava ao painel de admin, portanto **o botao
+    que aciona o rele nao ficava acessivel por um humano**, mesmo com a fila a
+    funcionar. Esse era o modo de falha mais enganador do projeto: a parte dificil
+    (fila, polling, at-most-once) estava provada, e o que faltava era configuracao.
+
+    **O que ficou registado como metodo** (porque custou uma sessao inteira):
+
+    - **A credencial antiga era irrecuperavel.** Foi procurada no historico
+      completo do Git (`git log --all -S 'mongodb+srv'`, 4 commits) e em todos os
+      artefactos de auditoria do repo: so restam placeholders. A v1.1.0 removeu o
+      segredo real e o Git nao o devolve. Alem disso, **o Atlas nunca devolve uma
+      password existente** — e por desenho, nao por limitacao do CLI.
+    - **O cluster ja existia.** O MongoDB Atlas CLI **estava instalado e
+      autenticado** nesta maquina
+      (`C:\Program Files (x86)\MongoDB Atlas CLI\atlas.exe`), mas **nao esta no
+      `PATH`**: `where.exe atlas` falha e `Test-Path $env:APPDATA\.atlas` da
+      `False`. A conclusao a que isso levou — *"nao ha CLI, logo nao da para
+      gerir"* — estava errada. *"Nao encontrei a ferramenta"* e *"a ferramenta
+      nao existe"* sao conclusoes diferentes.
+    - **Decisao de menor privilegio (§9.2):** em vez de repor a password do
+      `estufa_app` existente (role `readWriteAnyDatabase`), foi criado
+      **`estufa_vercel`** com **`readWrite@estufa`** — a app so toca em `User` e
+      `AccessLog`. Nao se corrigiu o sintoma mantendo o privilegio a mais.
+    - **O `0.0.0.0/0` da Access List fica** (trade-off assumido): as instancias
+      serverless da Vercel saem de IPs dinamicos da AWS e nao sao
+      allow-listaveis de forma estavel. A defesa passa a ser a password SCRAM +
+      o facto de a credencial viver so nas env vars da Vercel.
+
+    | Var. | Estado medido em 02/10 |
+    |---|---|
+    | `DEVICE_TOKEN` | OK — `GET /pending` com o token do firmware → 200 |
+    | `REDIS_URL` | OK — fila enfileira e entrega (prova ponta-a-ponta) |
+    | `JWT_SECRET` | OK — sem ela `lib/config.js` lanca e a app toda dava 500 |
+    | `TS_CHANNEL` | OK |
+    | `TS_API_KEY` | OK — `/api/thingspeak/last` → 200 com dados reais |
+    | `DEVICE_ID` | OK (`estufa01`) |
+    | `MONGODB_URI` | **OK** — `POST /api/auth/login` → **200** (era 500) |
+
+    Como foi fechado (02/10/2026):
+    `vercel env add MONGODB_URI production --value "<srv do Atlas>" --sensitive --yes`
+    seguido de `vercel redeploy <url> --no-wait --non-interactive` — o `--value`
+    evita o prompt interativo, que nao funciona em execucao nao assistida.
+
+    > **Armadilha dos dois projetos:** o dominio
+    > `dashboardestufaiot.vercel.app` esta vivo **noutra conta** (do colega de
+    > TCC). Este deploy usa `-omega` e o firmware foi apontado para la. Painel e
+    > firmware tem de apontar para o MESMO projeto, senao o poll vai buscar a
+    > fila de um lado e os comandos ficam no outro.
 
 ---
 
@@ -980,6 +1153,7 @@ app.whenReady().then(createWindow);
 | Variavel | Descricao | Obrigatoria |
 | -------- | --------- | ----------- |
 | MONGODB_URI | URI de conexao MongoDB Atlas (User + AccessLog) | Sim |
+| → detalhe | cluster `Cluster63224`, base `estufa`, utilizador **`estufa_vercel`** com role **`readWrite@estufa`** (nao `readWriteAnyDatabase` — least privilege, §9.2). Diagnostico: `npm run check:mongo`. Ver ADR-0010 | — |
 | REDIS_URL | Upstash Redis numa string so (endpoint + token) — fila de comandos | Sim (producao) |
 | DEVICE_TOKEN | Token que o ESP32 envia em `X-Device-Token` (comparado em tempo constante) | Sim (producao) |
 | JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao |
@@ -1067,6 +1241,32 @@ app.whenReady().then(createWindow);
 - Suporta variavel de ambiente `APP_URL` para base URL
 - Dependencias: Java 17+, Android SDK, Android Studio
 
+### 12.4 check-control-chain.js (diagnóstico da cadeia de comandos)
+
+- Verifica os QUATRO elos do acionamento manual (ADR-0007/0008), que falham em
+  sitios diferentes e produzem o MESMO sintoma ("o rele nao reage ao clique"):
+  `REDIS_URL` (com round-trip real ao Upstash), `DEVICE_TOKEN` na Vercel, o token
+  no firmware vs o da Vercel, e a heuristica "parece token do Upstash"
+- **Uso:** `npm run check:control`
+- **Fora do `npm run check`**: precisa de rede e credenciais reais, enquanto
+  `check`/`test` sao hermeticos por desenho (§5.2)
+
+### 12.5 check-mongo.js (diagnóstico da base de dados)
+
+- Verifica os quatro elos da ligacao ao Atlas: **formato** da URI (offline,
+  detecta placeholders, base ausente no caminho — que faria o Mongoose usar
+  `test` sem avisar — e credenciais mal escapadas), **ping** autenticado,
+  **leitura** das colecoes reais (`users`, `accesslogs`) e **escrita** numa
+  colecao descartavel
+- **Uso:** `npm run check:mongo`
+- Existe porque o modo de falha era ambiguo: sem `MONGODB_URI` o
+  `POST /api/auth/login` devolve 500, indistinguivel de JWT errado ou Redis em
+  baixo (bug #13 / ADR-0010)
+- Imprime a URI **sempre mascarada** (`mascararUri()`): um diagnostico que loga a
+  URI inteira e ele proprio o incidente — ela da acesso total a base
+- Le `.env` e `.env.local` (o CLI da Vercel escreve o segundo)
+- **Fora do `npm run check`**, pela mesma razao de 12.4
+
 ---
 
 ## 13. Padroes de Codigo e Governanza
@@ -1113,7 +1313,14 @@ app.whenReady().then(createWindow);
 - [x] HTTPS em producao
 - [ ] Headers de seguranca (HSTS, X-Frame-Options)
 - [x] Logs de acesso registrados
-- [ ] MongoDB Atlas com IP whitelist
+- [x] MongoDB Atlas com IP whitelist — **parcial, por desenho (ADR-0010)**: a
+      Access List tem `0.0.0.0/0` porque as funcoes serverless da Vercel saem de
+      IPs dinamicos da AWS e nao sao allow-listaveis de forma estavel. O que
+      compensa: password SCRAM forte, utilizador de BD dedicado com
+      `readWrite@estufa` (nao `readWriteAnyDatabase`), e a credencial a viver so
+      nas env vars da Vercel
+- [x] `npm run check:mongo` valida formato + ping + leitura + escrita sem expor
+      a URI (ADR-0010)
 - [x] Service Worker com cache seguro
 - [x] Electron com nodeIntegration=false
 - [ ] Dependencias auditadas (npm audit)
@@ -1155,6 +1362,12 @@ Baseado no Express.js Security Best Practices:
   chega ao atuador
 - `REDIS_URL` nunca entra no firmware: o ESP32 so conhece o
   URL publico da Vercel e o `DEVICE_TOKEN`
+- **A credencial da base de dados tem o ambito minimo** (`readWrite@estufa`,
+  ADR-0010) — nao `readWriteAnyDatabase`. A app so toca em `User` e `AccessLog`;
+  um utilizador com escrita em *qualquer* base do cluster nao da nada em troca
+  (§9.2, *least privilege*)
+- `MONGODB_URI` nunca e impressa em diagnostico ou log: `npm run check:mongo`
+  passa-a sempre por `mascararUri()` (§14.3)
 
 ---
 
