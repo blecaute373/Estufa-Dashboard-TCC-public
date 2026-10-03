@@ -56,6 +56,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Clone completo: o passo "Commit do assetlinks.json" faz
+          # `git push origin HEAD:main`, que falha em clone raso ("shallow
+          # update not allowed"). `persist-credentials` mantém o GITHUB_TOKEN
+          # para esse push (com `permissions.contents: write`).
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: JDK 17 (Temurin)
         uses: actions/setup-java@v4
@@ -239,6 +246,8 @@ jobs:
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
+          git fetch origin main --quiet || true
+          git pull --rebase origin main || true
           if git diff --quiet -- public/.well-known/assetlinks.json; then
             echo "assetlinks.json ja esta actualizado."
             exit 0

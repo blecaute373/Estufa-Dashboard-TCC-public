@@ -35,7 +35,12 @@ O APK fica em
 | Secret | Para que serve |
 |--------|----------------|
 | `ANDROID_KEYSTORE_BASE64` | Keystore de assinatura (base64 do ficheiro). Sem ele, o CI gera um novo keystore e entrega-o no artefacto `keystore-assinatura` — guarde-o para manter o mesmo apk atualizável. |
-| `ANDROID_KEYSTORE_PASSWORD` | Senha do keystore/chave. Sem ele usa-se o valor de desenvolvimento `estufa01tcc`. |
+| `ANDROID_KEYSTORE_PASSWORD` | Senha do keystore/chave. Sem ele usa-se o valor de desenvolvimento `estufa01tcc`. **Tem de ser a mesma senha usada quando o keystore foi gerado** — se mudar a senha depois sem gerar keystore novo, a assinatura falha. |
+
+> **Ordem certa na primeira vez:** 1) corra o workflow sem secrets → 2) descarregue
+> `keystore-assinatura` → 3) crie `ANDROID_KEYSTORE_BASE64` (+ `ANDROID_KEYSTORE_PASSWORD`
+> se definiu uma própria) → 4) corra de novo para confirmar reutilização → 5) só depois
+> crie a tag `v*` para a Release (o QR só serve o APK depois da Release existir).
 
 ### Método 2 — Via PWABuilder (manual)
 

@@ -69,7 +69,7 @@ const config: CapacitorConfig = {
   server: {
     url: '${app.entryUrl}',
     cleartext: false,
-    allowNavigation: ['dashboardestufaiot.vercel.app'],
+    allowNavigation: ['dashboardestufaiot-omega.vercel.app'],
   },
   android: {
     allowMixedContent: false,
