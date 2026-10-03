@@ -76,6 +76,9 @@ mobile/*/package-lock.json
 # Versiona-se APENAS `twa/twa-manifest.json` (a "receita" reproduzível do APK).
 # O projeto Android, o keystore e os binários assinados sao gerados no CI
 # (.github/workflows/android-twa.yml) e NUNCA entram no Git.
+# (O `android.keystore` da raiz tambem fica fora: foi onde o artefacto do CI
+# caiu numa sessao anterior — o sitio certo e a pasta Downloads, fora do repo.)
+android.keystore
 twa/app/
 twa/android.keystore
 twa/manifest-checksum.txt

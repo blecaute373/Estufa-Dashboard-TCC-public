@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/assetlinks.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**/*.!(html)",
       "use": "@vercel/static"
     }
