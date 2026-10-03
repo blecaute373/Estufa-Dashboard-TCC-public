@@ -72,6 +72,18 @@ jobs:
 
       - name: Android SDK (cmdline-tools)
         uses: android-actions/setup-android@v3
+        with:
+          # Versao longa (build number) das cmdline-tools — ver tabela em
+          # https://developer.android.com/studio#command-line-tools-only
+          # (12.0 = 11076708; a accao instala-as e poe `sdkmanager` no PATH).
+          # NUNCA pedir o pacote `tools` aqui: a Google descontinuou-o e o
+          # `sdkmanager --install tools` falha com
+          # "Warning: Failed to find package 'tools'".
+          cmdline-tools-version: '11076708'
+          # Pacotes validos do sdkmanager. `platform-tools` (adb) vem incluido
+          # por omissao na accao, mas declara-se de forma explicita; o resto e
+          # o que o Gradle/Bubblewrap precisam para compilar o TWA.
+          packages: 'platform-tools build-tools;34.0.0 platforms;android-34'
 
       - name: Ajustar layout do SDK para o Bubblewrap
         run: |
@@ -87,8 +99,11 @@ jobs:
           sudo ln -sfn "$CMDLINE_BIN" "$SDK/bin"
           ls -d "$SDK/bin" "$SDK/build-tools" "$SDK/platforms" 2>/dev/null || true
           # Aceitar licencas e instalar o que o Gradle/Bubblewrap precisam.
+          # (Mantem-se alinhado com o `packages:` da accao acima: build-tools
+          # 34.0.0 + android-34. O Bubblewrap/Gradle podem pedir API mais nova
+          # depois — este passo apenas garante que o minimo ja existe.)
           ( yes | "$SDK/bin/sdkmanager" --sdk_root="$SDK" --licenses ) >/dev/null 2>&1 || true
-          for pkg in "platform-tools" "build-tools;36.1.0" "platforms;android-35" "platforms;android-36"; do
+          for pkg in "platform-tools" "build-tools;34.0.0" "platforms;android-34"; do
             "$SDK/bin/sdkmanager" --sdk_root="$SDK" --install "$pkg" >/dev/null 2>&1 \
               && echo "ok: $pkg" || echo "aviso: $pkg indisponivel (o Bubblewrap trata disso)"
           done
