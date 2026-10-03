@@ -4,27 +4,62 @@ Documentação para build e distribuição dos aplicativos mobile (Android) e de
 
 ## 📱 APK Android (Mobile)
 
-### Método 1 — Via PWABuilder (recomendado, mais fácil)
+> ⚠️ **URL correta:** o domínio de produção deste repositório é
+> **`dashboardestufaiot-omega.vercel.app`**. O `dashboardestufaiot.vercel.app`
+> (sem `-omega`) é **outro projeto, noutra conta**: serve outro backend e outra
+> fila de comandos, pelo que o relé simplesmente não responde. Ver `README.md`.
+
+### Método 1 — GitHub Actions + Bubblewrap (recomendado, reproduzível)
+
+O APK sai de um workflow versionado (`.github/workflows/android-twa.yml`), que
+gera um **TWA (Trusted Web Activity)** a partir de `twa/twa-manifest.json` e o
+publica **assinado** numa Release.
+
+1. **Actions** → **Android APK — TWA (Bubblewrap)** → **Run workflow**
+2. Aguarde; no fim, descarregue o artefacto **`estufa01-android`** (`estufa01.apk`, `app-release-bundle.aab`)
+
+Para publicar uma Release (o que alimenta o **QR code** da página inicial, via
+`public/js/qr-app.js`):
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+O APK fica em
+`https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk`
+— exatamente o endereço codificado no QR.
+
+**Secrets opcionais** (Settings → Secrets and variables → Actions):
+
+| Secret | Para que serve |
+|--------|----------------|
+| `ANDROID_KEYSTORE_BASE64` | Keystore de assinatura (base64 do ficheiro). Sem ele, o CI gera um novo keystore e entrega-o no artefacto `keystore-assinatura` — guarde-o para manter o mesmo apk atualizável. |
+| `ANDROID_KEYSTORE_PASSWORD` | Senha do keystore/chave. Sem ele usa-se o valor de desenvolvimento `estufa01tcc`. |
+
+### Método 2 — Via PWABuilder (manual)
 
 1. Acesse https://pwabuilder.com
 2. Cole a URL do app:
-   - **Dashboard:** `https://dashboardestufaiot.vercel.app/login-dashboard.html`
-   - **Admin:** `https://dashboardestufaiot.vercel.app/login-admin.html`
+   - **Dashboard:** `https://dashboardestufaiot-omega.vercel.app/login-dashboard.html`
+   - **Admin:** `https://dashboardestufaiot-omega.vercel.app/login-admin.html`
 3. Clique em **"Package for Android"**
 4. Baixe o APK gerado e instale no celular
 
-### Método 2 — Via script local (requer Java + Android SDK)
+### Método 3 — Via script local (requer Java 17 + Android SDK)
 
 ```bash
-# Dashboard APK
+# Mostra o link do PWABuilder
 node scripts/build-mobile.js dashboard
 
-# Admin APK
-node scripts/build-mobile.js admin
-
-# Os dois
-node scripts/build-mobile.js both
+# Gera projeto Capacitor completo
+node scripts/build-android.js
 ```
+
+> O `scripts/build-android.js` e os `capacitor.config.*` de `mobile/` são o
+> caminho **Capacitor** (app que carrega o site remoto). É mais pesado que o
+> TWA e não gera release automaticamente — o **Método 1** é o caminho suportado.
+
 
 ---
 
@@ -48,9 +83,26 @@ Gera: `release/admin/Estufa-Admin-Setup.exe`
 
 ## 🔧 Requisitos para buildar os APKs localmente
 
-1. **Java 17+** (https://adoptium.net)
-2. **Android SDK** (Android Studio → SDK Manager)
-3. Variável de ambiente `ANDROID_HOME` configurada
+1. **JDK 17** (https://adoptium.net) — o Bubblewrap recusa versões < 17 e as > 17 são incompatíveis com o Android cmdline-tools
+2. **Android SDK cmdline-tools** (https://developer.android.com/studio#command-line-tools-only)
+3. **Bubblewrap**: `npm i -g @bubblewrap/cli`
+4. Na primeira execução, o Bubblewrap pergunta onde estão o JDK e o SDK. Para evitar o prompt, escreva `${USER_HOME}/.bubblewrap/config.json`:
+
+```json
+{ "jdkPath": "/caminho/para/o/jdk-17", "androidSdkPath": "/caminho/para/o/android-sdk" }
+```
+
+> ⚠️ `androidSdkPath` tem de conter `bin/sdkmanager` (ou `tools/bin/sdkmanager`) **e** ser a raiz onde vivem `build-tools/` e `platforms/`.
+
+Depois, dentro da pasta `twa/`:
+
+```bash
+bubblewrap update --manifest twa-manifest.json --directory . --skipVersionUpgrade
+BUBBLEWRAP_KEYSTORE_PASSWORD=... BUBBLEWRAP_KEY_PASSWORD=... \
+  bubblewrap build --manifest twa-manifest.json --directory .
+```
+
+Saída: `twa/app-release-signed.apk` e `twa/app-release-bundle.aab`.
 
 ---
 
@@ -58,15 +110,20 @@ Gera: `release/admin/Estufa-Admin-Setup.exe`
 
 | App | URL |
 |-----|-----|
-| Dashboard (login + registro) | `https://dashboardestufaiot.vercel.app/login-dashboard.html` |
-| Admin (só login) | `https://dashboardestufaiot.vercel.app/login-admin.html` |
-| Site principal | `https://dashboardestufaiot.vercel.app` |
+| Dashboard (login + registro) | `https://dashboardestufaiot-omega.vercel.app/login-dashboard.html` |
+| Admin (só login) | `https://dashboardestufaiot-omega.vercel.app/login-admin.html` |
+| Site principal | `https://dashboardestufaiot-omega.vercel.app` |
+| Manifesto do dashboard (PWA) | `https://dashboardestufaiot-omega.vercel.app/manifest-dashboard.json` |
+| APK mais recente | `https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk` |
 
 ---
 
 ## 📦 Estrutura de Build
 
 ```
+twa/                        # APK via Trusted Web Activity (Bubblewrap) — Método 1
+├── twa-manifest.json       # ÚNICA peça versionada: a "receita" do APK
+└── (app/, keystore, *.apk) # gerados no CI — NÃO versionados
 mobile/
 ├── dashboard/          # App dashboard (Capacitor)
 │   ├── capacitor.config.json

@@ -1,0 +1,42 @@
+{
+  "packageId": "com.estufa.dashboard",
+  "host": "dashboardestufaiot-omega.vercel.app",
+  "name": "Estufa 01 — Dashboard",
+  "launcherName": "Estufa 01",
+  "display": "standalone",
+  "themeColor": "#0d1f10",
+  "themeColorDark": "#0d1f10",
+  "navigationColor": "#08120a",
+  "navigationColorDark": "#08120a",
+  "navigationDividerColor": "#08120a",
+  "navigationDividerColorDark": "#08120a",
+  "backgroundColor": "#08120a",
+  "enableNotifications": false,
+  "startUrl": "/login-dashboard.html",
+  "iconUrl": "https://dashboardestufaiot-omega.vercel.app/icons/icon-dashboard-512.png",
+  "maskableIconUrl": "https://dashboardestufaiot-omega.vercel.app/icons/icon-dashboard-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "estufa01"
+  },
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://dashboardestufaiot-omega.vercel.app/manifest-dashboard.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://dashboardestufaiot-omega.vercel.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait-primary",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.estufa.dashboard",
+      "sha256_cert_fingerprints": [
+        "REPLACE_ME_RUN_THE_ANDROID_TWA_WORKFLOW_AND_COMMIT_ITS_OUTPUT"
+      ]
+    }
+  }
+]

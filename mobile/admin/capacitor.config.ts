@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   webDir: 'public',
   bundledWebRuntime: false,
   server: {
-    url: 'https://dashboardestufaiot.vercel.app/login-admin.html',
+    url: 'https://dashboardestufaiot-omega.vercel.app/login-admin.html',
     cleartext: false,
-    allowNavigation: ['dashboardestufaiot.vercel.app'],
+    allowNavigation: ['dashboardestufaiot-omega.vercel.app'],
   },
   android: {
     allowMixedContent: false,

@@ -72,6 +72,18 @@ mobile/*/ios/
 mobile/*/node_modules/
 mobile/*/package-lock.json
 
+# TWA (Android/Trusted Web Activity) gerado pelo Bubblewrap
+# Versiona-se APENAS `twa/twa-manifest.json` (a "receita" reproduzível do APK).
+# O projeto Android, o keystore e os binários assinados sao gerados no CI
+# (.github/workflows/android-twa.yml) e NUNCA entram no Git.
+twa/app/
+twa/android.keystore
+twa/manifest-checksum.txt
+twa/twa-manifest.json.backup
+twa/app-release-*
+twa/*.apk
+twa/*.aab
+
 # IDE and editor files
 .vscode/
 .idea/

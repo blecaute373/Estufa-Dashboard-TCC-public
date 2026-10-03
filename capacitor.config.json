@@ -4,7 +4,8 @@
   "webDir": "public",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://seu-site.vercel.app",
-    "cleartext": false
+    "url": "https://dashboardestufaiot-omega.vercel.app",
+    "cleartext": false,
+    "hostname": "dashboardestufaiot-omega.vercel.app"
   }
 }

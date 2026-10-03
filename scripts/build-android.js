@@ -13,7 +13,10 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = process.env.APP_URL || 'https://dashboardestufaiot.vercel.app';
+// ATENCAO: `dashboardestufaiot.vercel.app` (sem `-omega`) e OUTRO projeto, noutra
+// conta — serve de outro backend/fila de comandos e o rele simplesmente nao
+// responde. O deploy real deste repositorio e o `-omega` (ver README.md).
+const BASE_URL = process.env.APP_URL || 'https://dashboardestufaiot-omega.vercel.app';
 
 const APPS = {
   dashboard: {
