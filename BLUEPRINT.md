@@ -1,8 +1,10 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.6.5 · **Data:** 02/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.7.1 · **Data:** 04/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
-> **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (remote `mine`)
+> **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
+>
+> **Repo público standalone (Release/QR do APK):** https://github.com/blecaute373/Estufa-Dashboard-TCC-public (remote `mine` — download anónimo do APK em `releases/latest/download/estufa01.apk`)
 >
 > **Autores:** **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — **autor da camada de hardware e dados** (firmware ESP32 em C++, integração ThingSpeak no firmware, dashboard "as is" calibrado, stack Node-RED/InfluxDB/Grafana) e **co-autor do sistema web** · Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor do **sistema web** (reestruturação em camadas, login/JWT, painel admin, apps, deploy). Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md); versão original preservada em [legacy/](legacy/README.md).
 >
@@ -13,6 +15,96 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.7.1 (04/10/2026) - QR do APK aponta para repo publico standalone (destaque do fork)
+
+`fix(android): QR da tela de login apontava para um endereco que NAO baixa em
+     telemovel nenhum — dois bloqueios empilhados: (a) a URL apontava para
+     matheusbritogarbin-byte/Estufa-Dashboard-TCC (repo PRIVADO, 404 anonimo) e
+     (b) o repo nao tinha NENHUMA tag v* — nunca houve Release, logo
+     releases/latest/download/estufa01.apk nao existia em lado nenhum
+     - destaque do fork: GitHub bloqueia `visibility: public` num fork de repo
+       privado via API REST ("Private forks can't be made public", HTTP 422,
+       confirmado nesta sessao) e o botao "Leave fork network" (Settings ->
+       Danger Zone) so existe para fork publico <1GB — nenhum dos caminhos
+       servia. Solucao: repo standalone NOVO blecaute373/Estufa-Dashboard-TCC-
+       public (publico), espelhado com `git push --mirror` (branches + tags +
+       historico preservados; o vinculo de fork e as configs de Actions ficam
+       para tras de proposito)
+     - QR repointado: public/js/qr-app.js + public/index.html (fallback
+       clicavel) + README-APPS.md (2 sits) -> repo publico; public/sw.js cache
+       estufa-v14 -> estufa-v15 (sem o bump o PWA servia o QR velho do cache)
+     - .github/workflows/android-twa.yml: comentario de uso passa a
+       `git push mine v1.0.0` (o `origin` continua a ser o repo privado do
+       co-autor; o remote `mine` passa a apontar para o repo publico)
+     - secrets configurados por `gh secret set` a partir do artefacto
+       keystore-assinatura do run 37129553151: ANDROID_KEYSTORE_BASE64
+       (base64 do android.keystore, 2.668 B, alias estufa01) +
+       ANDROID_KEYSTORE_PASSWORD; o keystore e o MESMO que gerou o fingerprint
+       publicado (1C:FB:1B:ED:...:E1:91) — assetlinks.json NAO muda
+     - tag v1.0.0 no repo publico dispara o job "Publicar Release"
+       (softprops/action-gh-release) e fecha o circuito do QR
+docs: BLUEPRINT 1.7.1 — Registro, Estado Atual
+test: `npm run check` exit 0 (21 ficheiros), `npm test` 112/112 a passar (24
+      suites, 0 falhas)
+`
+### v1.7.0 (03/10/2026) - APK Android via TWA no CI + assetlinks por funcao serverless
+
+`feat(android): o APK deixou de depender de Android Studio na maquina local —
+     sai de um workflow versionado, assinado, e o proprio CI fecha o ciclo
+     (build -> Release -> fingerprint publicado no site)
+     - .github/workflows/android-twa.yml (novo): empacota o dashboard PWA
+       (startUrl /login-dashboard.html) como Trusted Web Activity via
+       Bubblewrap, a partir de twa/twa-manifest.json (packageId
+       com.estufa.dashboard, host dashboardestufaiot-omega.vercel.app); em
+       tags `v*` publica a Release de onde o QR da tela de login baixa o APK
+       (releases/latest/download/estufa01.apk) e deixa o artefacto
+       estufa01-android (apk + aab + manifest + assetlinks)
+     - contorna quatro armadilhas do Bubblewrap lidas no codigo-fonte (nao por
+       tentativa): ~/.bubblewrap/config.json pre-criado para nao pendurar no
+       prompt do JDK/SDK; symlink `bin/` dentro do androidSdkPath
+       (validatePath exige `bin/` ou `tools/`, e getAndroidHome devolve o
+       MESMO caminho); `update` ANTES de `build` (sem manifest-checksum.txt o
+       build pergunta interactivamente); e as senhas por
+       BUBBLEWRAP_KEYSTORE_PASSWORD / BUBBLEWRAP_KEY_PASSWORD
+     - .gitignore: twa/app/, twa/android.keystore, twa/*.apk, twa/*.aab e o
+       android.keystore que tinha caido na raiz do repo — versiona-se APENAS
+       twa/twa-manifest.json (a "receita" reproduzivel do APK)
+     - URLs de producao alinhadas no caminho mobile: scripts/build-android.js,
+       scripts/build-mobile.js, capacitor.config.* e README-APPS.md passam a
+       apontar para o dominio `-omega` (o QR e o manifest do TWA tambem)
+fix(android): cmdline-tools 12.0 (build 11076708) + pacotes validos no
+     sdkmanager (`platform-tools build-tools;34.0.0 platforms;android-34`) —
+     nunca pedir o pacote `tools` (descontinuado pela Google: "Failed to find
+     package 'tools'")
+fix(android): public/.well-known/assetlinks.json NUNCA chegava ao bundle do
+     deploy — o Vercel ignora pastas com ponto inicial na recolha de estaticos,
+     e a rota para o ficheiro dava 404 (o TWA abria com barra de endereco).
+     Passou a ser servido por api/assetlinks.js (funcao serverless), com o
+     fingerprint em lib/config.js (ASSETLINKS_FINGERPRINT; override por env var
+     sem commit quando a chave rodar)
+     - vercel.json: build @vercel/node para api/assetlinks.js + rota
+       /.well-known/assetlinks.json -> /api/assetlinks.js; no sistema de rotas
+       legado o dest tem de incluir o caminho do ficheiro (/api/assetlinks.js;
+       /api/assetlinks da 404)
+     - o proprio workflow commita o assetlinks.json actualizado
+       (github-actions[bot], [skip ci]) a cada build: o fingerprint que o
+       Chrome compara tem de estar publicado no site
+fix: fingerprint SHA-256 real do keystore no assetlinks
+     (1C:FB:1B:ED:...:93:F1:E1:91, gerado por keytool no CI)
+chore(git): 7284b1a e um MERGE (dois pais: 6bfe473 + f3f3e3e) — a linha local
+     com os fixes de vercel.json e o commit do bot com o fingerprint novo
+     divergiram e foram reconciliados; nao foi fast-forward
+docs: README-APPS.md reescrito — o metodo TWA no CI passa a "caminho
+      suportado" (PWABuilder e Capacitor ficam como alternativas manuais),
+      com a ordem certa da primeira execucao (workflow sem secrets -> guardar
+      keystore -> secrets -> tag `v*` para a Release)
+test: `npm run check` exit 0 (21 ficheiros), `npm test` 112/112 a passar (24
+      suites, 0 falhas), `node --check api/assetlinks.js` exit 0, vercel.json e
+      assetlinks.json validos (JSON.parse)
+nota: `api/assetlinks.js` ainda nao esta no `npm run check` — registado como
+      bug #14 no Estado Atual
+`
 
 ### v1.6.5 (02/10/2026) - Fix: log de eventos preso em "Carregando…"
 
@@ -430,20 +522,24 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.6.4):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.7.1):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
   publicado (fila de comandos via Vercel + Upstash Redis, ADR-0007/0008)**,
-  **cards Dark/Neon** e **QR de download do app na tela de login**; PWA, apps
-  mobile (Android) e desktop (Electron/Windows).
-- **Stack:** Node.js + Express + MongoDB (User/AccessLog) + Upstash Redis (fila de comandos) + HTML/CSS/JS vanilla + Chart.js + Service Worker + Capacitor + Electron + mqtt (broker local, opcional).
+  **cards Dark/Neon** e **QR de download do app na tela de login**; PWA,
+  **APK Android via TWA (Bubblewrap) no CI** e apps desktop (Electron/Windows);
+  o caminho Capacitor/PWABuilder fica como alternativa.
+- **Stack:** Node.js + Express + MongoDB (User/AccessLog) + Upstash Redis (fila de comandos) + HTML/CSS/JS vanilla + Chart.js + Service Worker + TWA/Bubblewrap (APK no CI) + Capacitor + Electron + mqtt (broker local, opcional).
 - **Deploy:** Vercel (serverless functions) com dominio customizado
   (**dashboardestufaiot-omega.vercel.app** — conta `deivisson1`, do autor da
   camada de hardware e dados; **nao** confundir com `dashboardestufaiot.vercel.app`,
   que e um projeto diferente noutra conta);
   **o controlo de atuadores funciona no site publicado** pela fila de comandos
   (`POST /api/control` → Upstash Redis → `GET /api/control/pending` pelo ESP32
-  a cada 10 s).
-- **Total de commits:** 58 commits (09/05/2026 - 25/09/2026).
+  a cada 10 s);
+  **`/.well-known/assetlinks.json` e servido por `api/assetlinks.js`** (funcao
+  serverless, fingerprint em `lib/config.js`) — o ficheiro em
+  `public/.well-known/` nao chega ao bundle do deploy (pasta com ponto inicial).
+- **Total de commits:** 83 commits (09/05/2026 - 03/10/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
@@ -456,8 +552,13 @@ a874402 | 09/05/2026 | Initial commit
   - **QR Code de download do app na tela de login** (index.html; geracao local
     com `js/qrcode.min.js`, sem CDN; link configuravel no script)
   - Painel admin com logs de acesso e gerenciamento de usuarios
-  - PWA com Service Worker v11 (cache limpo + network-first)
-  - Apps mobile Android via Capacitor + PWABuilder
+  - PWA com Service Worker v15 (cache `estufa-v15`, limpo + network-first)
+  - **APK Android via TWA no CI** (`.github/workflows/android-twa.yml`):
+    Bubblewrap a partir de `twa/twa-manifest.json`; APK/AAB assinado, artefacto
+    `estufa01-android` e Release em tags `v*` no repo **publico**
+    `blecaute373/Estufa-Dashboard-TCC-public` — o QR de `js/qr-app.js` serve
+    `releases/latest/download/estufa01.apk` com download anonimo
+  - Apps mobile Android via Capacitor + PWABuilder (alternativa manual)
   - Apps desktop Windows via Electron
   - Sistema de alertas por threshold (temperatura, umidade, etc.)
   - Graficos interativos (linha, gauge, barras) com Chart.js
@@ -554,7 +655,7 @@ a874402 | 09/05/2026 | Initial commit
     do broker so aparece apos clique, 502) — no caminho publicado este problema
     deixou de existir (fila na nuvem, ADR-0007)
 
-- _Ultima atualizacao: 02/10/2026_
+- _Ultima atualizacao: 04/10/2026_
 
 ---
 
@@ -562,14 +663,14 @@ a874402 | 09/05/2026 | Initial commit
 
 1. **Rate limiting no Vercel.** Funcoes serverless tem timeout de 10s (Hobby). Consultas ao MongoDB + ThingSpeak podem estourar esse limite, resultando em erro 504.
 2. **initChart silencioso.** Falha na inicializacao do grafico nao mostra erro visivel ao usuario; o canvas fica vazio sem feedback.
-3. **Service worker sem teste.** sw.js v4 nao tem teste automatizado; mudancas no cache podem quebrar o PWA silenciosamente.
+3. **Service worker sem teste.** sw.js v14 nao tem teste automatizado; mudancas no cache podem quebrar o PWA silenciosamente.
 4. **localStorage fallback.** Em modo PWA mobile, se httpOnly cookie falhar, fallback para localStorage e usado (menos seguro, vulneravel a XSS).
 5. **Chart.js CDN.** Dependencia externa sem fallback local; se CDN cair, graficos param de funcionar.
 6. **ThingSpeak rate limit.** API gratuita limitada a 3 requisicoes/segundo; polling frequente pode bloquear temporariamente.
 7. **Electron sem assinatura.** Apps desktop nao tem codigo assinado (SmartScreen do Windows mostra aviso de seguranca).
 8. **Capacitor sync manual.** npx cap sync necessario apos mudancas no frontend; nao ha automatizacao.
 9. **Admin sem link para dashboard.** Pagina admin nao tem link para dashboard (decisao intencional de seguranca).
-10. **Build Android requer Android Studio.** Build nativo requer Android Studio + SDK configurado localmente.
+10. **Build Android local requer Android Studio** (caminho Capacitor). O caminho suportado — APK via TWA no workflow `android-twa.yml` (§9.5) — nao exige Android Studio nem SDK na maquina.
 11. ~~**Controlo de atuadores so local.**~~ **RESOLVIDO na v1.5.0 (ADR-0007).**
     `/api/control` deixou de devolver 503 no deploy Vercel: o comando e
     enfileirado e recolhido pelo firmware em `GET /api/control/pending`.
@@ -644,6 +745,12 @@ a874402 | 09/05/2026 | Initial commit
     > TCC). Este deploy usa `-omega` e o firmware foi apontado para la. Painel e
     > firmware tem de apontar para o MESMO projeto, senao o poll vai buscar a
     > fila de um lado e os comandos ficam no outro.
+
+14. **`api/assetlinks.js` fora do `npm run check`.** O script `check` (package.json)
+    lista os ficheiros um a um e a funcao nova do assetlinks ficou de fora: um
+    SyntaxError ali so apareceria em deploy. Verificado manualmente
+    (`node --check api/assetlinks.js` exit 0); acrescentar a lista na proxima
+    sessao.
 
 ---
 
@@ -785,12 +892,13 @@ O sistema e composto por:
 | **Backend API** | REST API, autenticacao, proxy ThingSpeak, logs | Node.js + Express |
 | **MongoDB** | Persistencia de usuarios e logs de acesso | MongoDB Atlas |
 | **Frontend** | Dashboard interativo, graficos, alertas | HTML + CSS + JS + Chart.js |
-| **Service Worker** | Cache offline, PWA install | sw.js v9 |
-| **Mobile App** | App Android nativo | Capacitor + PWABuilder |
+| **Service Worker** | Cache offline, PWA install | sw.js v14 |
+| **Mobile App** | APK Android (TWA no CI) + apps Capacitor | Bubblewrap (`android-twa.yml`) + Capacitor + PWABuilder |
 | **Desktop App** | App Windows nativo | Electron |
 | **ThingSpeak** | Dados dos sensores IoT | ThingSpeak API |
 | **Broker MQTT local** | Transporte de comandos de atuadores (server.js -> ESP32) | MQTT (mosquitto) |
 | **ESP32** | Sensores + atuadores (relés/PWM); subscreve topicos `.../comando` | Firmware Arduino (`estufa_unificado (2).ino`) |
+| **Digital Asset Links** | Verificacao de dominio do TWA (Chrome abre o APK sem barra de endereco) | `api/assetlinks.js` + fingerprint em `lib/config.js` |
 
 ### 2.3 Fluxo de Dados
 
@@ -801,7 +909,8 @@ O sistema e composto por:
 5. **Logs** -> Backend registra acesso no MongoDB via AccessLog
 6. **Controlo ativo** -> Dashboard (botoes/slider) -> POST /api/control (server.js,
    protegido por auth) -> Broker MQTT local -> ESP32 aciona relé/PWM
-   (Em Vercel: stub devolve 503; ver Secao 11.1)
+   (Em Vercel o mesmo POST entra na fila Upstash Redis e e o ESP32 que a
+   recolhe — ADR-0007/0008; ver Secao 11.1.1)
 
 ### 2.4 Stack Tecnologica
 
@@ -813,8 +922,8 @@ O sistema e composto por:
 | Frontend | **HTML/CSS/JS vanilla** | Simples, sem build step, PWA-ready |
 | Graficos | **Chart.js** | Leve, interativo, canvas rendering (60k+ GitHub stars) |
 | Auth | **JWT 9.0 + bcryptjs 3.0** | Stateless, seguro, httpOnly cookie |
-| PWA | **Service Worker v9** | Offline, instalavel, network-first |
-| Mobile | **Capacitor 8.3** | Cross-platform, WebView-based, facil integracao |
+| PWA | **Service Worker v15** | Offline, instalavel, network-first |
+| Mobile | **TWA (Bubblewrap) no CI** + **Capacitor 8.3** | TWA: APK fiel ao PWA publicado, assinado e reproduzivel no CI; Capacitor: alternativa WebView |
 | Desktop | **Electron 42.2** | Cross-platform, Node.js integration |
 | Deploy | **Vercel** | Serverless, CI/CD integrado, gratuito |
 | Icons | **SVG/PNG** | PWA icons, manifest |
@@ -827,12 +936,18 @@ O sistema e composto por:
 
 `
 estufa-dashboard-tcc/
+|-- .github/                    # CI (GitHub Actions)
+|   |-- workflows/
+|   |   |-- ci.yml              # check + testes + audit (push/PR)
+|   |   |-- android-twa.yml     # APK/AAB assinado (Bubblewrap) + Release
+|
 |-- api/                        # Backend (Vercel serverless functions)
 |   |-- index.js               # Rotas principais (auth proxy, thingspeak)
 |   |-- auth.js                # Login, registro, logout, validacao JWT
 |   |-- admin.js               # CRUD admin (logs, usuarios)
 |   |-- db.js                  # Conexao MongoDB (Mongoose)
 |   |-- thingspeak.js          # Proxy + parsing dados ThingSpeak
+|   |-- assetlinks.js          # Digital Asset Links do TWA (/.well-known/assetlinks.json)
 |
 |-- public/                    # Frontend estatico
 |   |-- index.html             # Login unificado (layout dividido + registro)
@@ -857,10 +972,11 @@ estufa-dashboard-tcc/
 |   |   |-- control.js         # comando manual on/off/auto + luz auto/manual (admin)
 |   |-- script.js              # Logica dashboard (graficos, alertas, CSV)
 |   |-- pwa.js                 # Registro Service Worker
-|   |-- sw.js                  # Service Worker v9 (cache modular + network-first)
+|   |-- sw.js                  # Service Worker v15 (cache modular + network-first)
 |   |-- manifest-dashboard.json # PWA manifest do dashboard
 |   |-- manifest-admin.json     # PWA manifest do admin
 |   |-- icons/                  # Icones SVG/PNG para PWA
+|   |-- .well-known/            # assetlinks.json do TWA (registro; em producao serve api/assetlinks.js)
 |
 |-- mobile/                    # Apps mobile (Android)
 |   |-- dashboard/             # App dashboard (Capacitor)
@@ -876,6 +992,11 @@ estufa-dashboard-tcc/
 |       |-- package.json
 |       |-- index.html
 |       |-- node_modules/      # Dependencias do app mobile
+|
+|-- twa/                       # APK via Trusted Web Activity (Bubblewrap)
+|   |-- twa-manifest.json      # UNICA peca versionada — a "receita" do APK
+|   |-- (app/, keystore,       # gerados pelo CI (android-twa.yml); nunca
+|   |    *.apk, *.aab)         # entram no Git (.gitignore)
 |
 |-- scripts/                   # Scripts de build/utilidade
 |   |-- make-admin.js          # Criar usuario admin
@@ -1160,9 +1281,9 @@ nunca fala com o broker MQTT (quem publica e o `server.js`):
 
 ## 8. PWA e Service Worker
 
-### 8.1 Service Worker v11 (sw.js)
+### 8.1 Service Worker v15 (sw.js)
 
-- **Cache:** `estufa-v11` (versionado — `activate` apaga versoes antigas)
+- **Cache:** `estufa-v15` (versionado — `activate` apaga versoes antigas)
 - **Pre-cache (ASSETS):** CSS modular (10 folhas, incl. control.css), scripts
   (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`,
   `/js/qrcode.min.js`, `/pwa.js`),
@@ -1174,10 +1295,13 @@ nunca fala com o broker MQTT (quem publica e o `server.js`):
 
 ## 9. Apps Mobile (Android)
 
+Ha **dois caminhos** e o suportado e o **TWA no CI** (§9.5); o Capacitor
+(§9.1-9.3) e o PWABuilder (§9.4) ficam como alternativas manuais.
+
 ### 9.1 Estrutura
 
 `
-mobile/
+mobile/                        # Caminho Capacitor (alternativa)
 |-- dashboard/         # App dashboard
 |   |-- capacitor.config.ts
 |   |-- package.json
@@ -1187,6 +1311,11 @@ mobile/
 |   |-- capacitor.config.ts
 |   |-- package.json
 |   |-- android/        # Projeto Android gerado
+
+twa/                           # Caminho TWA (SUPORTADO — Bubblewrap no CI)
+|-- twa-manifest.json   # UNICA peca versionada: a "receita" do APK
+|-- (app/, keystore,    # gerados pelo workflow android-twa.yml;
+|    *.apk, *.aab)      # nunca entram no Git (.gitignore)
 `
 
 ### 9.2 Configuracao Capacitor
@@ -1194,20 +1323,66 @@ mobile/
 - appId: com.estufa01.dashboard
 - appName: Estufa 01
 - webDir: ../../public
-- androidScheme: https
+- androidScheme: https (server.url aponta para dashboardestufaiot-omega.vercel.app)
 
-### 9.3 Build
+### 9.3 Build (Capacitor)
 
 1. npx cap sync - Sincroniza web assets para Android
 2. npx cap open android - Abre Android Studio
 3. Build via Android Studio ou npx cap build android
 4. APK gerado em android/app/build/outputs/apk/
 
-### 9.4 PWABuilder (alternativa)
+### 9.4 PWABuilder (alternativa manual)
 
 - Usa script build-mobile.js
 - Gera APK via Bubblewrap (CLI)
 - Requer manifest valido + icons PNG
+
+### 9.5 TWA no CI — caminho suportado (Bubblewrap)
+
+`.github/workflows/android-twa.yml` empacota o PWA publicado como **Trusted Web
+Activity**: um APK fiel ao site (mesma UI, sempre atualizada), assinado e
+reproduzivel, sem Android Studio na maquina.
+
+- **Receita versionada:** `twa/twa-manifest.json` (packageId
+  `com.estufa.dashboard`, host `dashboardestufaiot-omega.vercel.app`, startUrl
+  `/login-dashboard.html`). O projeto Android, o keystore e os binarios sao
+  gerados no CI e ignorados no Git — versiona-se apenas a "receita"
+- **Gatilhos:** `workflow_dispatch` (Actions -> "Android APK — TWA (Bubblewrap)"
+  -> Run workflow) ou tags `v*`; na tag publica a **Release** de onde o QR da
+  tela de login baixa o APK (`releases/latest/download/estufa01.apk`) e deixa o
+  artefacto `estufa01-android` (apk + aab + manifest + assetlinks)
+- **Armadilhas do Bubblewrap** que o workflow contorna (lidas no codigo-fonte,
+  nao por tentativa): `~/.bubblewrap/config.json` pre-criado (senao o
+  `loadOrCreateConfig()` pergunta JDK/SDK e o job pendura); symlink `bin/` no
+  `androidSdkPath` (o `validatePath()` exige `bin/` ou `tools/` e o
+  `getAndroidHome()` usa o MESMO caminho); `bubblewrap update` ANTES de
+  `bubblewrap build` (sem `manifest-checksum.txt` o build pergunta
+  interactivamente); senhas por `BUBBLEWRAP_KEYSTORE_PASSWORD` e
+  `BUBBLEWRAP_KEY_PASSWORD`
+- **SDK:** JDK 17 (Temurin) + cmdline-tools **12.0 (11076708)** + pacotes
+  `platform-tools build-tools;34.0.0 platforms;android-34`. Nunca pedir o
+  pacote `tools` — descontinuado pela Google ("Failed to find package 'tools'")
+- **Secrets (opcionais):** `ANDROID_KEYSTORE_BASE64` (keystore proprio; sem ele
+  o CI gera um novo e entrega no artefacto `keystore-assinatura`) e
+  `ANDROID_KEYSTORE_PASSWORD` (sem ela usa o valor de desenvolvimento
+  `estufa01tcc`). Para a Play Store: definir secrets proprios e reutilizar
+  sempre o mesmo keystore — a assinatura tem de bater certo com o assetlinks
+  publicado
+- **Digital Asset Links:** o workflow extrai o SHA-256 do keystore (`keytool`),
+  escreve `public/.well-known/assetlinks.json` e **commita-o de volta na main**
+  (bot, `[skip ci]`): o fingerprint que o Chrome compara tem de estar publicado
+  no site. Em producao quem serve esse URL e `api/assetlinks.js` (§11.1) — o
+  ficheiro em `public/.well-known/` fica como registro/fallback
+- **Ordem certa na primeira vez** (README-APPS.md): 1) correr o workflow sem
+  secrets -> 2) guardar o artefacto `keystore-assinatura` -> 3) criar
+  `ANDROID_KEYSTORE_BASE64` (+ senha, se propria) -> 4) correr de novo para
+  confirmar reutilizacao -> 5) so depois criar a tag `v*` (o QR so serve o APK
+  depois de a Release existir)
+- **Nota local:** o Bubblewrap tambem corre fora do CI (README-APPS.md); nesse
+  caso define-se `${USER_HOME}/.bubblewrap/config.json` com `jdkPath` e
+  `androidSdkPath` (que tem de conter `bin/sdkmanager` E ser a raiz onde vivem
+  `build-tools/` e `platforms/`)
 
 ---
 
@@ -1252,10 +1427,18 @@ app.whenReady().then(createWindow);
 
 ### 11.1 vercel.json
 
-- **builds**: API (serverless) + public (static)
-- **routes**: Rewrite /api/* para serverless functions
-- **headers**: Cache-Control para static assets
-- **regions**: gru1 (Sao Paulo) para baixa latencia
+- **builds**: `api/index.js` e `api/assetlinks.js` (@vercel/node) + `public/**`
+  (@vercel/static, exceto HTML)
+- **routes** (sistema legado): `/.well-known/assetlinks.json` ->
+  `/api/assetlinks.js` (**dest com o caminho do ficheiro** — `/api/assetlinks`
+  dava 404); `/api/(.*)` -> `/api/index.js`; HTMLs e `/` -> `/api/index.js`;
+  estaticos -> `/public/$1`
+- **`.well-known` em `public/` nunca chega ao deploy**: o Vercel ignora pastas
+  com ponto inicial na recolha de estaticos — por isso o assetlinks e servido
+  por funcao (§9.5)
+- **headers**: os mesmos de seguranca do Express (X-Content-Type-Options,
+  X-Frame-Options, Referrer-Policy, Permissions-Policy + HSTS) — ha testes
+  Medium que comparam os dois lados
 
 ### 11.2 Variaveis de Ambiente
 
@@ -1268,6 +1451,7 @@ app.whenReady().then(createWindow);
 | JWT_SECRET | Chave secreta JWT (gerado automaticamente se nao definido) | Nao |
 | TS_API_KEY | API key do ThingSpeak (escrita) | Recomendado |
 | TS_CHANNEL | ID do canal ThingSpeak | Sim |
+| ASSETLINKS_FINGERPRINT | Override do fingerprint SHA-256 do APK/TWA (default no codigo, `lib/config.js`) — o Chrome compara-o com a assinatura do APK | Nao |
 | APP_URL | URL base para apps Electron/Mobile | Nao (default: localhost) |
 | PORT | Porta do servidor local | Nao (default: 3000) |
 | NODE_ENV | production/development | Nao |
@@ -1321,6 +1505,10 @@ app.whenReady().then(createWindow);
 - Push na main -> Deploy automatico via GitHub integration
 - Preview deployments para branches
 - Rollback via Vercel Dashboard
+- **`ci.yml`**: `npm run check` + `npm test` + `npm run audit` em push/PR para a
+  main (o commit automatico do assetlinks usa `[skip ci]`)
+- **`android-twa.yml`**: APK/AAB assinado via Bubblewrap (§9.5) em
+  `workflow_dispatch` ou tags `v*`; commita o assetlinks actualizado
 
 ---
 
@@ -1340,6 +1528,7 @@ app.whenReady().then(createWindow);
 - Suporta variavel de ambiente `APP_URL` para base URL
 - Gera links diretos para PWABuilder com URLs configuradas
 - Pode abrir o navegador automaticamente
+- Base URL default: **`dashboardestufaiot-omega.vercel.app`** (o dominio certo; ver aviso no README)
 
 ### 12.3 build-android.js
 
@@ -1349,6 +1538,8 @@ app.whenReady().then(createWindow);
 - Configura Capacitor com server URL apontando para producao
 - Suporta variavel de ambiente `APP_URL` para base URL
 - Dependencias: Java 17+, Android SDK, Android Studio
+- Base URL default: **`dashboardestufaiot-omega.vercel.app`**; `allowNavigation` limitado a esse host
+- Para gerar o APK sem SDK local, o caminho suportado e o workflow TWA (§9.5)
 
 ### 12.4 check-control-chain.js (diagnóstico da cadeia de comandos)
 
@@ -1431,6 +1622,8 @@ app.whenReady().then(createWindow);
 - [x] `npm run check:mongo` valida formato + ping + leitura + escrita sem expor
       a URI (ADR-0010)
 - [x] Service Worker com cache seguro
+- [x] TWA: `/.well-known/assetlinks.json` servido por `api/assetlinks.js` com o
+      fingerprint do keystore em uso (§9.5)
 - [x] Electron com nodeIntegration=false
 - [ ] Dependencias auditadas (npm audit)
 - [x] `/api/control` protegida por `requireAdminApi` + `controlLimiter` (30/min)
@@ -1461,6 +1654,7 @@ Baseado no Express.js Security Best Practices:
 | TS_CHANNEL | Vercel env vars | ✅ Seguro |
 | DEVICE_TOKEN | Vercel env vars **e** `main.cpp` (obrigatorio: e o unico segredo que o firmware conhece) | ✅ Seguro |
 | REDIS_URL | **So** Vercel env vars (endpoint + token) — nunca no firmware, nunca no browser | ✅ Seguro |
+| Keystore do APK (TWA) | Secrets do GitHub Actions (`ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASSWORD`); sem secrets, o CI gera keystore+senha de desenvolvimento (`estufa01tcc`) — so para sideload, nao para a Play Store | ✅ Seguro |
 
 **Regras de Seguranca:**
 - Nunca commitar arquivos `.env` ou `.jwt_secret`
@@ -1504,7 +1698,7 @@ Baseado no Express.js Security Best Practices:
 12. **Multi-estufa** - Suporte a multiplas estufas
 13. **API publica** - REST API documentada (Swagger)
 14. **Docker** - Containerizacao para deploy flexivel
-15. **CI/CD completo** - GitHub Actions com testes + deploy
+15. **CI/CD completo** - GitHub Actions com testes + deploy (parcial: `ci.yml` corre check/testes/audit e `android-twa.yml` gera o APK; o deploy continua pela integracao da Vercel)
 
 ---
 
@@ -1521,6 +1715,7 @@ Baseado no Express.js Security Best Practices:
 | Vercel | Serverless, CI/CD integrado, dominio customizado gratuito |
 | JWT + bcrypt | Stateless, seguro, amplamente adotado |
 | Capacitor | Cross-platform, WebView-based, facil integracao |
+| APK Android via TWA (Bubblewrap) no CI | APK fiel ao PWA publicado, assinado e reproduzivel num workflow versionado — sem Android Studio local; o proprio CI publica o fingerprint do assetlinks |
 | Controlo de atuadores so no admin | Menor superficie de ataque: o dashboard publico e somente leitura; os comandos exigem sessao autenticada |
 | JS partilhado sem bundler (`sensor.js`) | Reutiliza fetch/render entre dashboard e admin sem introduzir build step (mantem HTML/CSS/JS vanilla) |
 
@@ -1537,6 +1732,13 @@ Serverless functions + deploy automatico + dominio customizado gratuito.
 
 **O PWA funciona offline?**
 Parcialmente. Assets sao cacheados, mas dados requerem rede.
+
+**Por que TWA (e nao Capacitor) para o APK?**
+
+O TWA abre o proprio PWA publicado (mesma UI, sempre a versao do site) com
+verificacao de dominio via `/.well-known/assetlinks.json`; sai de um workflow
+reproduzivel (`android-twa.yml`) sem Android Studio local. O caminho Capacitor
+(`mobile/`, `scripts/build-android.js`) fica como alternativa WebView.
 
 **Como adicionar novos sensores?**
 Adicione fields no ThingSpeak e mapeie no frontend (`public/js/sensor.js`, que e
@@ -1601,6 +1803,8 @@ real chega pelo ThingSpeak (field5-8) no ciclo de monitorizacao seguinte
 - [ ] Admin panel acessivel
 - [ ] PWA instalavel
 - [ ] Service Worker registrado
+- [ ] `/.well-known/assetlinks.json` responde 200 com o fingerprint do keystore
+      em uso (TWA sem barra de endereco, §9.5)
 
 ### 17.4 Documentacao
 
@@ -1654,11 +1858,13 @@ feeds: [{ created_at, field1-8, entry_id }]
 
 `
 estufa-dashboard-tcc/
-|-- api/                     # Backend - 5 arquivos (index, auth, admin, db, thingspeak)
-|-- public/                  # Frontend - 14 arquivos HTML/CSS/JS + 3 modulos js/ + manifests + icons
-|-- mobile/                  # Apps mobile - 2 apps (dashboard, admin)
+|-- api/                     # Backend - 6 arquivos (index, auth, admin, db, thingspeak, assetlinks)
+|-- public/                  # Frontend - 14 arquivos HTML/CSS/JS + 3 modulos js/ + manifests + icons + .well-known/
+|-- mobile/                  # Apps mobile - 2 apps (dashboard, admin) — caminho Capacitor
 |   |-- dashboard/           # App dashboard com Capacitor
 |   |-- admin/               # App admin com Capacitor
+|-- twa/                     # TWA — twa-manifest.json versionado; APK/keystore gerados no CI
+|-- .github/workflows/       # ci.yml (check+test) + android-twa.yml (APK/Release)
 |-- models/                  # Schemas Mongoose - 2 arquivos (User, AccessLog)
 |-- scripts/                 # Build scripts - 3 arquivos
 |-- electron-dashboard.js    # App desktop Dashboard
@@ -1679,5 +1885,5 @@ estufa-dashboard-tcc/
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.4.0**
+**Fim do Blueprint Estufa 01 v1.7.0**
 

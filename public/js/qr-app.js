@@ -10,7 +10,7 @@
 /* Aponta para o download direto do APK (GitHub Releases). Publique o APK numa
    release com o nome exato "estufa01.apk" — o link abaixo passa a baixá-lo. */
 (function () {
-  const APP_DOWNLOAD_URL = 'https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk';
+  const APP_DOWNLOAD_URL = 'https://github.com/blecaute373/Estufa-Dashboard-TCC-public/releases/latest/download/estufa01.apk';
   const link = document.getElementById('appQrLink');   // fallback clicável (mantém-se em sincronia)
   if (link) link.href = APP_DOWNLOAD_URL;
 

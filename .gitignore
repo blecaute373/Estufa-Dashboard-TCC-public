@@ -86,6 +86,10 @@ twa/twa-manifest.json.backup
 twa/app-release-*
 twa/*.apk
 twa/*.aab
+# Scratch de sessao (downloads de artefactos do CI, backups --bare, espelhos
+# de release): ficheiros que so existem durante o trabalho e nao pertencem ao
+# versionamento.
+.tmp/
 
 # IDE and editor files
 .vscode/

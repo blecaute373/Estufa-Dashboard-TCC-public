@@ -6,7 +6,7 @@ name: Android APK — TWA (Bubblewrap)
 #
 # Como correr:
 #   * Actions -> "Android APK — TWA (Bubblewrap)" -> Run workflow
-#   * ou `git tag v1.0.0 && git push origin v1.0.0` (publica a Release)
+#   * ou `git tag v1.0.0 && git push mine v1.0.0` (publica a Release)
 #
 # Detalhes do Bubblewrap que obrigam a este passo-a-passo (lidos no codigo-fonte
 # do GoogleChromeLabs/bubblewrap; nao ha aqui margem para "tentar e ver"):

@@ -27,7 +27,7 @@ git push origin v1.0.0
 ```
 
 O APK fica em
-`https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk`
+`https://github.com/blecaute373/Estufa-Dashboard-TCC-public/releases/latest/download/estufa01.apk`
 — exatamente o endereço codificado no QR.
 
 **Secrets opcionais** (Settings → Secrets and variables → Actions):
@@ -119,7 +119,7 @@ Saída: `twa/app-release-signed.apk` e `twa/app-release-bundle.aab`.
 | Admin (só login) | `https://dashboardestufaiot-omega.vercel.app/login-admin.html` |
 | Site principal | `https://dashboardestufaiot-omega.vercel.app` |
 | Manifesto do dashboard (PWA) | `https://dashboardestufaiot-omega.vercel.app/manifest-dashboard.json` |
-| APK mais recente | `https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC/releases/latest/download/estufa01.apk` |
+| APK mais recente | `https://github.com/blecaute373/Estufa-Dashboard-TCC-public/releases/latest/download/estufa01.apk` |
 
 ---
 
