@@ -47,6 +47,23 @@ Historico completo de todos os commits do projeto, organizados por versao.
 docs: BLUEPRINT 1.7.1 — Registro, Estado Atual
 test: `npm run check` exit 0 (21 ficheiros), `npm test` 112/112 a passar (24
       suites, 0 falhas)
+      - ciclo COMPLETO validado com pedidos reais no site publicado (nao por
+        inspecao): run 37205006682 (workflow TWA na tag v1.0.0) SUCCESS em
+        1m30s; Release v1.0.0 publicada com estufa01.apk (1.130.670 B) +
+        app-release-bundle.aab; download ANONIMO do QR
+        (curl -L, sem sessao): 302 -> 200, SHA-256 do ficheiro == SHA-256 do
+        artefacto do run (AC02EE5C...C3B2) — o binario servido e exatamente o
+        build assinado; /.well-known/assetlinks.json ao vivo: 200
+        application/json, fingerprint 1C:FB:1B:ED:...:E1:91 identico ao do
+        keystore; deploy de producao novo
+        (dpl_Be1kWjjXePyZo2AvCqEqoxaWmiGZ, --prod --no-wait) e site a servir
+        sw.js `estufa-v15` + `js/qr-app.js` com a URL nova
+nota: o workflow CI (Lint/Check/Teste/Audit) fica VERMELHO no repo publico —
+      regra `npm audit --audit-level=high` contra deps pre-existentes
+      (braces/nodemon, http-cache-semantics, uuid/@capacitor/cli; 7
+      vulnerabilidades). Nao e regressao desta versao: a run 37204362211 (no
+      commit anterior, antes das edicoes) falha exatamente no mesmo passo;
+      o audit pertence ao escopo de dependencias, nao ao do QR
 `
 ### v1.7.0 (03/10/2026) - APK Android via TWA no CI + assetlinks por funcao serverless
 
