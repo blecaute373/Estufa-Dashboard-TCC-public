@@ -29,7 +29,7 @@
   "routes": [
     {
       "src": "/.well-known/assetlinks.json",
-      "dest": "/api/assetlinks"
+      "dest": "/api/assetlinks.js"
     },
     { "src": "/api/(.*)", "dest": "/api/index.js" },
     { "src": "/login-dashboard.html", "dest": "/api/index.js" },
