@@ -40,10 +40,18 @@ let brokerUltimoErro = '';
 const brokerListeners = [];
 
 /* ── CONFIG (localStorage, por navegador) ───────────────────────────────── */
+/* Em Node (testes Small), `localStorage` não existe — usa memória local. */
+const __memBrokerCfg = {};
+function __lerMem(chave) { return __memBrokerCfg[chave]; }
+function __gravarMem(chave, valor) { __memBrokerCfg[chave] = valor; }
+
 function brokerConfig() {
   let salvo = {};
   try {
-    salvo = JSON.parse(localStorage.getItem(BROKER_STORAGE_KEY) || '{}') || {};
+    const bruto = (typeof localStorage !== 'undefined')
+      ? localStorage.getItem(BROKER_STORAGE_KEY)
+      : __lerMem(BROKER_STORAGE_KEY);
+    salvo = JSON.parse(bruto || '{}') || {};
   } catch { salvo = {}; }
   const cfg = Object.assign({}, BROKER_DEFAULTS, salvo);
   cfg.port = Number.parseInt(cfg.port, 10) || BROKER_DEFAULTS.port;
@@ -59,7 +67,13 @@ function brokerSalvarConfig(cfg) {
     path: String(cfg.path || BROKER_DEFAULTS.path),
     tls: Boolean(cfg.tls),
   };
-  localStorage.setItem(BROKER_STORAGE_KEY, JSON.stringify(limpo));
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(BROKER_STORAGE_KEY, JSON.stringify(limpo));
+    } else {
+      __gravarMem(BROKER_STORAGE_KEY, JSON.stringify(limpo));
+    }
+  } catch { /* armazenamento indisponível: segue com defaults em memória */ }
   return limpo;
 }
 
@@ -99,15 +113,26 @@ function brokerConectar(cfg) {
   if (!conf.host) return Promise.resolve({ ok: false, erro: 'Preencha o IP/host do broker.' });
 
   // Conteúdo misto: página HTTPS não pode abrir ws:// (o browser bloqueia).
-  if (location.protocol === 'https:' && !conf.tls) {
+  if (typeof location !== 'undefined' && location.protocol === 'https:' && !conf.tls) {
     return Promise.resolve({
       ok: false,
-      erro: 'Página HTTPS só pode usar wss:// (marque "TLS/WSS" e use um certificado aceite pelo browser).',
+      erro: 'Página HTTPS só pode usar wss:// (marque "TLS/WSS" e use um certificado aceite pelo browser). Sem TLS no broker, use a fila da nuvem (~10 s).',
+    });
+  }
+
+  // Erro de configuração mais comum: 1883 é MQTT sobre TCP (server.js/ESP32).
+  // O navegador só fala WebSocket — o Mosquitto precisa de `listener 9001` +
+  // `protocol websockets`. Avisar antes de tentar evita o loop "A ligar…".
+  // (Bloqueio incondicional: 1883 nunca fala WebSocket, não é questão de retry.)
+  if (Number(conf.port) === 1883) {
+    return Promise.resolve({
+      ok: false,
+      erro: 'Porta 1883 é MQTT/TCP (para server.js/ESP32). O navegador precisa da porta WebSocket (ex.: 9001 com `protocol websockets` no Mosquitto).',
     });
   }
 
   if (typeof mqtt === 'undefined') {
-    return Promise.resolve({ ok: false, erro: '/js/mqtt.min.js não carregou.' });
+    return Promise.resolve({ ok: false, erro: '/js/mqtt.min.js não carregou (verifique rede/cache do PWA).' });
   }
 
   brokerDesconectar();                       // sem clientes duplicados
@@ -116,31 +141,86 @@ function brokerConectar(cfg) {
   const url = brokerUrl(conf);
   return new Promise((resolve) => {
     let resolvido = false;
-    const finalizar = (r) => { if (!resolvido) { resolvido = true; resolve(r); } };
+    let timer = null;
+    const limparTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+    // Encerra a tentativa sem notificar: usado no timeout/erro para que o
+    // `close` subsequente não apague o estado final 'error'.
+    const encerrarTentativa = () => {
+      limparTimer();
+      const cli = brokerClient;
+      brokerClient = null;
+      if (cli) { try { cli.removeAllListeners(); cli.end(true); } catch { /* já fechado */ } }
+    };
+    const finalizar = (r) => {
+      if (resolvido) return;
+      resolvido = true;
+      limparTimer();
+      if (!r.ok) encerrarTentativa();
+      resolve(r);
+    };
 
     brokerClient = mqtt.connect(url, {
       clientId: 'estufa_web_' + Math.random().toString(16).slice(2, 10),
       clean: true,
       connectTimeout: 6000,
-      reconnectPeriod: 4000,
+      // Sem auto-reconnect DURANTE a discagem inicial: o retry infinito era o
+      // que prendia a UI em "A ligar…". Depois do primeiro `connect`, o
+      // auto-reconnect é religado (sessão estabelecida que cai = reconecta).
+      reconnectPeriod: 0,
       protocolVersion: 4,        // MQTT 3.1.1: máxima compatibilidade (Mosquitto)
     });
 
     brokerClient.on('connect', () => {
+      limparTimer();
+      // Sessão estabelecida: agora sim faz sentido reconectar sozinho se cair.
+      try { brokerClient.options.reconnectPeriod = 4000; } catch { /* versão sem options mutável */ }
       brokerDefinirEstado('on');
       console.log('[broker] Ligado a', url);
       finalizar({ ok: true });
     });
-    brokerClient.on('reconnect', () => brokerDefinirEstado('connecting'));
-    brokerClient.on('close', () => { if (brokerEstado !== 'off') brokerDefinirEstado('off'); });
+    // `reconnect` só dispara após sessão estabelecida (reconnectPeriod=0 na
+    // discagem), então aqui "A ligar…" significa "reconectando", não travamento.
+    brokerClient.on('reconnect', () => { if (!resolvido) brokerDefinirEstado('connecting'); });
+    brokerClient.on('close', () => {
+      if (resolvido) return;               // erro/timeout já pintou 'error'
+      if (brokerEstado === 'connecting') brokerDefinirEstado('off');
+    });
     brokerClient.on('error', (err) => {
-      brokerDefinirEstado('error', err && err.message ? err.message : String(err));
-      finalizar({ ok: false, erro: brokerUltimoErro });
+      const msg = diagnosticarErroBroker(err, conf, url);
+      brokerDefinirEstado('error', msg);
+      finalizar({ ok: false, erro: msg });
     });
 
-    // Rede lenta: não deixa a UI pendurada.
-    setTimeout(() => finalizar({ ok: false, erro: 'Tempo esgotado ao ligar ao broker.' }), 6500);
+    // Rede lenta: não deixa a UI pendurada — e ENCERRA o cliente, senão o
+    // retry em segundo plano repintava "connecting" para sempre.
+    timer = setTimeout(() => {
+      const msg = 'Tempo esgotado ao ligar ao broker (sem resposta em ~6 s). Confirme IP/porta WebSocket (9001 + `protocol websockets`) e que está na mesma rede da estufa.';
+      brokerDefinirEstado('error', msg);
+      finalizar({ ok: false, erro: msg });
+    }, 6500);
   });
+}
+
+/**
+ * Traduz o erro bruto do mqtt.js em diagnóstico acionável (o `err.message`
+ * sozinho — "connection refused", "timeout" — não diz o que configurar).
+ */
+function diagnosticarErroBroker(err, conf, url) {
+  const bruto = (err && err.message ? err.message : String(err || 'Falha ao ligar')).trim();
+  const detalhe = bruto ? ' (' + bruto + ')' : '';
+  if (Number(conf.port) === 1883) {
+    return 'Porta 1883 é MQTT/TCP, não WebSocket. Use a porta WebSocket do Mosquitto (ex.: 9001 com `protocol websockets`)' + detalhe + '.';
+  }
+  if (/refused|ECONNREFUSED/i.test(bruto)) {
+    return 'Broker recusou a ligação em ' + url + ': sem listener WebSocket nessa porta (Mosquitto: `listener 9001` + `protocol websockets`)' + detalhe + '.';
+  }
+  if (/timeout|timed out|ETIMEDOUT/i.test(bruto)) {
+    return 'Broker sem resposta em ' + url + ': IP errado, fora da LAN da estufa, ou firewall' + detalhe + '. Os comandos seguem pela fila da nuvem.';
+  }
+  if (conf.tls) {
+    return 'Falha WSS em ' + url + ': o broker precisa de TLS com certificado aceite pelo browser (self-signed é rejeitado sem importar)' + detalhe + '.';
+  }
+  return 'Não foi possível ligar ao broker em ' + url + detalhe + '. Os comandos seguem pela fila da nuvem.';
 }
 
 function brokerDesconectar() {
@@ -181,6 +261,23 @@ function brokerMontarPayload(actuator, action) {
 
 function brokerTopico(actuator) {
   return `${BROKER_TOPIC_PREFIX}/${BROKER_TOPICO_ID[actuator]}/comando`;
+}
+
+/* Exporta as funções PURAS para testes Small em Node — sem tocar no
+   comportamento no browser (lá `module` não existe e o bloco é ignorado).
+   `brokerConectar` vai junto para testar as recusas ANTES da rede (sem host,
+   porta 1883, https sem TLS) — com stubs de `location`/`mqtt` quando ausentes. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    BROKER_DEFAULTS,
+    brokerConfig,
+    brokerSalvarConfig,
+    brokerUrl,
+    brokerConectar,
+    brokerMontarPayload,
+    brokerTopico,
+    diagnosticarErroBroker,
+  };
 }
 
 /**

@@ -2,7 +2,7 @@
  * Service Worker — Estufa 01 PWA
  * Cacheia assets estáticos para funcionamento offline básico
  */
-const CACHE = 'estufa-v15';
+const CACHE = 'estufa-v16';
 /* Apenas assets públicos: páginas protegidas (/ , /dashboard.html, /admin.html)
    ficam a cargo do network-first em tempo de execução, para não gravar
    a página de login sob a chave de outra rota. */

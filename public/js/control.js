@@ -309,9 +309,15 @@ function iniciarBroker() {
     });
   }
 
-  // Se já houver host guardado, tenta ligar sozinho ao abrir o painel. A falha
-  // é silenciosa (volta a 'off'): não vale um alerta em cada abertura de página.
-  if (brokerConfig().host) brokerConectar().then((r) => { if (!r.ok) pintarBrokerEstado('off', ''); });
+  // Se já houver host guardado, tenta ligar sozinho ao abrir o painel.
+  // A falha NÃO é silenciosa: preserva o erro no pill (era `pintar('off','')`,
+  // que apagava o diagnóstico e parecia "nunca conecta sem dizer porquê").
+  // O comando continua funcionando pela fila — o erro é só informativo.
+  if (brokerConfig().host) {
+    brokerConectar().then((r) => {
+      if (!r.ok) pintarBrokerEstado('error', r.erro);
+    });
+  }
 }
 
 /* ══════════════════════════════════════════
