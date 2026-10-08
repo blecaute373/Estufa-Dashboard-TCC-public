@@ -1,12 +1,12 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.7.1 · **Data:** 04/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.8.0 · **Data:** 08/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
 >
 > **Repo público standalone (Release/QR do APK):** https://github.com/blecaute373/Estufa-Dashboard-TCC-public (remote `mine` — download anónimo do APK em `releases/latest/download/estufa01.apk`)
 >
-> **Autores:** **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — **autor da camada de hardware e dados** (firmware ESP32 em C++, integração ThingSpeak no firmware, dashboard "as is" calibrado, stack Node-RED/InfluxDB/Grafana) e **co-autor do sistema web** · Matheus Garbin ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor do **sistema web** (reestruturação em camadas, login/JWT, painel admin, apps, deploy). Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md); versão original preservada em [legacy/](legacy/README.md).
+> **Autores:** **Matheus Garbin** ([@matheusbritogarbin-byte](https://github.com/matheusbritogarbin-byte)) — autor do **sistema web**: reestruturação em camadas, **sistema de login e credenciamento** (JWT, bcrypt, rate limiting), painel admin, apps, **escolha da Vercel como hospedagem** e primeiro deploy · **Deivisson Lino Campos dos Santos Junior** ([@blecaute373](https://github.com/blecaute373)) — **autor da camada de hardware e dados** (firmware ESP32 em C++, integração ThingSpeak no firmware, dashboard "as is" calibrado, stack Node-RED/InfluxDB/Grafana) e **co-autor do sistema web** (fila Upstash Redis, controlo remoto fim-a-fim, Atlas em produção, diagnóstico). Repartição detalhada em [CONTRIBUTORS.md](CONTRIBUTORS.md); versão original preservada em [legacy/](legacy/README.md).
 >
 > **Este documento é o prompt operacional do projeto** — qualquer IA, em qualquer fase ou sessão, deve segui-lo como instrução, não apenas consultá-lo como referência de fundo.
 
@@ -15,6 +15,76 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.8.0 (08/10/2026) - Firmware: válvula solenoide trocada por bomba submersa AC + correções de lógica
+
+`feat(firmware): irrigação em pulsos com watchdog (bomba AC Durapets 3 W / 180 L/h)
+      no lugar da válvula solenoide + correções de revisão (ADR-0011)
+      - §2.2/§5.2: field6 deixa de ser descrito como "válvula"; identificadores
+        públicos (valv_001, "valve", field6) preservados — dashboard/Node-RED intactos
+      - §19 (nova): hardware da bomba AC (relé na fase, fusível, caixa, DR, boia
+        GPIO25, reservatório >= 5 L), invariantes de segurança, comportamentos novos,
+        ciclo circadiano, tabela de constantes novas e checklist de bancada
+      - Nova seção §19 ao fim do documento (não renumera as anteriores)`
+nota: o firmware vive fora do versionamento (pasta PlatformIO 260929-*/.gitignore);
+      o painel web não foi alterado — texto de interface que ainda diz "Válvula"
+      listado em §19.7, mantido de propósito.
+
+### v1.7.3 (06/10/2026) - Creditos: login/credenciamento e escolha da Vercel atribuidos ao Matheus
+
+`docs: CONTRIBUTORS.md reescrito em tom neutro e cabecalho do BLUEPRINT alinhado
+     - Matheus Garbin: o sistema de login e credenciamento (JWT, bcrypt, rate
+       limiting — ADR-0002) e o painel admin passam a ter destaque proprio; a
+       ideia de hospedar na Vercel e o primeiro deploy sao dele
+     - Deivisson: na Vercel, regista-se a configuracao do ambiente de producao
+       (conta `deivisson1`) e a verificacao da cadeia de controlo; a plataforma
+       foi escolhida pelo Matheus
+     - "todo o historico e do Matheus" corrigido para "de v0.1.0 a v1.6.1" (a
+       partir da v1.6.2 ha commits do Deivisson)
+     - e-mail e identificadores alternativos do Matheus retirados do
+       CONTRIBUTORS.md (dado pessoal; so voltam com o consentimento dele)
+     - Estado Atual e Decisoes (§16.1): atribuicoes nomeadas; "colega de TCC"
+       passa a "co-autor Matheus Garbin"
+nota: os registos anteriores (v1.6.2-v1.6.4) mantem o texto original — sao o
+      historico do que foi commitado, nao se reescrevem
+`
+
+### v1.7.2 (04/10/2026) - Controlo documentado com os 3 caminhos + pausa global; anti-duplo-clique na pausa
+
+`docs(blueprint): o documento passa a refletir o controlo como o codigo ja o tem
+     (commit 3cb9b9a) — 3 caminhos de entrega e pausa global da automacao,
+     nenhum deles documentado ate aqui
+     - §6.3/§11.1.1 reescritos: (1) MQTT direto do navegador (LAN) via
+       public/js/mqtt-gateway.js + vendor public/js/mqtt.min.js (WebSocket
+       :9001/mqtt, QoS 1, imediato); (2) fila na nuvem (POST /api/control ->
+       Upstash Redis -> poll do ESP32 a cada 10 s); (3) server.js local
+       (publicacao MQTT direta; montagem unica dev/prod, ADR-0009)
+     - atuador logico global_001 documentado: {command:'PAUSE'} congela toda a
+       logica automatica no firmware (modoPausaGlobal; avaliarControle()
+       regressa cedo; reles ficam no estado atual; telemetria continua;
+       comandos manuais continuam a funcionar) e {command:'AUTO'} retoma
+       (STOP/RESUME sao sinonimos; reboot do ESP32 retoma — estado em RAM).
+       NAO confundir com o AUTO por atuador (vent/valv/luz)
+     - §16.1: ADR-0009 (uma unica montagem Express para dev e producao + cache
+       de leitura TTL) citado nas decisoes de arquitetura; §16.2 (FAQ) alinhado
+       aos 3 caminhos; §1.4 (Nao-Objetivos) e §2.3 (fluxo) corrigidos — diziam
+       "apenas via servidor local" e 503 no Vercel, o que deixou de ser verdade
+       na v1.5.0 (ADR-0007)
+     - ressalva de Mixed Content registada em §11.1.1: pagina servida por HTTPS
+       (site publicado na Vercel) so abre `wss://` — `ws://` e bloqueado pelo
+       browser; sem TLS no broker o painel cai automaticamente na fila (~10 s).
+       O Mosquitto precisa do listener websockets (`listener 9001` + `protocol
+       websockets`) e de permitir ligacao anonima
+fix(admin): botoes "Pausar automacao"/"Retomar (AUTO)" ganham
+     data-atuador="global" — o setBotoesDisabled('global', ...) do control.js ja
+     existia mas nao encontrava nenhum elemento; o anti-duplo-clique nos dois
+     botoes era inoperante (sem risco de estado errado — os comandos sao
+     idempotentes e a fila colapsa por atuador — mas o clique duplo durante o
+     envio nao era bloqueado)
+docs: BLUEPRINT 1.7.2 — cabecalho, Registro, §1.4, §2.3, §6.3, §11.1.1, §16.1,
+      §16.2, Estado Atual
+test: `npm run check` exit 0, `npm test` 112/112 a passar (24 suites, 0 falhas)
+`
 
 ### v1.7.1 (04/10/2026) - QR do APK aponta para repo publico standalone (destaque do fork)
 
@@ -539,16 +609,18 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.7.1):** Dashboard web com autenticacao, graficos ThingSpeak,
-  **controlo de atuadores AUTO/MANUAL no painel de admin — tambem no site
-  publicado (fila de comandos via Vercel + Upstash Redis, ADR-0007/0008)**,
+- **Versao atual (v1.7.3):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **controlo de atuadores AUTO/MANUAL no painel de admin com 3 caminhos de
+  entrega (MQTT direto do navegador na LAN, fila Vercel + Upstash Redis e
+  `server.js` local — ADR-0007/0008/0009) e pausa global da automacao
+  (`global_001`, PAUSE/AUTO)**,
   **cards Dark/Neon** e **QR de download do app na tela de login**; PWA,
   **APK Android via TWA (Bubblewrap) no CI** e apps desktop (Electron/Windows);
   o caminho Capacitor/PWABuilder fica como alternativa.
 - **Stack:** Node.js + Express + MongoDB (User/AccessLog) + Upstash Redis (fila de comandos) + HTML/CSS/JS vanilla + Chart.js + Service Worker + TWA/Bubblewrap (APK no CI) + Capacitor + Electron + mqtt (broker local, opcional).
 - **Deploy:** Vercel (serverless functions) com dominio customizado
-  (**dashboardestufaiot-omega.vercel.app** — conta `deivisson1`, do autor da
-  camada de hardware e dados; **nao** confundir com `dashboardestufaiot.vercel.app`,
+  (**dashboardestufaiot-omega.vercel.app** — conta `deivisson1`; a plataforma (Vercel) foi escolhida por Matheus Garbin;
+  **nao** confundir com `dashboardestufaiot.vercel.app`,
   que e um projeto diferente noutra conta);
   **o controlo de atuadores funciona no site publicado** pela fila de comandos
   (`POST /api/control` → Upstash Redis → `GET /api/control/pending` pelo ESP32
@@ -561,9 +633,11 @@ a874402 | 09/05/2026 | Initial commit
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
   - **Controlo ativo de atuadores com modo AUTO/MANUAL** (ventilador e valvula
-    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO) via `/api/control` —
-    **disponivel no painel de admin tanto na rede local (MQTT) como no site
-    publicado (fila Vercel + Upstash Redis, ADR-0007/0008)**
+    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO) e **pausa global da
+    automacao** (`global_001`: PAUSE congela toda a logica automatica sem
+    desligar reles; AUTO retoma) — **3 caminhos**: MQTT direto do navegador
+    (`js/mqtt-gateway.js` + `js/mqtt.min.js`, na LAN/WebSocket), fila Vercel +
+    Upstash Redis (poll do ESP32, ~10 s) e `server.js` local (ADR-0007/0008/0009)
   - **Monitorizacao ao vivo no admin** (4 sensores + estado dos atuadores +
     status/RSSI), reutilizando `/js/sensor.js` (ciclo de `INTERVALO_S` s)
   - **QR Code de download do app na tela de login** (index.html; geracao local
@@ -599,6 +673,11 @@ a874402 | 09/05/2026 | Initial commit
   - Service worker sem teste automatizado
   - PWABuilder requer hospedagem HTTPS
   - Chart.js dependente de CDN (sem fallback local)
+  - **Caminho MQTT direto do navegador (LAN) exige `wss://` quando o painel e
+    servido por HTTPS** (Mixed Content bloqueia `ws://`): sem TLS aceito pelo
+    browser no broker, o comando cai automaticamente na fila (~10 s). O broker
+    precisa ainda do listener websockets (`listener 9001` + `protocol
+    websockets`) e de permitir ligacao anonima (ver §11.1.1)
   - **Firmware ainda nao uploaded** (ESP32 sem porta serial). `API_VERCEL_TOKEN`
     **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — build a passar.
   - **Falta o REST TOKEN do Upstash.** O endpoint
@@ -659,8 +738,8 @@ a874402 | 09/05/2026 | Initial commit
     --non-interactive`**: a criacao acontece no servidor e o CLI devolve logo.
     Evita tambem o `--yes`, que o `redeploy` nao aceita.
   - **ATENCAO — dois projetos Vercel com o mesmo nome-base.** O dominio
-    `dashboardestufaiot.vercel.app` esta **vivo noutra conta** (a do colega de
-    TCC, onde o repo tem origem) e o firmware apontava para la. O firmware foi
+    `dashboardestufaiot.vercel.app` esta **vivo noutra conta** (a do co-autor
+    Matheus Garbin, onde o repo tem origem) e o firmware apontava para la. O firmware foi
     passado para o dominio desta conta (`...-omega`), porque foi **aqui** que as
     env vars ficaram. Os DOIS lados (painel e firmware) tem de apontar para o
     MESMO projeto: se o poll for para um projeto e a fila estiver no outro, o
@@ -672,7 +751,7 @@ a874402 | 09/05/2026 | Initial commit
     do broker so aparece apos clique, 502) — no caminho publicado este problema
     deixou de existir (fila na nuvem, ADR-0007)
 
-- _Ultima atualizacao: 04/10/2026_
+- _Ultima atualizacao: 06/10/2026_
 
 ---
 
@@ -758,8 +837,8 @@ a874402 | 09/05/2026 | Initial commit
     evita o prompt interativo, que nao funciona em execucao nao assistida.
 
     > **Armadilha dos dois projetos:** o dominio
-    > `dashboardestufaiot.vercel.app` esta vivo **noutra conta** (do colega de
-    > TCC). Este deploy usa `-omega` e o firmware foi apontado para la. Painel e
+    > `dashboardestufaiot.vercel.app` esta vivo **noutra conta** (do co-autor
+    > Matheus Garbin). Este deploy usa `-omega` e o firmware foi apontado para la. Painel e
     > firmware tem de apontar para o MESMO projeto, senao o poll vai buscar a
     > fila de um lado e os comandos ficam no outro.
 
@@ -851,18 +930,21 @@ O sistema e composto por:
 
 ### 1.4 Nao-Objetivos
 
-- **Nao e um sistema de controle ativo em nuvem.** O controlo manual de atuadores
-  (ventilador, valvula, iluminacao) funciona **apenas via servidor local** (`server.js`,
-  rede da estufa): o deploy Vercel (serverless) devolve **503** em `/api/control`
-  (ver `api/index.js`), porque nao alcanca o broker MQTT local. O frontend trata
-  esse caso e mostra a mensagem adequada.
+- **O controlo ativo nao depende de um unico transporte.** O controlo manual de
+  atuadores (ventilador, valvula, iluminacao) e a pausa global da automacao
+  chegam ao ESP32 por **tres caminhos** (ver §11.1.1): MQTT direto do navegador
+  na LAN (WebSocket), fila na nuvem (Vercel + Upstash Redis, poll do ESP32) e
+  `server.js` local. O antigo "503 no Vercel" deixou de existir na v1.5.0
+  (ADR-0007).
 - **O controlo nao esta exposto ao dashboard publico.** Por seguranca, o dashboard
   (`dashboard.html`) e **estritamente de leitura**: mostra dados e estado dos
   atuadores, mas nao envia comandos. Os comandos vivem apenas em `admin.html`
-  (autenticado) via `public/js/control.js`, e o endpoint exige `requireAuthApi`.
-- **Controlo ativo requer broker MQTT local.** O ESP32 subscreve os topicos
-  `fazenda/<estufa>/atuador/*/comando` e so recebe comandos publicados nesse broker
-  (`LOCAL_MQTT_BROKER`).
+  (autenticado) via `public/js/control.js`; o endpoint exige `requireAdminApi`
+  (Vercel) ou `requireAuthApi` (local), e o caminho direto exige estar na LAN.
+- **O ESP32 recebe comandos por dois canais.** O broker MQTT local (subscreve os
+  topicos `fazenda/<estufa>/atuador/*/comando`, incluindo o atuador logico
+  `global_001`) e o poll HTTPS da fila na nuvem (`GET /api/control/pending`, a
+  cada 10 s) — ver §11.1.1.
 - **Nao substitui sistemas SCADA profissionais.** E um projeto academico/monitoramento basico.
 - **Nao processa dados em edge.** Todo processamento e serverless (Vercel) ou client-side.
 
@@ -914,7 +996,7 @@ O sistema e composto por:
 | **Desktop App** | App Windows nativo | Electron |
 | **ThingSpeak** | Dados dos sensores IoT | ThingSpeak API |
 | **Broker MQTT local** | Transporte de comandos de atuadores (server.js -> ESP32) | MQTT (mosquitto) |
-| **ESP32** | Sensores + atuadores (relés/PWM); subscreve topicos `.../comando` | Firmware Arduino (`estufa_unificado (2).ino`) |
+| **ESP32** | Sensores + atuadores (relés/PWM); irrigação agora em **pulsos com watchdog** (bomba submersa AC no lugar da válvula); subscreve tópicos `.../comando` | Firmware Arduino / PlatformIO (core arduino-esp32 3.x; identificadores públicos `valv_001`, `"valve"`, field6 preservados) |
 | **Digital Asset Links** | Verificacao de dominio do TWA (Chrome abre o APK sem barra de endereco) | `api/assetlinks.js` + fingerprint em `lib/config.js` |
 
 ### 2.3 Fluxo de Dados
@@ -924,10 +1006,10 @@ O sistema e composto por:
 3. **Backend** responde com JSON -> Frontend atualiza graficos
 4. **Alertas** -> Frontend verifica thresholds e exibe alertas visuais
 5. **Logs** -> Backend registra acesso no MongoDB via AccessLog
-6. **Controlo ativo** -> Dashboard (botoes/slider) -> POST /api/control (server.js,
-   protegido por auth) -> Broker MQTT local -> ESP32 aciona relé/PWM
-   (Em Vercel o mesmo POST entra na fila Upstash Redis e e o ESP32 que a
-   recolhe — ADR-0007/0008; ver Secao 11.1.1)
+6. **Controlo ativo** -> Painel de admin (botoes/slider) -> uma de tres vias:
+   MQTT direto do navegador na LAN (WebSocket), POST /api/control na fila
+   (Vercel + Upstash Redis, recolhida pelo ESP32) ou server.js local (MQTT)
+   -> ESP32 aciona relé/PWM — ver Secao 11.1.1 (ADR-0007/0008/0009)
 
 ### 2.4 Stack Tecnologica
 
@@ -1139,7 +1221,7 @@ function authenticateToken(req, res, next) {
 | field3 | Luminosidade | lux | Intensidade luminosa (BH1750) |
 | field4 | Umidade Ar | % | Umidade relativa do ar (DHT22) |
 | field5 | Estado Ventilador | 0/1 | Estado digital do relé (0=Off, 1=On) |
-| field6 | Estado Valvula | 0/1 | Estado digital da valvula (0=Fechada, 1=Aberta) |
+| field6 | Estado Valvula/Bomba | 0/1 | Estado digital do relé de irrigação (0=Desligada, 1=Ligada). Identificador público **mantido**: o hardware passou a ser uma **bomba submersa AC** no lugar da válvula solenoide, mas o campo, o tópico (`valv_001`) e o nome da fila (`"valve"`) não mudaram |
 | field7 | Duty Iluminacao | 0-100 | Percentagem PWM (0=apagado, 100=completo) |
 | field8 | RSSI WiFi | dBm | Forca do sinal do ESP32 |
 
@@ -1230,19 +1312,41 @@ feeds: [{ created_at: 2026-09-10T12:00:00Z, field1: 25.5, field2: 65.0 }]
 | atualizarAtuador() | Chip ON/OFF + classe `.is-on` no card |
 | setStatus() / setText() | Status pill e utilitario de texto |
 
-**`public/js/control.js`** (apenas admin) — v1.3.2: so comando manual; o browser
-nunca fala com o broker MQTT (quem publica e o `server.js`):
+**`public/js/control.js`** (apenas admin) — comando manual com **dois transportes
+decididos no cliente** (o terceiro caminho, `server.js`, e do lado servidor —
+ver §11.1.1): (1) **broker local na LAN** via `mqtt-gateway.js` — imediato; se
+nao estiver ligado ou a publicacao falhar, (2) **fila na nuvem**
+(`POST /api/control`) — o ESP32 aplica em ate ~10 s. O contrato
+`(actuator, action) -> payload` e o mesmo nos dois (espelho de `lib/control.js`,
+incluindo o atuador logico **`global`** — PAUSE/AUTO):
 
 | Funcao | Descricao |
 | ------ | --------- |
-| enviarComando(actuator, action) | POST /api/control com cookie httpOnly (`credentials: same-origin`); 401 -> redirect, 503 -> broker indisponivel, erros RFC 9457 |
-| setBotoesDisabled(actuator, disabled) | Desativa/reativa botoes e slider do atuador durante o envio (anti-duplo-clique) |
+| enviarComando(actuator, action) | Decide o transporte: broker ligado -> `brokerPublicar()` (direto, imediato); falha ou broker desligado -> `enviarComandoPelaFila()` (fallback automatico) |
+| enviarComandoPelaFila(actuator, action) | POST /api/control com cookie httpOnly (`credentials: same-origin`); 401 -> redirect, 503 -> broker indisponivel, erros RFC 9457; timeout por AbortController |
+| setBotoesDisabled(actuator, disabled) | Desativa/reativa os elementos `[data-atuador=...]` durante o envio (anti-duplo-clique; desde a v1.7.2 cobre tambem `global`) |
 | apiErrorMessage(payload, fallback) | Extrai `detail`/`title` (RFC 9457) com fallback legado `error` |
 | mostrarStatus(msg, tipo) | Feedback em `#ctrlStatusMsg` (classe `.warn`), auto-hide 3.5s |
-| marcarModo(actuator, modo) | Atualiza o label "Modo: Auto/Manual" (`modeVent`/`modeValve`/`modeLight`) |
+| marcarModo(actuator, modo) / marcarModoGlobal(modo) | Atualiza o label "Modo: Auto/Manual" (`modeVent`/`modeValve`/`modeLight`) e "Automatico/Pausado" (`modoGlobal`) |
 | setLightMode(modo) | Alterna AUTO/MANUAL da iluminacao (`.is-active` nos botoes, slider desabilitado em AUTO) |
 | cicloMonitorizar() | Polling do feed (`buscarUltimo()` de `/js/sensor.js`) para a faixa ao vivo; guard se sensor.js ausente |
 | iniciarControlo() | Arranca o ciclo (chamada imediata + `setInterval` de `INTERVALO_S`), DOMContentLoaded-safe |
+
+**`public/js/mqtt-gateway.js`** (apenas admin; carregado ANTES do `control.js` no `admin.html`):
+
+| Funcao | Descricao |
+| ------ | --------- |
+| brokerConfig() / brokerSalvarConfig(cfg) | Config do broker por navegador (localStorage `estufa_broker`: host, port, path, tls; default 9001 `/mqtt`) |
+| brokerConectar() / brokerDesconectar() | Liga/desliga a sessao WebSocket (`mqtt.js` vendorizado em `/js/mqtt.min.js`; reconexao a cada 4 s) |
+| brokerLigado() / brokerEstadoAtual() / brokerOnStatus(cb) | Estado da ligacao para a UI (pill `brokerPill`) e para o `enviarComando()` |
+| brokerPublicar(actuator, action) | Publica o JSON no topico `fazenda/estufa01/atuador/<id>/comando` com QoS 1 (resolve so com a confirmacao do broker) |
+| brokerMontarPayload() / brokerTopico() | Espelho do contrato de `lib/control.js` para o caminho direto (inclui `global` PAUSE/AUTO) |
+
+> **Nota (v1.7.2):** o browser **passou a falar direto com o broker MQTT** (LAN)
+> com a introducao do `mqtt-gateway.js` + `mqtt.min.js` (vendorizado, sem CDN) —
+> a frase anterior ("o browser nunca fala com o broker; quem publica e o
+> `server.js`") ficou desatualizada. Limitacoes e ressalva de Mixed Content:
+> ver §11.1.1.
 
 > **Nota (v1.3.2):** `cicloMonitorizar()` / `iniciarControlo()` (fim do ficheiro)
 > fazem o polling do feed a cada `INTERVALO_S`, com guard para `sensor.js` ausente
@@ -1479,42 +1583,89 @@ app.whenReady().then(createWindow);
 | -------- | --------- | ----------- |
 | LOCAL_MQTT_BROKER | URL do broker MQTT local (controlo de atuadores em `server.js`) | Nao (default: `mqtt://192.168.100.3:1883`) |
 
-### 11.1.1 Controlo de Atuadores (`/api/control`)
+### 11.1.1 Controlo de Atuadores — 3 caminhos de entrega
+
+O contrato `(actuator, action) -> payload` tem **fonte unica** (`lib/control.js`)
+e o comando chega ao ESP32 por **tres caminhos** — muda o transporte, nunca o
+contrato:
+
+**1) MQTT direto do navegador (LAN) — `public/js/mqtt-gateway.js`**
+- Painel de admin aberto **na mesma rede da estufa**: o browser liga-se ao
+  broker por **WebSocket** (`mqtt.js` vendorizado em `public/js/mqtt.min.js`,
+  sem CDN; default porta `9001`, path `/mqtt`; config `estufa_broker` por
+  navegador) e publica direto no topico (`QoS 1` — resolve so com a confirmacao
+  do broker). **Imediato**: sem fila, sem Vercel.
+- So o `admin.html` carrega o gateway (ANTES do `control.js`); se a publicacao
+  falhar, o `control.js` **cai automaticamente no caminho 2** (fallback).
+
+**2) Fila na nuvem (Vercel + Upstash Redis) — `api/control.js`**
+- `POST /api/control` (admin autenticado): `requireAdminApi` + `controlLimiter`
+  (30/min), valida com o mesmo contrato (`lib/control.js`), enfileira no
+  **Upstash Redis** (`LPUSH` + `EXPIRE 300`, chave `estufa:comandos:<device>`) e
+  responde **`202 {queued:true, id, expires_at}`** — aceite, ainda nao aplicado.
+  Auditoria (`control_<actuator>`) no AccessLog **depois** de o comando estar na
+  fila e em modo best-effort (§13): uma falha do Atlas nao bloqueia o controlo
+  (bolkhead §11.3).
+- O **ESP32 e quem busca**: `GET /api/control/pending` com `X-Device-Token`
+  comparado em tempo constante, devolve ate 10 comandos e faz `LPOP` (atomico —
+  fecha a corrida `find`/`updateMany` do ADR-0007). Comando nunca recolhido
+  expira aos 5 min. **Latencia ate ~10 s** (intervalo do poll). Ver ADR-0008.
+- Sem `DEVICE_TOKEN` na Vercel ⇒ 401 *fail-closed*; `REDIS_URL` ausente ⇒ 500
+  com mensagem explicita (fail-fast).
+
+**3) Servidor local Express (`server.js`) — publicacao MQTT direta**
+- Rota real, protegida por `requireAuthApi`, valida `actuator`
+  (`vent|valve|light`) e `action` (`on|off|auto`; em `light` tambem um numero
+  0-100 como duty — NaN devolve VALIDATION/400), publica JSON no broker MQTT,
+  regista auditoria (`control_<actuator>`) no AccessLog e responde
+  `{ ok, actuator, action, payload }`.
+- A montagem Express deixou de ser duplicada entre dev e producao: **uma unica
+  montagem** (`lib/app.js` + `lib/cache.js`) serve os dois — ver **ADR-0009**.
 
 - **Cliente autorizado:** apenas `public/js/control.js`, carregado **somente** por
   `admin.html`. O dashboard publico nao tem botoes de comando nem o script.
   Desde a v1.3.2 autentica-se apenas com o cookie httpOnly (`credentials:
   same-origin`); o envio do token `Authorization: Bearer` foi removido.
-- **Servidor local (`server.js`):** rota real, protegida por `requireAuthApi`,
-  valida `actuator` (`vent|valve|light`) e `action` (`on|off|auto`; em `light`
-  tambem um numero 0-100 como duty — NaN devolve VALIDATION/400), publica JSON
-  no broker MQTT, regista auditoria (`control_<actuator>`) no AccessLog e
-  responde `{ ok, actuator, action, payload }`.
-- **Vercel (`api/control.js`):** `requireAdminApi` + `controlLimiter` (30/min),
-  valida com o mesmo contrato (`lib/control.js`), enfileira o comando no
-  **Upstash Redis** (`LPUSH` + `EXPIRE 300`, chave `estufa:comandos:<device>`) e
-  responde **`202 {queued:true, id, expires_at}`** — aceite, ainda nao aplicado.
-  Regista auditoria (`control_<actuator>`) no AccessLog, mas **depois** de o
-  comando ja estar na fila e em modo best-effort (§13): uma falha do Atlas nao
-  bloqueia o controlo (bolkhead §11.3).
-  O **ESP32 e quem busca**: `GET /api/control/pending` com `X-Device-Token`
-  comparado em tempo constante, devolve ate 10 comandos e faz `LPOP` (atomico —
-  fecha a corrida `find`/`updateMany` do ADR-0007). Comando nunca recolhido
-  expira aos 5 min. Latencia ate ~10 s. Ver ADR-0008.
-  Sem `DEVICE_TOKEN` na Vercel ⇒ 401 *fail-closed*; sem as duas
-  `REDIS_URL` ausente ⇒ 500 com mensagem explicita (fail-fast).
-- **Topicos MQTT:** `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001/comando`
-  payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv) e `{"duty":0-100}` ou
-  `{"command":"AUTO"}` (ilum).
-- **Modo AUTO:** a decisao fica no firmware (o backend so reencaminha o comando);
-  os limites praticos — vent liga >= 30 C / desliga <= 26 C; valvula abre <= 40 %
-  / fecha >= 70 %; luz segue o ciclo circadiano do firmware (fotoperiodo, com
-  atenuacao por luz natural medida em janela de blackout — apaga >= 5000 lux).
-  A UI mostra "Modo: Auto/Manual" (atualizado no clique, sem ack).
-- **Sem ack:** a API confirma apenas a **aceitacao** do comando (no caminho local,
-  a publicacao no broker; na nuvem, a entrada na fila). O estado real regressa
-  depois pelo ThingSpeak (field5-8) e e refletido nos cards quando o feed e
-  atualizado (no admin, a cada `INTERVALO_S` via cicloMonitorizar).
+- **Topicos MQTT (iguais nos tres caminhos):**
+  `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001|global_001/comando`
+  — payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv), `{"duty":0-100}` ou
+  `{"command":"AUTO"}` (ilum) e, no atuador logico `global_001`,
+  `{"command":"PAUSE"}` / `{"command":"AUTO"}` (ver "Pausa global" abaixo).
+- **Modo AUTO (por atuador):** a decisao fica no firmware (o backend so
+  reencaminha o comando); os limites praticos — vent liga >= 30 C / desliga
+  <= 26 C; valvula abre <= 40 % / fecha >= 70 %; luz segue o ciclo circadiano do
+  firmware (fotoperiodo, com atenuacao por luz natural medida em janela de
+  blackout — apaga >= 5000 lux). A UI mostra "Modo: Auto/Manual" (atualizado no
+  clique, sem ack).
+- **Pausa global da automacao (`global_001`):** atuador **logico** — nao aciona
+  hardware; e o interruptor geral da automacao, com card proprio no admin
+  ("Pausar automacao" / "Retomar (AUTO)").
+  - `{command:"PAUSE"}` congela **toda** a logica automatica no firmware
+    (`modoPausaGlobal`; `avaliarControle()` regressa cedo): ventilacao,
+    irrigacao, iluminacao, janela de amostragem de lux e avaliacao de umidade do
+    ar deixam de decidir. **Nada e desligado** — os reles/PWM ficam no estado em
+    que estao — e a telemetria continua a sair (sensores + MQTT + ThingSpeak).
+    Comandos manuais continuam a funcionar com a automacao pausada.
+  - `{command:"AUTO"}` retoma o modo automatico (`STOP`/`RESUME` sao sinonimos
+    aceites pelo firmware).
+  - O estado vive em RAM: **um reboot do ESP32 retoma a automacao** (fail-safe).
+  - NAO confundir com o `AUTO` **por atuador** (vent/valv/luz), que devolve
+    apenas aquele atuador a automacao.
+- **Sem ack:** a API confirma apenas a **aceitacao** do comando (no caminho
+  direto, a confirmacao de publicacao do broker; na nuvem, a entrada na fila).
+  O estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos
+  cards quando o feed e atualizado (no admin, a cada `INTERVALO_S` via
+  cicloMonitorizar).
+
+> **Ressalva de Mixed Content (por que o caminho 1 nem sempre liga):** pagina
+> servida por **HTTPS** (o site publicado na Vercel) so pode abrir **`wss://`** —
+> o browser **bloqueia `ws://`** (conteudo misto), portanto o caminho direto
+> exige **TLS no broker com certificado aceite pelo browser**. Sem isso, o
+> painel continua a funcionar pelo caminho 2 (fila, ~10 s) — o fallback e
+> automatico, mas o utilizador deve saber porque o comando deixou de ser
+> imediato. O Mosquitto precisa ainda do listener de WebSocket ligado
+> (`listener 9001` + `protocol websockets`) e de permitir ligacao anonima
+> (a ligacao do browser nao envia username/password).
 
 
 ### 11.3 CI/CD
@@ -1729,12 +1880,15 @@ Baseado no Express.js Security Best Practices:
 | MongoDB Atlas | NoSQL flexivel, gratuito, serverless-friendly |
 | HTML/CSS/JS vanilla | Simples, sem build step, PWA-ready |
 | Chart.js | Leve, interativo, canvas rendering (60k+ GitHub stars) |
-| Vercel | Serverless, CI/CD integrado, dominio customizado gratuito |
-| JWT + bcrypt | Stateless, seguro, amplamente adotado |
+| Vercel (proposta de Matheus Garbin) | Serverless, CI/CD integrado, dominio customizado gratuito |
+| JWT + bcrypt (sistema de login e credenciamento, de Matheus Garbin — ADR-0002) | Stateless, seguro, amplamente adotado |
 | Capacitor | Cross-platform, WebView-based, facil integracao |
 | APK Android via TWA (Bubblewrap) no CI | APK fiel ao PWA publicado, assinado e reproduzivel num workflow versionado — sem Android Studio local; o proprio CI publica o fingerprint do assetlinks |
 | Controlo de atuadores so no admin | Menor superficie de ataque: o dashboard publico e somente leitura; os comandos exigem sessao autenticada |
 | JS partilhado sem bundler (`sensor.js`) | Reutiliza fetch/render entre dashboard e admin sem introduzir build step (mantem HTML/CSS/JS vanilla) |
+| Uma unica montagem Express dev/prod + cache de leitura TTL (**ADR-0009**) | O `lib/app.js` e o dono do `express()`; `server.js` e `api/index.js` fornecem so as suas extensoes — elimina o drift entre as duas entradas (404 HTML no local, limiter sem trust proxy, errorHandler divergente); o cache de leitura TTL 8 s + coalescencia + LRU-32 (`lib/cache.js`) evita repetir os 2 pedidos HTTPS ao ThingSpeak a cada carga de painel |
+| Controlo de atuadores com 3 caminhos + pausa global (`global_001`) | O contrato vive num so sitio (`lib/control.js`) e a entrega escolhe-se pelo contexto — MQTT direto na LAN (imediato), fila na nuvem (~10 s) ou `server.js`; a pausa global congela a automacao no firmware sem desligar atuadores (§11.1.1) |
+| Irrigação em pulsos com watchdog — bomba submersa AC (**ADR-0011**) | A válvula solenoide deu lugar a uma bomba AC que **queima a seco** e **esvazia o reservatório**; a histerese contínua 40%→70% é insustentável. Pulsos + espera + limite diário + boia (GPIO25) + teto de tempo; todo acionamento passa por `bombaDefinir()` e `bombaWatchdog()` corre antes do `return` da pausa. PAUSE e `conectarWiFi()` desligam a bomba |
 
 ### 16.2 FAQ
 
@@ -1766,24 +1920,30 @@ Header.Payload.Signature - Header define algoritmo, Payload tem claims (userId, 
 
 **Como funciona o controlo ativo de atuadores?**
 
-Ha **dois caminhos de entrega** e o que muda e so o transporte — o contrato
-`(actuator, action) -> payload` e o mesmo nos dois (`lib/control.js`, fonte
+Ha **tres caminhos de entrega** e o que muda e so o transporte — o contrato
+`(actuator, action) -> payload` e o mesmo nos tres (`lib/control.js`, fonte
 unica):
 
-- **Rede local** (`server.js`): o painel de admin (`admin.html`, autenticado)
-  envia `POST /api/control` via `public/js/control.js` -> o `server.js` publica
-  no broker MQTT -> o ESP32, ja subscrito em
-  `fazenda/estufa01/atuador/*/comando`, aciona o rele/PWM de imediato.
-- **Site publicado** (Vercel, ADR-0007/0008): o mesmo `POST /api/control` nao
-  alcanca a LAN, por isso **o sentido do comando e invertido** — o comando e
-  enfileirado no Upstash Redis e e o **ESP32 que o busca** em
-  `GET /api/control/pending` a cada 10 s. Latencia ate ~10 s (sem servico nem
-  processo na rede local).
+- **MQTT direto do navegador** (`public/js/mqtt-gateway.js` + `mqtt.min.js`,
+  so na LAN): o painel liga-se ao broker por WebSocket e publica direto no
+  topico — **imediato** (se a pagina vier por HTTPS exige `wss://`; ver a
+  ressalva de Mixed Content em §11.1.1).
+- **Fila na nuvem** (Vercel, ADR-0007/0008): `POST /api/control` nao alcanca a
+  LAN, por isso **o sentido do comando e invertido** — o comando e enfileirado
+  no Upstash Redis e e o **ESP32 que o busca** em `GET /api/control/pending` a
+  cada 10 s. Latencia ate ~10 s. E tambem o **fallback automatico** quando o
+  broker local nao esta ligado.
+- **Rede local via servidor** (`server.js`): `POST /api/control` (protegido por
+  auth) publica no broker MQTT e o ESP32 — subscrito em
+  `fazenda/estufa01/atuador/*/comando` — aciona o rele/PWM de imediato
+  (montagem unica dev/prod, ADR-0009).
 
 O dashboard publico **nao** tem botoes de comando. Alem do manual (ON/OFF e
 duty), vent/valv/luz aceitam o modo **AUTO** (`action: "auto"` ->
 `{"command":"AUTO"}`), com o firmware a decidir pelos thresholds (ver Secao
-11.1.1).
+11.1.1). O card "Automacao da estufa" envia `global_001` — **PAUSE** congela
+toda a automacao (reles ficam como estao; telemetria continua) e **AUTO**
+retoma; nao confundir com o AUTO por atuador.
 
 **Como sei o estado real apos enviar um comando?**
 A API nao devolve ack do ESP32: confirma apenas a publicacao no broker. O estado
@@ -1902,5 +2062,137 @@ estufa-dashboard-tcc/
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.7.0**
+## 19. Firmware — Bomba submersa AC, pulsos com watchdog e correções (v1.8.0)
 
+> Ref.: [ADR-0011](../docs/ADR-0011-irrigacao-pulsos-watchdog.md) · código em
+> `src/main.cpp` (fora do versionamento, pasta PlatformIO `260929-*`). O painel
+> web **não** foi alterado; os identificadores públicos (`valv_001`, `"valve"`,
+> `field6`) foram preservados de propósito para o dashboard/Node-RED.
+
+### 19.1 Hardware da irrigação
+
+A válvula solenoide (e a mini bomba 5 V avaliada antes) deu lugar a uma **bomba
+submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
+
+- **O relé comuta a FASE** (não o neutro), com **fusível 0,5 A**, caixa fechada,
+  emendas isoladas e **DR 30 mA** se possível.
+- **Reservatório próprio ≥ 5 L, tampado e opaco** (evita algae e evaporação).
+- **Boia de nível no GPIO25**, `INPUT_PULLUP`, `LOW = há água`
+  (`BOIA_COM_AGUA_NIVEL`). Sem boia (pino solto) o pull-up lê HIGH = sem água e a
+  bomba fica bloqueada — proteção a seco por omissão.
+- A proteção lógica a seco (boia + watchdog) é **obrigatória**: a bomba AC
+  **queima a seco**.
+- Consumo previsto: 12 pulsos × 6 s × 0,05 L/s ≈ **3,6 L/dia** (vazão máxima, sem
+  coluna). A vazão real será medida em bancada; os valores são iniciais.
+
+### 19.2 Invariantes de segurança da bomba
+
+1. **Todo** acionamento passa por `bombaDefinir(bool)` — é o único ponto que
+   escreve em `PIN_RELE_VALV` (fora do `setup()`).
+2. `bombaWatchdog()` corre **antes do `return` de `modoPausaGlobal`** em
+   `avaliarControle()` — vale até em modo manual e em pausa.
+3. **PAUSE** (ramo PAUSE/STOP de `globalAplicarComando`) e **`conectarWiFi()`**
+   desligam a bomba (`bombaDefinir(false)`).
+4. **Sensor de solo inválido nunca irriga:** `soloValido` (faixa 500–3800) porta a
+   decisão automática e conta como offline em `saude_sensores`.
+5. **Boia com debounce** (`NIVEL_DEBOUNCE_MS = 1 s`): o balanço da água durante o
+   bombeamento não causa falso corte; o corte por tempo (`BOMBA_MAX_ON_MS`) é
+   imediato. Para **ligar**, a falta de água bloqueia na hora.
+
+### 19.3 Comportamentos novos (Parte B)
+
+- **Manual com validade:** `MANUAL_TIMEOUT_MS` (30 min) devolve cada atuador
+  (vent, bomba, iluminação) ao AUTO. A **pausa congela** esses timers (checagem
+  depois do `return` da pausa) e AUTO/RESUME os **reinicia** (senão uma pausa
+  longa expiraria o manual no instante do retorno).
+- **Janela de retidas:** `MQTT_JANELA_RETIDAS_MS` (2 s) ignora comandos manuais
+  recebidos logo após `conectarLocalMQTT()` — um comando retido no broker não
+  reaplica modo manual no reboot. Inclui `global_001` (um PAUSE retido congelaria
+  tudo em silêncio).
+- **Fail-safe do DHT:** `DHT_FALHA_VENT_MS` (30 s) — DHT mudo no automático liga o
+  ventilador (`ventAutoLigado = true`) para a histerese desligá-lo na temperatura
+  certa quando o sensor voltar.
+- **`TEMP_LIMITE_SUPERIOR` como override "liga imediato"**: ignora **só** o tempo
+  mínimo anti-ciclagem, **nunca** o modo manual. `VENT_TEMPO_MINIMO_MS` (60 s)
+  evita liga/desliga rápido na histerese de 1 °C.
+- **Poll da Vercel em HTTP/1.0**: status tolerante (a primeira linha contém
+  `" 200"` — a resposta pode ser HTTP/1.0 ou 1.1) e extrator do primeiro `{` ao
+  último `}` (absorve framing de chunked se o servidor ignorar o HTTP/1.0).
+  Orçamento de tempo: 2 s de connect + 2 s de leitura (bloqueio ≤ ~4 s). Se a
+  Vercel recusar HTTP/1.0 (505), volta-se para HTTP/1.1 mantendo o extrator.
+
+### 19.4 Ciclo circadiano (Parte C)
+
+- **Janela de lux:** `JANELA_BLACKOUT_MS` (400 ms) apaga a fita para uma leitura
+  "limpa" do BH1750; **pula em modo manual**, **aborta no PAUSE** (restaura
+  `brilhoSalvoAntesJanela`) e **não contamina a telemetria** de lux.
+- **Atenuação por luz ambiente** com média das últimas 3 amostras limpas e
+  **rampa** (`FATOR_ATENUACAO_TAU_MS` ≈ 30 s, snap em `FATOR_ATENUACAO_SNAP`),
+  em vez de salto instantâneo. Limiares 2000/5000 lx intactos (num dia ensolarado
+  a fita fica apagada na maior parte do tempo).
+- **Sem NTP no boot:** a fita fica **apagada** até `getLocalTime()` ser válido
+  (exceto no modo manual, que usa `obterHoraDoDia()` com fallback, e no
+  `MODO_DEMO_ACELERADO`).
+- **Fotoperíodo parametrizável:** `FOTOPERIODO_INICIO_H`/`FOTOPERIODO_FIM_H`
+  (5.0–20.0 por omissão) remapeiam os horários dos keyframes de `CICLO[]` sem
+  alterar cores/brilhos. Com os valores por omissão o comportamento é idêntico.
+
+> **Nota operacional:** numa apresentação **sem internet** use
+> `MODO_DEMO_ACELERADO = true`; senão a fita não acende no automático (o portão de
+> NTP a mantém apagada, coerente com ThingSpeak/Vercel também dependerem de rede).
+
+### 19.5 Tabela de constantes novas
+
+| Constante | Valor | Função | Linha |
+| --------- | ----- | ------ | ----- |
+| `JANELA_BLACKOUT_MS` | 400 ms | apaga a fita p/ leitura limpa do BH1750 | 237 |
+| `FATOR_ATENUACAO_TAU_MS` | 30000 ms | rampa da atenuação por luz ambiente | 243 |
+| `FATOR_ATENUACAO_SNAP` | 0.005 | cola no alvo quando a rampa fica perto | 244 |
+| `MANUAL_TIMEOUT_MS` | 30 min | validade do modo manual por atuador | 281 |
+| `VENT_TEMPO_MINIMO_MS` | 60000 ms | anti-ciclagem do ventilador | 285 |
+| `DHT_FALHA_VENT_MS` | 30000 ms | DHT mudo → ventilador ON (auto) | 286 |
+| `BOIA_COM_AGUA_NIVEL` | `LOW` | nível lógico da boia "há água" | 296 |
+| `BOMBA_PULSO_MS` | 6000 ms | duração do pulso (~0,3 L) | 297 |
+| `BOMBA_ESPERA_MS` | 5 min | espera p/ a água chegar ao sensor | 298 |
+| `BOMBA_MAX_ON_MS` | 12000 ms | teto absoluto (watchdog) | 299 |
+| `BOMBA_MAX_PULSOS_DIA` | 12 | limite diário (~3,6 L/dia) | 300 |
+| `BOMBA_RESET_DIA_MS` | 24 h | fallback do reset diário sem NTP | 301 |
+| `NIVEL_DEBOUNCE_MS` | 1000 ms | debounce da boia ao cortar | 302 |
+| `SOLO_RAW_MIN_VALIDO` | 500 | solo válido: mínimo | 305 |
+| `SOLO_RAW_MAX_VALIDO` | 3800 | solo válido: máximo | 306 |
+| `MQTT_JANELA_RETIDAS_MS` | 2000 ms | janela de comandos retidos | 315 |
+| `FOTOPERIODO_INICIO_H` | 5.0 | início do fotoperíodo | 330 |
+| `FOTOPERIODO_FIM_H` | 20.0 | fim do fotoperíodo | 331 |
+
+### 19.6 Checklist de bancada
+
+Ordem: **sem tensão de rede** (relé e boia) → **carga de baixa tensão** no lugar
+da bomba → **bomba AC** só no fim.
+
+- [ ] Bomba sem boia (GPIO25 solto): **não liga** por nenhum caminho.
+- [ ] Bomba com jumper na boia: liga e o **watchdog corta em ~12 s** mesmo em manual.
+- [ ] **PAUSE** com a bomba ligada: desliga **imediatamente**.
+- [ ] Solo desconectado (fora de 500–3800): irrigação automática **não** dispara e
+      `saude_sensores.offline` aumenta.
+- [ ] Poll: `valve ON` do painel aplicado em ≤ ~10 s; se a Vercel recusar HTTP/1.0
+      (4xx/505), o log mostra o status → voltar para HTTP/1.1 com o extrator.
+- [ ] Retidas: reiniciar o ESP32 com um comando manual retido no broker e
+      confirmar que **não** entra em modo manual sozinho.
+- [ ] Janela de lux: PAUSE durante o blackout restaura a fita; modo manual não pisca.
+
+### 19.7 Texto de interface que ainda diz "Válvula" (não alterado de propósito)
+
+O painel web continua funcional e os identificadores públicos não mudaram, por isso
+os rótulos de UI foram **deixados como estão** (são apenas texto; o `field6` e os
+nomes da fila já estão corretos). Locais a ajustar **quando/quiser**, sem urgência:
+
+- `public/admin.html` e `public/*.html`: rótulos/cards que mencionam "Válvula".
+- `public/js/control.js`, `public/js/sensor.js`: `data-atuador="valve"`,
+  rótulos de status e `field6` apresentado como "Válvula".
+
+> Estes são apenas **textos de interface**; nenhum deles quebra a integração. A
+> troca por "Bomba" é cosmética e pode ser feita num commit separado do painel.
+
+---
+
+**Fim do Blueprint Estufa 01 v1.8.0**

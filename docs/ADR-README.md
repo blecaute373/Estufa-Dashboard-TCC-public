@@ -16,3 +16,4 @@ descartadas*.
 | [0008](ADR-0008-fila-upstash-redis.md) | Fila de comandos em Upstash Redis (híbrido) | aceite |
 | [0009](ADR-0009-app-partilhado.md) | Uma única montagem Express para dev e produção (+ cache de leitura TTL) | aceite |
 | [0010](ADR-0010-mongodb-atlas-producao.md) | MongoDB Atlas em produção: cluster, utilizador com privilégio mínimo e diagnóstico | aceite |
+| [0011](ADR-0011-irrigacao-pulsos-watchdog.md) | Irrigação em pulsos com watchdog (bomba submersa AC) | aceite |
