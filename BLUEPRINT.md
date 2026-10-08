@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.8.0 · **Data:** 08/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.8.1 · **Data:** 08/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
 >
@@ -15,6 +15,42 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.8.1 (08/10/2026) - Firmware: poll à prova de cabeçalhos grandes + watchdog do loop com a bomba ligada
+
+`fix(firmware): poll detecta o fim dos cabeçalhos pelos últimos 4 bytes lidos e
+      nenhuma reconexão/poll bloqueante roda com a bomba ligada + correções
+      - §19.3 (poll): pollComandosVercel() detectava o fim dos cabeçalhos olhando
+        o conteúdo guardado (String limitada a 512 B); com cabeçalhos maiores o
+        "\r\n\r\n" nunca era visto, o corpo ficava vazio e o comando (já removido
+        da fila por LPOP) era perdido em silêncio. Agora a detecção é pelos
+        últimos 4 bytes lidos (ult4), guarda-se só a linha de status (<=128 B) e
+        cabeçalhos que não terminam logam "Resposta incompleta". O log "Poll de
+        comandos ativo" passou para DEPOIS do JSON válido (mascarava o bug).
+      - §19.2 (invariante f): no loop(), conectarLocalMQTT()/conectarThingSpeak()/
+        pollComandosVercel() só correm com a bomba desligada (bombaAtiva) — o
+        bombaWatchdog() é por software e não corta nada com o loop preso num
+        handshake TLS ou à espera do CONNACK. localMQTT.loop()/tsMQTT.loop()
+        continuam sempre.
+      - timeouts: httpsVercel.setHandshakeTimeout(3) e localMQTT/tsMQTT
+        .setSocketTimeout(3) limitam o bloqueio do handshake/socket.
+      - bombaDefinir() zera semAguaDesdeMs em toda transição (liga/desliga):
+        evita o debounce de 1 s cortar no primeiro tranco da boia no pulso
+        seguinte; conectarLocalMQTT() publica o estado ATUAL (estadoValvula), não
+        false, porque também roda em reconexões com a bomba ligada.
+      - comentários: "watchdog de 30 s" -> BOMBA_MAX_ON_MS; "200 ms a cada 5 min"
+        -> JANELA_BLACKOUT_MS/INTERVALO_AMOSTRA_LUX_MS; números de linha da "NOTA
+        de ordem" removidos (derivam a cada edição).
+      - §11.1.1 (Modo AUTO por atuador) reescrito: bomba em pulsos (não
+        histerese); ventilador com histerese 26/25 °C + override 30 °C + tempo
+        mínimo 60 s. §19.1 "algae" -> "algas"; §19.5 sem coluna de linha;
+        §19.3 documenta que "Ligar" manual é um pulso <= BOMBA_MAX_ON_MS;
+        §19.6 com 2 testes novos (cabeçalhos grandes; bomba ligada + broker
+        offline corta em <= 12 s).
+nota: firmware fora do versionamento (pasta PlatformIO 260929-*/.gitignore);
+      `pio run` SUCCESS (RAM 17,2% / Flash 42,7%), sem warnings novos;
+      PubSubClient 2.8.0 (tem setSocketTimeout) e WiFiClientSecure 2.0.0 (tem
+      setHandshakeTimeout).
 
 ### v1.8.0 (08/10/2026) - Firmware: válvula solenoide trocada por bomba submersa AC + correções de lógica
 
@@ -609,7 +645,7 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.7.3):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.8.1):** Dashboard web com autenticacao, graficos ThingSpeak,
   **controlo de atuadores AUTO/MANUAL no painel de admin com 3 caminhos de
   entrega (MQTT direto do navegador na LAN, fila Vercel + Upstash Redis e
   `server.js` local — ADR-0007/0008/0009) e pausa global da automacao
@@ -628,7 +664,7 @@ a874402 | 09/05/2026 | Initial commit
   **`/.well-known/assetlinks.json` e servido por `api/assetlinks.js`** (funcao
   serverless, fingerprint em `lib/config.js`) — o ficheiro em
   `public/.well-known/` nao chega ao bundle do deploy (pasta com ponto inicial).
-- **Total de commits:** 83 commits (09/05/2026 - 03/10/2026).
+- **Total de commits:** 87 commits (09/05/2026 - 08/10/2026).
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
@@ -680,6 +716,13 @@ a874402 | 09/05/2026 | Initial commit
     websockets`) e de permitir ligacao anonima (ver §11.1.1)
   - **Firmware ainda nao uploaded** (ESP32 sem porta serial). `API_VERCEL_TOKEN`
     **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — build a passar.
+  - **Firmware com bomba AC aguardando bancada** (ADR-0011): a logica de pulsos
+    com watchdog, o poll de comandos e os bloqueios com a bomba ligada estao
+    implementados e a build passa, mas **nao foram validados em hardware**.
+    Faltam testar em bancada: a **boia fisica** (nivel logico real de
+    `BOIA_COM_AGUA_NIVEL`), a **vazao real da bomba** (e portanto litros/pulso e
+    litros/dia efetivos — os 3,6 L/dia sao teoricos) e o watchdog sob
+    reconexao/poll bloqueante (bomba ligada + broker offline corta em <= 12 s).
   - **Falta o REST TOKEN do Upstash.** O endpoint
     `https://loyal-stag-44345.upstash.io` esta confirmado (responde), mas falta
     o token REST (o que comeca por `AX`, na seccao "REST API" do console). A
@@ -751,7 +794,7 @@ a874402 | 09/05/2026 | Initial commit
     do broker so aparece apos clique, 502) — no caminho publicado este problema
     deixou de existir (fila na nuvem, ADR-0007)
 
-- _Ultima atualizacao: 06/10/2026_
+- _Ultima atualizacao: 08/10/2026_
 
 ---
 
@@ -895,6 +938,7 @@ Este documento e a **fonte unica da verdade** do Estufa 01 e o **prompt operacio
 16. [Anexo: Decisoes de Arquitetura e FAQ](#16-anexo-decisoes-de-arquitetura-e-faq)
 17. [Checklist de Lancamento (Go-Live)](#17-checklist-de-lancamento-go-live)
 18. [Entidades e Estrutura de Dados](#18-entidades-e-estrutura-de-dados)
+19. [Firmware — Bomba submersa AC, pulsos com watchdog](#19-firmware--bomba-submersa-ac-pulsos-com-watchdog-e-correcoes-v180)
 
 ---
 
@@ -1632,11 +1676,16 @@ contrato:
   `{"command":"AUTO"}` (ilum) e, no atuador logico `global_001`,
   `{"command":"PAUSE"}` / `{"command":"AUTO"}` (ver "Pausa global" abaixo).
 - **Modo AUTO (por atuador):** a decisao fica no firmware (o backend so
-  reencaminha o comando); os limites praticos — vent liga >= 30 C / desliga
-  <= 26 C; valvula abre <= 40 % / fecha >= 70 %; luz segue o ciclo circadiano do
-  firmware (fotoperiodo, com atenuacao por luz natural medida em janela de
-  blackout — apaga >= 5000 lux). A UI mostra "Modo: Auto/Manual" (atualizado no
-  clique, sem ack).
+  reencaminha o comando). **Bomba (irrigacao, ADR-0011):** pulsos iniciados em
+  solo <= 40 %, encerrados no fim do pulso (`BOMBA_PULSO_MS`) ou em solo
+  >= 70 %, com **limite diario** (`BOMBA_MAX_PULSOS_DIA`), **boia de nivel** e
+  **watchdog** (`BOMBA_MAX_ON_MS`) — nunca em histerese continua. **Ventilador:**
+  liga >= 26 °C, desliga <= 25 °C (histerese de 1 °C), com **override imediato**
+  em >= 30 °C (ignora so o tempo minimo anti-ciclagem) e **tempo minimo** de
+  60 s entre transicoes. **Luz:** segue o ciclo circadiano do firmware
+  (fotoperiodo, com atenuacao por luz natural medida em janela de blackout —
+  apaga >= 5000 lux). A UI mostra "Modo: Auto/Manual" (atualizado no clique,
+  sem ack).
 - **Pausa global da automacao (`global_001`):** atuador **logico** — nao aciona
   hardware; e o interruptor geral da automacao, com card proprio no admin
   ("Pausar automacao" / "Retomar (AUTO)").
@@ -2076,7 +2125,7 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 
 - **O relé comuta a FASE** (não o neutro), com **fusível 0,5 A**, caixa fechada,
   emendas isoladas e **DR 30 mA** se possível.
-- **Reservatório próprio ≥ 5 L, tampado e opaco** (evita algae e evaporação).
+- **Reservatório próprio ≥ 5 L, tampado e opaco** (evita algas e evaporação).
 - **Boia de nível no GPIO25**, `INPUT_PULLUP`, `LOW = há água`
   (`BOIA_COM_AGUA_NIVEL`). Sem boia (pino solto) o pull-up lê HIGH = sem água e a
   bomba fica bloqueada — proteção a seco por omissão.
@@ -2098,6 +2147,11 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 5. **Boia com debounce** (`NIVEL_DEBOUNCE_MS = 1 s`): o balanço da água durante o
    bombeamento não causa falso corte; o corte por tempo (`BOMBA_MAX_ON_MS`) é
    imediato. Para **ligar**, a falta de água bloqueia na hora.
+6. **Nenhuma reconexão/poll bloqueante com a bomba ligada:** no `loop()`,
+   `conectarLocalMQTT()`, `conectarThingSpeak()` e `pollComandosVercel()` só
+   correm quando `!bombaAtiva` (`estadoValvula` false) — podem bloquear vários
+   segundos e o `bombaWatchdog()` é por software, não corta nada com o loop
+   preso. `localMQTT.loop()`/`tsMQTT.loop()` (não bloqueantes) continuam sempre.
 
 ### 19.3 Comportamentos novos (Parte B)
 
@@ -2105,6 +2159,9 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
   (vent, bomba, iluminação) ao AUTO. A **pausa congela** esses timers (checagem
   depois do `return` da pausa) e AUTO/RESUME os **reinicia** (senão uma pausa
   longa expiraria o manual no instante do retorno).
+- **"Ligar" manual é um pulso:** o comando manual `ON` da bomba aciona o relé,
+  mas o `bombaWatchdog()` corta em no máximo `BOMBA_MAX_ON_MS` — não fica ligado
+  indefinidamente. O painel reflete o estado real via field6 no feed seguinte.
 - **Janela de retidas:** `MQTT_JANELA_RETIDAS_MS` (2 s) ignora comandos manuais
   recebidos logo após `conectarLocalMQTT()` — um comando retido no broker não
   reaplica modo manual no reboot. Inclui `global_001` (um PAUSE retido congelaria
@@ -2143,26 +2200,28 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 
 ### 19.5 Tabela de constantes novas
 
-| Constante | Valor | Função | Linha |
-| --------- | ----- | ------ | ----- |
-| `JANELA_BLACKOUT_MS` | 400 ms | apaga a fita p/ leitura limpa do BH1750 | 237 |
-| `FATOR_ATENUACAO_TAU_MS` | 30000 ms | rampa da atenuação por luz ambiente | 243 |
-| `FATOR_ATENUACAO_SNAP` | 0.005 | cola no alvo quando a rampa fica perto | 244 |
-| `MANUAL_TIMEOUT_MS` | 30 min | validade do modo manual por atuador | 281 |
-| `VENT_TEMPO_MINIMO_MS` | 60000 ms | anti-ciclagem do ventilador | 285 |
-| `DHT_FALHA_VENT_MS` | 30000 ms | DHT mudo → ventilador ON (auto) | 286 |
-| `BOIA_COM_AGUA_NIVEL` | `LOW` | nível lógico da boia "há água" | 296 |
-| `BOMBA_PULSO_MS` | 6000 ms | duração do pulso (~0,3 L) | 297 |
-| `BOMBA_ESPERA_MS` | 5 min | espera p/ a água chegar ao sensor | 298 |
-| `BOMBA_MAX_ON_MS` | 12000 ms | teto absoluto (watchdog) | 299 |
-| `BOMBA_MAX_PULSOS_DIA` | 12 | limite diário (~3,6 L/dia) | 300 |
-| `BOMBA_RESET_DIA_MS` | 24 h | fallback do reset diário sem NTP | 301 |
-| `NIVEL_DEBOUNCE_MS` | 1000 ms | debounce da boia ao cortar | 302 |
-| `SOLO_RAW_MIN_VALIDO` | 500 | solo válido: mínimo | 305 |
-| `SOLO_RAW_MAX_VALIDO` | 3800 | solo válido: máximo | 306 |
-| `MQTT_JANELA_RETIDAS_MS` | 2000 ms | janela de comandos retidos | 315 |
-| `FOTOPERIODO_INICIO_H` | 5.0 | início do fotoperíodo | 330 |
-| `FOTOPERIODO_FIM_H` | 20.0 | fim do fotoperíodo | 331 |
+| Constante | Valor | Função |
+| --------- | ----- | ------ |
+| `JANELA_BLACKOUT_MS` | 400 ms | apaga a fita p/ leitura limpa do BH1750 |
+| `FATOR_ATENUACAO_TAU_MS` | 30000 ms | rampa da atenuação por luz ambiente |
+| `FATOR_ATENUACAO_SNAP` | 0.005 | cola no alvo quando a rampa fica perto |
+| `MANUAL_TIMEOUT_MS` | 30 min | validade do modo manual por atuador |
+| `VENT_TEMPO_MINIMO_MS` | 60000 ms | anti-ciclagem do ventilador |
+| `DHT_FALHA_VENT_MS` | 30000 ms | DHT mudo → ventilador ON (auto) |
+| `BOIA_COM_AGUA_NIVEL` | `LOW` | nível lógico da boia "há água" |
+| `BOMBA_PULSO_MS` | 6000 ms | duração do pulso (~0,3 L) |
+| `BOMBA_ESPERA_MS` | 5 min | espera p/ a água chegar ao sensor |
+| `BOMBA_MAX_ON_MS` | 12000 ms | teto absoluto (watchdog) |
+| `BOMBA_MAX_PULSOS_DIA` | 12 | limite diário (~3,6 L/dia) |
+| `BOMBA_RESET_DIA_MS` | 24 h | fallback do reset diário sem NTP |
+| `NIVEL_DEBOUNCE_MS` | 1000 ms | debounce da boia ao cortar |
+| `SOLO_RAW_MIN_VALIDO` | 500 | solo válido: mínimo |
+| `SOLO_RAW_MAX_VALIDO` | 3800 | solo válido: máximo |
+| `MQTT_JANELA_RETIDAS_MS` | 2000 ms | janela de comandos retidos |
+| `FOTOPERIODO_INICIO_H` | 5.0 | início do fotoperíodo |
+| `FOTOPERIODO_FIM_H` | 20.0 | fim do fotoperíodo |
+
+> Números de linha omitidos de propósito (derivam a cada edição) — ver `src/main.cpp`.
 
 ### 19.6 Checklist de bancada
 
@@ -2179,6 +2238,12 @@ da bomba → **bomba AC** só no fim.
 - [ ] Retidas: reiniciar o ESP32 com um comando manual retido no broker e
       confirmar que **não** entra em modo manual sozinho.
 - [ ] Janela de lux: PAUSE durante o blackout restaura a fita; modo manual não pisca.
+- [ ] Poll com cabeçalhos grandes (>128 B): o comando é aplicado e o log "Poll de
+      comandos ativo" só aparece **depois** de um JSON válido (não com corpo
+      vazio). Cabeçalhos que não terminam logam "Resposta incompleta".
+- [ ] Bomba ligada + broker MQTT offline: o watchdog corta em <= 12 s
+      (`BOMBA_MAX_ON_MS`) mesmo com `conectarLocalMQTT()`/`pollComandosVercel()`
+      adiados enquanto a bomba está ligada.
 
 ### 19.7 Texto de interface que ainda diz "Válvula" (não alterado de propósito)
 
@@ -2195,4 +2260,4 @@ nomes da fila já estão corretos). Locais a ajustar **quando/quiser**, sem urg�
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.8.0**
+**Fim do Blueprint Estufa 01 v1.8.1**
