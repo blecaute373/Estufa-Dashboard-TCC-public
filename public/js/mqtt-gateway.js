@@ -34,9 +34,18 @@ const BROKER_TOPICO_ID = { vent: 'vent_001', valve: 'valv_001', light: 'ilum_001
    '/mqtt' é o path default do mqtt.js. */
 const BROKER_DEFAULTS = { host: '', port: 9001, path: '/mqtt', tls: false };
 
+/* Limite de falhas seguidas antes de declarar o broker INDISPONÍVEL. Martelar a
+   cada 4 s (reconnectPeriod) um broker que está de fato fora só enche o pill de
+   "A ligar…"/"Erro" e não muda nada: passado este limite, mostramos uma mensagem
+   clara ("usando a fila na nuvem") e ESPAÇAMOS as tentativas para 30 s. */
+const BROKER_FALHAS_PARA_INDISPONIVEL = 3;
+const BROKER_RECONEXAO_INDISPONIVEL_MS = 30000;
+const BROKER_MSG_INDISPONIVEL = 'Broker indisponivel — usando a fila na nuvem (~10 s)';
+
 let brokerClient = null;
-let brokerEstado = 'off';            // 'off' | 'connecting' | 'on' | 'error'
+let brokerEstado = 'off';            // 'off' | 'connecting' | 'on' | 'error' | 'unavailable'
 let brokerUltimoErro = '';
+let brokerFalhasSeguidas = 0;        // falhas de conexão seguidas (zera ao conectar/desconectar)
 const brokerListeners = [];
 
 /* ── CONFIG (localStorage, por navegador) ───────────────────────────────── */
@@ -99,6 +108,24 @@ function brokerDefinirEstado(estado, erro) {
   brokerEstado = estado;
   brokerUltimoErro = erro || '';
   brokerNotificar();
+}
+function brokerUltimoErroAtual() { return brokerUltimoErro; }
+
+/* Conta uma falha de conexão. A partir de BROKER_FALHAS_PARA_INDISPONIVEL falhas
+   SEGUIDAS, o broker é declarado INDISPONÍVEL: em vez de martelar a cada 4 s
+   repintando "A ligar…"/"Erro" sem nunca conectar, mostra uma mensagem clara
+   ("usando a fila na nuvem") e ESPAÇA as tentativas para 30 s. Devolve true
+   quando acabou de cruzar o limite. Zera ao conectar (connect) ou ao
+   desconectar de propósito (brokerDesconectar). */
+function brokerRegistrarFalha() {
+  brokerFalhasSeguidas++;
+  if (brokerFalhasSeguidas >= BROKER_FALHAS_PARA_INDISPONIVEL) {
+    if (brokerClient) {
+      try { brokerClient.options.reconnectPeriod = BROKER_RECONEXAO_INDISPONIVEL_MS; } catch { /* options não mutável */ }
+    }
+    return true;
+  }
+  return false;
 }
 
 /* ── CONEXÃO ────────────────────────────────────────────────────────────── */
@@ -172,7 +199,9 @@ function brokerConectar(cfg) {
 
     brokerClient.on('connect', () => {
       limparTimer();
-      // Sessão estabelecida: agora sim faz sentido reconectar sozinho se cair.
+      // Conectou de verdade: zera o backoff de falhas e volta ao auto-reconnect
+      // curto (4 s) — se cair agora, é uma sessão estabelecida que oscilou.
+      brokerFalhasSeguidas = 0;
       try { brokerClient.options.reconnectPeriod = 4000; } catch { /* versão sem options mutável */ }
       brokerDefinirEstado('on');
       console.log('[broker] Ligado a', url);
@@ -187,16 +216,21 @@ function brokerConectar(cfg) {
     });
     brokerClient.on('error', (err) => {
       const msg = diagnosticarErroBroker(err, conf, url);
-      brokerDefinirEstado('error', msg);
-      finalizar({ ok: false, erro: msg });
+      // 3.ª falha seguida: declarar indisponível (fila) e espaçar as tentativas.
+      const indisponivel = brokerRegistrarFalha();
+      brokerDefinirEstado(indisponivel ? 'unavailable' : 'error',
+                          indisponivel ? BROKER_MSG_INDISPONIVEL : msg);
+      finalizar({ ok: false, erro: indisponivel ? BROKER_MSG_INDISPONIVEL : msg });
     });
 
     // Rede lenta: não deixa a UI pendurada — e ENCERRA o cliente, senão o
     // retry em segundo plano repintava "connecting" para sempre.
     timer = setTimeout(() => {
       const msg = 'Tempo esgotado ao ligar ao broker (sem resposta em ~6 s). Confirme IP/porta WebSocket (9001 + `protocol websockets`) e que está na mesma rede da estufa.';
-      brokerDefinirEstado('error', msg);
-      finalizar({ ok: false, erro: msg });
+      const indisponivel = brokerRegistrarFalha();
+      brokerDefinirEstado(indisponivel ? 'unavailable' : 'error',
+                          indisponivel ? BROKER_MSG_INDISPONIVEL : msg);
+      finalizar({ ok: false, erro: indisponivel ? BROKER_MSG_INDISPONIVEL : msg });
     }, 6500);
   });
 }
@@ -228,6 +262,7 @@ function brokerDesconectar() {
     try { brokerClient.end(true); } catch { /* já fechado */ }
     brokerClient = null;
   }
+  brokerFalhasSeguidas = 0;   // desconexão de propósito: zera o backoff
   brokerDefinirEstado('off');
 }
 
@@ -270,6 +305,9 @@ function brokerTopico(actuator) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     BROKER_DEFAULTS,
+    BROKER_FALHAS_PARA_INDISPONIVEL,
+    BROKER_RECONEXAO_INDISPONIVEL_MS,
+    BROKER_MSG_INDISPONIVEL,
     brokerConfig,
     brokerSalvarConfig,
     brokerUrl,
@@ -277,6 +315,10 @@ if (typeof module !== 'undefined' && module.exports) {
     brokerMontarPayload,
     brokerTopico,
     diagnosticarErroBroker,
+    brokerEstadoAtual,
+    brokerUltimoErroAtual,
+    brokerRegistrarFalha,
+    brokerDesconectar,
   };
 }
 

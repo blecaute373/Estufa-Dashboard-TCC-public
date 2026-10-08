@@ -224,10 +224,14 @@ function iniciarControlo() {
    pill separado do pill do ThingSpeak — são coisas diferentes.
 ═══════════════════════════════════════════ */
 const BROKER_ESTADO_UI = {
-  off:        ['off',     'Desligado'],
-  connecting: ['loading', 'A ligar…'],
-  on:         ['online',  'Ligado'],
-  error:      ['offline', 'Erro'],
+  off:         ['off',      'Desligado'],
+  connecting:  ['loading',  'A ligar…'],
+  on:          ['online',   'Ligado'],
+  error:       ['offline',  'Erro'],
+  // 3 falhas seguidas: o gateway declarou o broker indisponível e espaçou as
+  // tentativas para 30 s. O detalhe ("usando a fila na nuvem ~10 s") vai no
+  // #brokerErro; aqui no pill fica o resumo curto.
+  unavailable: ['offline',  'Indisponivel'],
 };
 
 function pintarBrokerEstado(estado, erro) {
@@ -312,10 +316,13 @@ function iniciarBroker() {
   // Se já houver host guardado, tenta ligar sozinho ao abrir o painel.
   // A falha NÃO é silenciosa: preserva o erro no pill (era `pintar('off','')`,
   // que apagava o diagnóstico e parecia "nunca conecta sem dizer porquê").
-  // O comando continua funcionando pela fila — o erro é só informativo.
+  // Repinta com o estado ATUAL do gateway (não força 'error'): na 3.ª falha
+  // seguida o gateway já pintou 'unavailable' via brokerOnStatus, e forçar
+  // 'error' aqui sobrescreveria essa decisão. O comando continua funcionando
+  // pela fila — o erro é só informativo.
   if (brokerConfig().host) {
-    brokerConectar().then((r) => {
-      if (!r.ok) pintarBrokerEstado('error', r.erro);
+    brokerConectar().then(() => {
+      pintarBrokerEstado(brokerEstadoAtual(), brokerUltimoErroAtual());
     });
   }
 }

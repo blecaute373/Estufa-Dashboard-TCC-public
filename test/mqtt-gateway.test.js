@@ -72,6 +72,33 @@ describe('mqtt-gateway — diagnóstico acionável por tipo de erro', () => {
   });
 });
 
+describe('mqtt-gateway — backoff após 3 falhas seguidas (estado unavailable)', () => {
+  // brokerRegistrarFalha()/brokerDesconectar() mexem em estado de módulo; cada
+  // teste começa zerando o contador via brokerDesconectar().
+  const reset = () => gw.brokerDesconectar();
+
+  it('as duas primeiras falhas mantêm erro; a 3.ª cruza o limite', () => {
+    reset();
+    assert.equal(gw.brokerRegistrarFalha(), false, '1.ª falha ainda é erro pontual');
+    assert.equal(gw.brokerRegistrarFalha(), false, '2.ª falha ainda é erro pontual');
+    assert.equal(gw.brokerRegistrarFalha(), true, '3.ª falha seguida declara indisponível');
+  });
+
+  it('conectar (brokerDesconectar) zera o contador de falhas', () => {
+    reset();
+    gw.brokerRegistrarFalha();
+    gw.brokerRegistrarFalha();
+    reset();
+    assert.equal(gw.brokerRegistrarFalha(), false, 'após zerar, recomeça a contagem');
+  });
+
+  it('limite é 3 e a reconexão passa a 30 s', () => {
+    assert.equal(gw.BROKER_FALHAS_PARA_INDISPONIVEL, 3);
+    assert.equal(gw.BROKER_RECONEXAO_INDISPONIVEL_MS, 30000);
+    assert.match(gw.BROKER_MSG_INDISPONIVEL, /indisponivel.*fila na nuvem/i);
+  });
+});
+
 describe('mqtt-gateway — contrato payload/tópico intacto', () => {
   it('monta ON/OFF/AUTO e duty com clamp 0-100', () => {
     assert.deepEqual(gw.brokerMontarPayload('vent', 'on'), { payload: { command: 'ON' } });
