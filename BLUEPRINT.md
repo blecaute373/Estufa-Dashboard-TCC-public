@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.8.1 · **Data:** 08/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.8.2 · **Data:** 08/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
 >
@@ -15,6 +15,33 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.8.2 (08/10/2026) - Firmware: sem boia — irrigação protegida só por teto de tempo e limite diário persistido
+
+`refactor(firmware): remove a boia (GPIO25) e qualquer cálculo de nível; a irrigação
+      fica protegida só pelo teto de tempo (BOMBA_MAX_ON_MS) e pelo limite diário
+      de pulsos, agora persistido na flash (ADR-0011, emenda "sem boia")
+      - removidos: PIN_NIVEL_AGUA, BOIA_COM_AGUA_NIVEL, NIVEL_DEBOUNCE_MS,
+        reservatorioTemAgua() (+ protótipo), semAguaDesdeMs, o ramo de falta
+        d'água de bombaWatchdog() e a mensagem "Reservatorio vazio"; GPIO25 deixa
+        de ser usado
+      - limite diário como única barreira de volume: a contagem passa para
+        bombaDefinir() (transição OFF->ON) e bombaDefinir(true) recusa ligar se
+        pulsosHoje >= BOMBA_MAX_PULSOS_DIA (vale para auto e manual; caminho 2.3
+        mantido, mensagem -> "ON recusado: limite diario atingido")
+      - reset diário extraído para atualizarContadorDiario(), chamada no início de
+        avaliarControle() (depois do return da pausa) — antes corria depois de
+        early-returns e nesses casos não rodava
+      - persistência (Preferences NVS, namespace "estufa", chaves "pulsos_hoje"/
+        "dia_pulsos"): gravada a cada incremento e a cada reset; lida no setup() —
+        o limite diário sobrevive a reboot
+      - constantes: BOMBA_MAX_PULSOS_DIA 12 -> 6; BOMBA_PULSO_MS/BOMBA_MAX_ON_MS
+        mantidos; comentário de dimensionamento do balde (~80% do volume)
+      - §11.1.1/§16.1/§19.*: boia removida; field8 continua RSSI; painel web
+        inalterado
+nota: firmware fora do versionamento (pasta PlatformIO 260929-*/.gitignore);
+      `pio run` SUCCESS (RAM 17,2% / Flash 42,8%), sem warnings novos;
+      Preferences 2.0.0 (core arduino-esp32 3.x).
 
 ### v1.8.1 (08/10/2026) - Firmware: poll à prova de cabeçalhos grandes + watchdog do loop com a bomba ligada
 
@@ -717,12 +744,14 @@ a874402 | 09/05/2026 | Initial commit
   - **Firmware ainda nao uploaded** (ESP32 sem porta serial). `API_VERCEL_TOKEN`
     **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — build a passar.
   - **Firmware com bomba AC aguardando bancada** (ADR-0011): a logica de pulsos
-    com watchdog, o poll de comandos e os bloqueios com a bomba ligada estao
-    implementados e a build passa, mas **nao foram validados em hardware**.
-    Faltam testar em bancada: a **boia fisica** (nivel logico real de
-    `BOIA_COM_AGUA_NIVEL`), a **vazao real da bomba** (e portanto litros/pulso e
-    litros/dia efetivos — os 3,6 L/dia sao teoricos) e o watchdog sob
+    com watchdog, o limite diario persistido na flash e os bloqueios com a bomba
+    ligada estao implementados e a build passa, mas **nao foram validados em
+    hardware**. Faltam testar em bancada: a **vazao real da bomba** (e portanto
+    litros/pulso e litros/dia efetivos — os ~1,8 L/dia sao teoricos), o
+    **contador de pulsos apos reboot** (leitura/gravacao em NVS) e o watchdog sob
     reconexao/poll bloqueante (bomba ligada + broker offline corta em <= 12 s).
+    **Sem sensor de nivel**: a protecao a seco e só o teto de tempo + o limite
+    diario — reabastecer o balde e rotina manual do utilizador.
   - **Falta o REST TOKEN do Upstash.** O endpoint
     `https://loyal-stag-44345.upstash.io` esta confirmado (responde), mas falta
     o token REST (o que comeca por `AX`, na seccao "REST API" do console). A
@@ -1678,8 +1707,8 @@ contrato:
 - **Modo AUTO (por atuador):** a decisao fica no firmware (o backend so
   reencaminha o comando). **Bomba (irrigacao, ADR-0011):** pulsos iniciados em
   solo <= 40 %, encerrados no fim do pulso (`BOMBA_PULSO_MS`) ou em solo
-  >= 70 %, com **limite diario** (`BOMBA_MAX_PULSOS_DIA`), **boia de nivel** e
-  **watchdog** (`BOMBA_MAX_ON_MS`) — nunca em histerese continua. **Ventilador:**
+  >= 70 %, com **limite diario** (`BOMBA_MAX_PULSOS_DIA`) e **watchdog**
+  (`BOMBA_MAX_ON_MS`) — nunca em histerese continua. **Ventilador:**
   liga >= 26 °C, desliga <= 25 °C (histerese de 1 °C), com **override imediato**
   em >= 30 °C (ignora so o tempo minimo anti-ciclagem) e **tempo minimo** de
   60 s entre transicoes. **Luz:** segue o ciclo circadiano do firmware
@@ -1937,7 +1966,7 @@ Baseado no Express.js Security Best Practices:
 | JS partilhado sem bundler (`sensor.js`) | Reutiliza fetch/render entre dashboard e admin sem introduzir build step (mantem HTML/CSS/JS vanilla) |
 | Uma unica montagem Express dev/prod + cache de leitura TTL (**ADR-0009**) | O `lib/app.js` e o dono do `express()`; `server.js` e `api/index.js` fornecem so as suas extensoes — elimina o drift entre as duas entradas (404 HTML no local, limiter sem trust proxy, errorHandler divergente); o cache de leitura TTL 8 s + coalescencia + LRU-32 (`lib/cache.js`) evita repetir os 2 pedidos HTTPS ao ThingSpeak a cada carga de painel |
 | Controlo de atuadores com 3 caminhos + pausa global (`global_001`) | O contrato vive num so sitio (`lib/control.js`) e a entrega escolhe-se pelo contexto — MQTT direto na LAN (imediato), fila na nuvem (~10 s) ou `server.js`; a pausa global congela a automacao no firmware sem desligar atuadores (§11.1.1) |
-| Irrigação em pulsos com watchdog — bomba submersa AC (**ADR-0011**) | A válvula solenoide deu lugar a uma bomba AC que **queima a seco** e **esvazia o reservatório**; a histerese contínua 40%→70% é insustentável. Pulsos + espera + limite diário + boia (GPIO25) + teto de tempo; todo acionamento passa por `bombaDefinir()` e `bombaWatchdog()` corre antes do `return` da pausa. PAUSE e `conectarWiFi()` desligam a bomba |
+| Irrigação em pulsos com watchdog — bomba submersa AC (**ADR-0011**) | A válvula solenoide deu lugar a uma bomba AC que **queima a seco** e **esvazia o reservatório**; a histerese contínua 40%→70% é insustentável. Pulsos + espera + limite diário (persistido em NVS) + teto de tempo (sem sensor de nível); todo acionamento passa por `bombaDefinir()` e `bombaWatchdog()` corre antes do `return` da pausa. PAUSE e `conectarWiFi()` desligam a bomba |
 
 ### 16.2 FAQ
 
@@ -2111,7 +2140,7 @@ estufa-dashboard-tcc/
 
 ---
 
-## 19. Firmware — Bomba submersa AC, pulsos com watchdog e correções (v1.8.0)
+## 19. Firmware — Bomba submersa AC, pulsos com watchdog e correções (v1.8.2)
 
 > Ref.: [ADR-0011](../docs/ADR-0011-irrigacao-pulsos-watchdog.md) · código em
 > `src/main.cpp` (fora do versionamento, pasta PlatformIO `260929-*`). O painel
@@ -2126,13 +2155,18 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 - **O relé comuta a FASE** (não o neutro), com **fusível 0,5 A**, caixa fechada,
   emendas isoladas e **DR 30 mA** se possível.
 - **Reservatório próprio ≥ 5 L, tampado e opaco** (evita algas e evaporação).
-- **Boia de nível no GPIO25**, `INPUT_PULLUP`, `LOW = há água`
-  (`BOIA_COM_AGUA_NIVEL`). Sem boia (pino solto) o pull-up lê HIGH = sem água e a
-  bomba fica bloqueada — proteção a seco por omissão.
-- A proteção lógica a seco (boia + watchdog) é **obrigatória**: a bomba AC
-  **queima a seco**.
-- Consumo previsto: 12 pulsos × 6 s × 0,05 L/s ≈ **3,6 L/dia** (vazão máxima, sem
-  coluna). A vazão real será medida em bancada; os valores são iniciais.
+- **Sem sensor de nível** (sem boia, sem fio de touch, sem cálculo de litros):
+  nenhum pino extra no ESP32 além do GPIO27. A proteção da bomba AC — que
+  **queima a seco** — é só o **teto de tempo** por pulso (`BOMBA_MAX_ON_MS`) e o
+  **limite diário** de pulsos (`BOMBA_MAX_PULSOS_DIA`).
+- **Dimensionamento do reservatório:** litros/dia = pulsos × (BOMBA_PULSO_MS/1000)
+  × 0,05 L/s. Com 6 × 6 s × 0,05 ≈ **1,8 L/dia** (vazão máxima, sem coluna; a
+  vazão real será medida em bancada). Escolha o tamanho do balde para que
+  (pulsos/dia × litros/pulso × dias entre reabastecimentos) fique abaixo de ~80%
+  do volume do balde.
+- **Rotina de reabastecimento:** sem sensor de nível, esvaziar o balde é um
+  **risco assumido pelo utilizador** — reabasteça **antes** de o balde esvaziar,
+  com a margem dos 20% a cobrir vazão real acima da teórica e a evaporação.
 
 ### 19.2 Invariantes de segurança da bomba
 
@@ -2144,9 +2178,10 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
    desligam a bomba (`bombaDefinir(false)`).
 4. **Sensor de solo inválido nunca irriga:** `soloValido` (faixa 500–3800) porta a
    decisão automática e conta como offline em `saude_sensores`.
-5. **Boia com debounce** (`NIVEL_DEBOUNCE_MS = 1 s`): o balanço da água durante o
-   bombeamento não causa falso corte; o corte por tempo (`BOMBA_MAX_ON_MS`) é
-   imediato. Para **ligar**, a falta de água bloqueia na hora.
+5. **Sem sensor de nível, a única proteção a seco é o teto de tempo + o limite
+   diário** (risco assumido pelo utilizador): cada pulso é cortado em
+   `BOMBA_MAX_ON_MS` e o volume do dia é limitado por `BOMBA_MAX_PULSOS_DIA`
+   (persistido em NVS). Não há bloqueio por nível — reabastecer é manual.
 6. **Nenhuma reconexão/poll bloqueante com a bomba ligada:** no `loop()`,
    `conectarLocalMQTT()`, `conectarThingSpeak()` e `pollComandosVercel()` só
    correm quando `!bombaAtiva` (`estadoValvula` false) — podem bloquear vários
@@ -2159,9 +2194,13 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
   (vent, bomba, iluminação) ao AUTO. A **pausa congela** esses timers (checagem
   depois do `return` da pausa) e AUTO/RESUME os **reinicia** (senão uma pausa
   longa expiraria o manual no instante do retorno).
-- **"Ligar" manual é um pulso:** o comando manual `ON` da bomba aciona o relé,
-  mas o `bombaWatchdog()` corta em no máximo `BOMBA_MAX_ON_MS` — não fica ligado
-  indefinidamente. O painel reflete o estado real via field6 no feed seguinte.
+- **"Ligar" manual é um pulso e conta no limite diário:** o comando manual `ON`
+  (MQTT ou fila) aciona o relé e incrementa `pulsosHoje` dentro de
+  `bombaDefinir()`; o `bombaWatchdog()` corta em no máximo `BOMBA_MAX_ON_MS`. Se
+  o limite diário já foi atingido, `bombaDefinir(true)` recusa (loga "Limite
+  diario atingido") e o caminho 2.3 publica OFF sem entrar em modo manual. O
+  contador é **persistido na flash** (NVS/Preferences) a cada incremento e a cada
+  reset diário, e lido no `setup()` — sobrevive a reboot.
 - **Janela de retidas:** `MQTT_JANELA_RETIDAS_MS` (2 s) ignora comandos manuais
   recebidos logo após `conectarLocalMQTT()` — um comando retido no broker não
   reaplica modo manual no reboot. Inclui `global_001` (um PAUSE retido congelaria
@@ -2208,13 +2247,11 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 | `MANUAL_TIMEOUT_MS` | 30 min | validade do modo manual por atuador |
 | `VENT_TEMPO_MINIMO_MS` | 60000 ms | anti-ciclagem do ventilador |
 | `DHT_FALHA_VENT_MS` | 30000 ms | DHT mudo → ventilador ON (auto) |
-| `BOIA_COM_AGUA_NIVEL` | `LOW` | nível lógico da boia "há água" |
 | `BOMBA_PULSO_MS` | 6000 ms | duração do pulso (~0,3 L) |
 | `BOMBA_ESPERA_MS` | 5 min | espera p/ a água chegar ao sensor |
 | `BOMBA_MAX_ON_MS` | 12000 ms | teto absoluto (watchdog) |
-| `BOMBA_MAX_PULSOS_DIA` | 12 | limite diário (~3,6 L/dia) |
+| `BOMBA_MAX_PULSOS_DIA` | 6 | limite diário (~1,8 L/dia), persistido em NVS |
 | `BOMBA_RESET_DIA_MS` | 24 h | fallback do reset diário sem NTP |
-| `NIVEL_DEBOUNCE_MS` | 1000 ms | debounce da boia ao cortar |
 | `SOLO_RAW_MIN_VALIDO` | 500 | solo válido: mínimo |
 | `SOLO_RAW_MAX_VALIDO` | 3800 | solo válido: máximo |
 | `MQTT_JANELA_RETIDAS_MS` | 2000 ms | janela de comandos retidos |
@@ -2225,11 +2262,14 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 
 ### 19.6 Checklist de bancada
 
-Ordem: **sem tensão de rede** (relé e boia) → **carga de baixa tensão** no lugar
-da bomba → **bomba AC** só no fim.
+Ordem: **sem tensão de rede** (relé) → **carga de baixa tensão** no lugar da
+bomba → **bomba AC** só no fim.
 
-- [ ] Bomba sem boia (GPIO25 solto): **não liga** por nenhum caminho.
-- [ ] Bomba com jumper na boia: liga e o **watchdog corta em ~12 s** mesmo em manual.
+- [ ] O **7.º pulso** do dia (limite 6) é **recusado** — automático e "Ligar"
+      manual logam "Limite diario atingido" / "ON recusado: limite diario
+      atingido" e o relé não aciona.
+- [ ] **Contador sobrevive a reboot:** após 3 pulsos + reboot, `pulsosHoje` volta
+      como 3 (lido do NVS) e só restam 3 pulsos no dia.
 - [ ] **PAUSE** com a bomba ligada: desliga **imediatamente**.
 - [ ] Solo desconectado (fora de 500–3800): irrigação automática **não** dispara e
       `saude_sensores.offline` aumenta.
@@ -2260,4 +2300,4 @@ nomes da fila já estão corretos). Locais a ajustar **quando/quiser**, sem urg�
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.8.1**
+**Fim do Blueprint Estufa 01 v1.8.2**
