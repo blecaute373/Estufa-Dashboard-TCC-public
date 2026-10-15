@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.9.2 · **Data:** 15/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.9.3 · **Data:** 15/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
 >
@@ -15,6 +15,16 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.9.3 (15/10/2026) - Upload ESP32 concluído + deploy v20 no ar
+
+`docs: firmware v1.9.2 rodando no ESP32 (upload pelo autor via COM3); deploy
+      a1zjw1fqu serve sw.js estufa-v20; tag v1.0.2 no HEAD p/ APK
+      - Estado Atual: pendência "pronto p/ upload" vira "upload concluído +
+        validação em bancada (DHT/solo/bomba/watchdog)"
+      - Redeploy: vercel redeploy clonou deployment antigo (v17); vercel --prod
+        publicou o código atual (v20 provado ao vivo no alias -omega)
+test: npm run check exit 0, npm test 129/129 a passar (28 suites, 0 falhas)`
 
 ### v1.9.2 (15/10/2026) - Ventilação estática fechada (código alcança o blueprint) + DHT22/solo auditados
 
@@ -754,7 +764,7 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.9.2):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.9.3):** Dashboard web com autenticacao, graficos ThingSpeak,
   **ventilação direta na fonte (sempre ligada, sem relé/GPIO26, card estático verde
   sem botões, field5 = 1 fixo, `vent` rejeitado com 400 nos 3 caminhos) + DHT22 em
   módulo no GPIO4 e solo no GPIO34 auditados (VCC no GPIO23) + controlo de bomba/luz AUTO/MANUAL no painel de admin com 3 caminhos de
@@ -827,11 +837,11 @@ a874402 | 09/05/2026 | Initial commit
     browser no broker, o comando cai automaticamente na fila (~10 s). O broker
     precisa ainda do listener websockets (`listener 9001` + `protocol
     websockets`) e de permitir ligacao anonima (ver §11.1.1)
-  - **Firmware v1.9.2 pronto p/ upload (ESP32 na COM3).** `API_VERCEL_TOKEN`
-    **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — falta rodar
-    `pio run -t upload` na pasta `260929-212817-esp32doit-devkit-v1` com o ESP32
-    plugado (COM3 detectada nesta sessão). DHT22 em módulo (GPIO4) + solo
-    (GPIO34, VCC no GPIO23) auditados; ventilação direta na fonte (field5 = 1).
+  - **Firmware v1.9.2 rodando no ESP32 (upload concluído pelo autor via COM3).**
+    `API_VERCEL_TOKEN` **preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`).
+    DHT22 em módulo (GPIO4) + solo (GPIO34, VCC no GPIO23) auditados;
+    ventilação direta na fonte (field5 = 1). **Falta validar em bancada:**
+    DHT atualizando, solo coerente, field5 fixo, fila ≤10 s, bomba/watchdog/NVS.
   - **Firmware com bomba AC aguardando bancada** (ADR-0011): a logica de pulsos
     com watchdog, o limite diario persistido na flash e os bloqueios com a bomba
     ligada estao implementados e a build passa, mas **nao foram validados em
@@ -2408,4 +2418,4 @@ nomes da fila já estão corretos). Locais a ajustar **quando/quiser**, sem urg�
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.9.2**
+**Fim do Blueprint Estufa 01 v1.9.3**
