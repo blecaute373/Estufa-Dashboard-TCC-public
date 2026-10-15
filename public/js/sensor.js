@@ -4,13 +4,13 @@
    Totalmente guardado: IDs de DOM ausentes são no-ops.
    Sem import/export (compatível Electron/Capacitor/node --check).
 
-   Mapeamento dos feeds do ThingSpeak (firmware estufa_unificado.ino):
+   Mapeamento dos feeds do ThingSpeak (firmware 260929-*/src/main.cpp):
      field1 — Temperatura (°C)
      field2 — Humidade do Solo (%)
      field3 — Luminosidade (Lux)
      field4 — Humidade do Ar (%)
-     field5 — Estado do Ventilador       (0 / 1)   — Relé GPIO 26
-     field6 — Estado da Válvula Solenoide (0 / 1)  — Relé GPIO 27
+     field5 — Ventilação: SEMPRE 1 (fonte direta, sem relé/GPIO — estático)
+     field6 — Estado da Bomba (0 / 1) — Relé GPIO 27
      field7 — Brilho/Duty Cycle da Iluminação (0–100 %) — LED WS2811
      field8 — Sinal Wi-Fi (RSSI, dBm)
 ═══════════════════════════════════════════ */
@@ -52,8 +52,8 @@ function processarUltimo(d) {
   const solo   = parseFloat(d.field2); // Humidade do Solo (%)
   const lux    = parseFloat(d.field3); // Luminosidade (Lux)
   const umidAr = parseFloat(d.field4); // Humidade do Ar (%)
-  const vent   = parseInt(d.field5, 10); // Ventilador — Relé GPIO 26 (0/1)
-  const valv   = parseInt(d.field6, 10); // Válvula Solenoide — Relé GPIO 27 (0/1)
+  // Ventilação direta na fonte: SEMPRE ligada (field5 estático = 1, sem relé).
+  const valv   = parseInt(d.field6, 10); // Bomba — Relé GPIO 27 (0/1)
   const duty   = parseInt(d.field7, 10); // Iluminação LED WS2811 — duty cycle (0-100%)
   const rssi   = parseInt(d.field8, 10); // Sinal Wi-Fi (RSSI)
 
@@ -67,8 +67,8 @@ function processarUltimo(d) {
   const stamp = d.created_at ? new Date(d.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
   setText('kpiUpdated', 'atualizado ' + stamp);
 
-  /* Atuadores */
-  atualizarAtuador('cardVent',  'chipVent',  'lblVent',  vent === 1, 'Ligado',  'Desligado');
+  /* Atuadores — ventilação SEMPRE ligada (fonte direta, sem relé): estático. */
+  atualizarAtuador('cardVent',  'chipVent',  'lblVent',  true, 'Ligado (fonte direta)',  'Ligado (fonte direta)');
   atualizarAtuador('cardValve', 'chipValve', 'lblValve', valv === 1, 'Aberta',  'Fechada');
   atualizarAtuador('cardLight', 'chipLight', 'lblLight', duty > 0,  'Ligada',  'Apagada');
 

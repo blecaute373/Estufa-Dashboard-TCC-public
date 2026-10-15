@@ -120,8 +120,8 @@
   <div class="section-label">🎛 Controlo de Atuadores <span class="count-chip">requer login</span></div>
   <div class="actuator-grid">
 
-    <!-- Ventilador — Relé GPIO 26 -->
-    <div class="actuator-card act-vent" id="cardVent">
+    <!-- Ventilação — direta na fonte (sempre ligada, sem relé): estático -->
+    <div class="actuator-card act-vent is-on" id="cardVent">
       <div class="act-glow"></div>
       <div class="act-icon-ring" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -132,17 +132,16 @@
         </svg>
       </div>
       <div class="act-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="act-name">Ventilador <span class="act-gpio">Relé GPIO 26</span></div>
-      <div class="act-chip chip-off" id="chipVent">
-        <span class="chip-dot"></span><span id="lblVent">Desligado</span>
+      <div class="act-name">Ventilação <span class="act-gpio">Fonte direta</span></div>
+      <div class="act-sub">Sempre ligada — sem relé</div>
+      <div class="act-chip chip-on" id="chipVent">
+        <span class="chip-dot"></span><span id="lblVent">Ligado (fonte direta)</span>
       </div>
+      <div class="act-static-note">Sem botões — ventilação direta na fonte.</div>
       <div class="act-control act-control-row">
-        <button class="ctrl-btn ctrl-on"   type="button" data-atuador="vent" data-acao="on">Ligar</button>
-        <button class="ctrl-btn ctrl-off"  type="button" data-atuador="vent" data-acao="off">Desligar</button>
-        <button class="ctrl-btn ctrl-auto" type="button" data-atuador="vent" data-acao="auto">Auto</button>
       </div>
-      <div class="act-hint">Auto · liga ≥ 30 °C · desliga ≤ 26 °C</div>
-      <div class="act-mode">Modo: <span class="mode-value" id="modeVent">Manual</span></div>
+      <div class="act-hint">Fonte direta — sempre ligada · sem relé</div>
+      <div class="act-mode">Estado: <span class="mode-value">Sempre ligado</span></div>
     </div>
 
     <!-- Válvula Solenoide / Aspersor — Relé GPIO 27 -->

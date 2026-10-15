@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.8.2 · **Data:** 08/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.9.2 · **Data:** 15/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
 >
@@ -15,6 +15,88 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.9.2 (15/10/2026) - Ventilação estática fechada (código alcança o blueprint) + DHT22/solo auditados
+
+`fix(web,docs): fecha os 5 pontos onde o código estava atrás do blueprint v1.9.0/v1.9.1
+      - public/js/control.js: aplicarEstadoOtimista() sem ramo vent (só bomba/luz);
+        vent segue rejeitado com 400 explicativo em lib/control.js e mqtt-gateway.js
+      - public/admin.html + public/dashboard.html: hint do card Vent deixa a
+        histerese ("liga ≥30 °C / desliga ≤26 °C") e vira "Fonte direta — sempre
+        ligada · sem relé" (badge/ícone verde estático, sem botões)
+      - public/sw.js: estufa-v19 -> v20 (PWA servia o painel velho do cache)
+      - BLUEPRINT §5.2 (field5 = 1 fixo), §6.3 (sem modeVent), §7.1 (sem botões
+        vent, Bomba GPIO27), §11.1.1 (só bomba/luz têm AUTO; TEMP_*/VENT_*/
+        DHT_FALHA_VENT_MS = legado, não decidem), §19.3 (ventilação fora do ESP
+        + sensores auditados)
+      - auditoria DHT22/solo confirmada (pedido do autor, tudo batendo, 1 ressalva
+        de texto): DHT22 em módulo no GPIO4 (ADC2_CH0 mas uso digital — sem o
+        conflito ADC2×Wi-Fi do analogRead), leitura não-bloqueante 2 s + retry
+        1 s com força + fail-safe 30 s + ciclo de alimentação (off 500 ms,
+        1/min, adiado com bomba ligada); solo no ADC1 GPIO34 (só-entrada, sem
+        pull-up) com média de 16 amostras; VCC de ambos no GPIO23 (~7-10 mA,
+        dentro do limite); calibração ar ~3050 / água ~1176 (SECO 3000 /
+        MOLHADO 1200), faixa 500–3800 (fora dela não irriga, conta offline)
+      - firmware (fora do versionamento, pasta PlatformIO 260929-*/.gitignore):
+        sem alteração — ventilação já direta na fonte (field5 = 1 estático)
+test: npm run check exit 0, npm test 129/129 a passar (28 suites, 0 falhas)`
+
+### v1.9.1 (15/10/2026) - Ventilação estática ponta-a-ponta + auditoria DHT22/solo confirmada
+
+`fix(web): remove o último resquício de comando de ventilação + auditoria DHT22/solo
+      - public/js/control.js: aplicarEstadoOtimista() sem ramo vent (só bomba);
+        vent segue rejeitado com 400 explicativo em lib/control.js
+      - public/sw.js: estufa-v18 -> v19 (PWA servia o painel velho do cache)
+      - auditoria DHT22 em módulo (pedido do autor, tudo batendo): GPIO4 seguro
+        (fora de strapping/ADC2/I2C), VCC chaveado no GPIO23 (3,3 V, ~2,5 mA
+        DHT22 + ~5 mA solo, dentro do limite do GPIO), leitura não-bloqueante
+        2 s + retry 1 s com força + fail-safe 30 s + ciclo de alimentação
+        (off 500 ms, 1/min, adiado com bomba ligada); solo capacitivo no ADC1
+        GPIO34 (só-entrada, sem pull-up — correto) com média de 16 amostras,
+        calibração ar ~3050 / água ~1176 (SECO 3000 / MOLHADO 1200), faixa
+        válida 500–3800 (fora dela não irriga e conta offline)
+      - firmware (fora do versionamento, pasta PlatformIO 260929-*/.gitignore):
+        sem alteração — ventilação já direta na fonte (field5 = 1 estático)
+test: npm run check exit 0, npm test 129/129 a passar (28 suites, 0 falhas)`
+
+### v1.9.0 (15/10/2026) - Ventilação direta na fonte (sempre ligada) + auditoria DHT22/solo
+
+`feat(firmware,web): ventilador sai do relé (GPIO26 liberado) e vai direto na fonte —
+      estado estático sempre ligado no painel (ícone verde, sem botões)
+      - firmware (fora do versionamento, pasta PlatformIO 260929-*/.gitignore):
+        PIN_RELE_VENT removido; ventiladorInicializar()/ventiladorAtualizar() viram
+        no-op documentado; ventAplicarComando() e aplicarComandoDaFila() ignoram
+        vent_* (retornam true p/ não cair em "desconhecido"); callbackLocal segue
+        subscrito em vent_001 por compatibilidade; publicarStatusSistema() envia
+        ventilador "ON" fixo; publicarThingSpeak() envia field5 = 1 estático;
+        TEMP_*/VENT_*/DHT_FALHA_VENT_MS viram legado documentado (não decidem);
+        MANUAL_TIMEOUT/manual só para bomba/luz
+      - auditoria DHT22 em módulo + solo (pedido do autor, tudo batendo):
+        DHT22 em módulo no GPIO4 (com pull-up e desacoplamento próprios — sem
+        resistor externo); GPIO4 fora dos strappings, fora do ADC2 (Wi-Fi ok) e
+        fora do I2C/relé/fita; leitura não-bloqueante com intervalo 2 s
+        (mínimo do datasheet), retry 1 s com leitura forçada, fail-safe 30 s e
+        ciclo de alimentação (off 500 ms, no máx. 1/min, adiado com bomba ligada);
+        estabilização 2 s após energizar; solo capacitivo no ADC1 GPIO34
+        (só-entrada, sem pull-up — correto) com média de 16 amostras; VCC de
+        ambos pelo GPIO23 (3V3 chaveado, ~7-10 mA somados, dentro do limite);
+        calibração medida ar ~3050 / água ~1176 (SECO 3000 / MOLHADO 1200);
+        faixa válida 500–3800 (fora dela não irriga e conta offline)
+      - contrato nuvem/local: validarComando('vent', *) rejeita com 400 explicativo
+        ("fonte direta, sempre ligada"); TOPICOS.vent mantido p/ mensagem clara
+        (sem 500 genérico, sem quebrar histórico do field5); server.js e
+        api/control.js herdam pela fonte única lib/control.js; mqtt-gateway
+        rejeita vent antes de publicar
+      - painel: sensor.js força cardVent sempre ligado ("Ligado (fonte direta)",
+        ignora field5); admin.html sem btnVentOn/Off/Auto e sem modeVent (badge
+        estático + nota "Direto na fonte — sem relé"); dashboard.html idem
+        (só-leitura); control.js sem otimismo/modo/botões de vent; sw.js
+        estufa-v18 -> v19 (sem bump o PWA serviria o card velho)
+      - §5.2 (field5 sempre 1), §6.3/§7.1 (sem botões vent), §11.1.1 (só bomba/luz
+        têm AUTO; ventilação sem AUTO/MANUAL), §19 (vent fora do ESP, fiação direta
+        com fusível; DHT22 em módulo no GPIO4; solo no GPIO34 com VCC no GPIO23)
+docs: BLUEPRINT 1.9.0 — cabecalho, Registro, Estado Atual, §5.2, §6.3, §7.1, §11.1.1, §19
+test: `npm run check` exit 0, `npm test` 129/129 a passar (28 suites, 0 falhas)`
 
 ### v1.8.2 (08/10/2026) - Firmware: sem boia — irrigação protegida só por teto de tempo e limite diário persistido
 
@@ -672,8 +754,10 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.8.1):** Dashboard web com autenticacao, graficos ThingSpeak,
-  **controlo de atuadores AUTO/MANUAL no painel de admin com 3 caminhos de
+- **Versao atual (v1.9.2):** Dashboard web com autenticacao, graficos ThingSpeak,
+  **ventilação direta na fonte (sempre ligada, sem relé/GPIO26, card estático verde
+  sem botões, field5 = 1 fixo, `vent` rejeitado com 400 nos 3 caminhos) + DHT22 em
+  módulo no GPIO4 e solo no GPIO34 auditados (VCC no GPIO23) + controlo de bomba/luz AUTO/MANUAL no painel de admin com 3 caminhos de
   entrega (MQTT direto do navegador na LAN, fila Vercel + Upstash Redis e
   `server.js` local — ADR-0007/0008/0009) e pausa global da automacao
   (`global_001`, PAUSE/AUTO)**,
@@ -695,18 +779,20 @@ a874402 | 09/05/2026 | Initial commit
 - **Funcionalidades implementadas:**
   - Sistema de autenticacao JWT com cookies httpOnly + localStorage fallback
   - Dashboard com graficos em tempo real (ThingSpeak API) — **somente leitura**
-  - **Controlo ativo de atuadores com modo AUTO/MANUAL** (ventilador e valvula
-    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO) e **pausa global da
+  - **Controlo ativo de bomba/luz com modo AUTO/MANUAL** (valvula/bomba
+    ON/OFF/AUTO; iluminacao duty PWM 0-100 % ou AUTO; **ventilação sem AUTO/MANUAL —
+    direta na fonte, sempre ligada, card estático**) e **pausa global da
     automacao** (`global_001`: PAUSE congela toda a logica automatica sem
     desligar reles; AUTO retoma) — **3 caminhos**: MQTT direto do navegador
     (`js/mqtt-gateway.js` + `js/mqtt.min.js`, na LAN/WebSocket), fila Vercel +
     Upstash Redis (poll do ESP32, ~10 s) e `server.js` local (ADR-0007/0008/0009)
+    (`vent` rejeitado com 400 explicativo nos 3 caminhos)
   - **Monitorizacao ao vivo no admin** (4 sensores + estado dos atuadores +
     status/RSSI), reutilizando `/js/sensor.js` (ciclo de `INTERVALO_S` s)
   - **QR Code de download do app na tela de login** (index.html; geracao local
     com `js/qrcode.min.js`, sem CDN; link configuravel no script)
   - Painel admin com logs de acesso e gerenciamento de usuarios
-  - PWA com Service Worker v15 (cache `estufa-v15`, limpo + network-first)
+  - PWA com Service Worker v20 (cache `estufa-v20`, limpo + network-first)
   - **APK Android via TWA no CI** (`.github/workflows/android-twa.yml`):
     Bubblewrap a partir de `twa/twa-manifest.json`; APK/AAB assinado, artefacto
     `estufa01-android` e Release em tags `v*` no repo **publico**
@@ -741,8 +827,11 @@ a874402 | 09/05/2026 | Initial commit
     browser no broker, o comando cai automaticamente na fila (~10 s). O broker
     precisa ainda do listener websockets (`listener 9001` + `protocol
     websockets`) e de permitir ligacao anonima (ver §11.1.1)
-  - **Firmware ainda nao uploaded** (ESP32 sem porta serial). `API_VERCEL_TOKEN`
-    **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — build a passar.
+  - **Firmware v1.9.2 pronto p/ upload (ESP32 na COM3).** `API_VERCEL_TOKEN`
+    **ja preenchido** em `src/main.cpp` (igual ao `DEVICE_TOKEN`) — falta rodar
+    `pio run -t upload` na pasta `260929-212817-esp32doit-devkit-v1` com o ESP32
+    plugado (COM3 detectada nesta sessão). DHT22 em módulo (GPIO4) + solo
+    (GPIO34, VCC no GPIO23) auditados; ventilação direta na fonte (field5 = 1).
   - **Firmware com bomba AC aguardando bancada** (ADR-0011): a logica de pulsos
     com watchdog, o limite diario persistido na flash e os bloqueios com a bomba
     ligada estao implementados e a build passa, mas **nao foram validados em
@@ -1293,7 +1382,7 @@ function authenticateToken(req, res, next) {
 | field2 | Umidade Solo | % | Umidade do solo (sensor analogico) |
 | field3 | Luminosidade | lux | Intensidade luminosa (BH1750) |
 | field4 | Umidade Ar | % | Umidade relativa do ar (DHT22) |
-| field5 | Estado Ventilador | 0/1 | Estado digital do relé (0=Off, 1=On) |
+| field5 | Estado Ventilador | 1 fixo | Ventilação direta na fonte (sempre ligada, sem relé/GPIO) — `publicarThingSpeak()` envia `field5 = 1` estático; `sensor.js` ignora o valor e força o card em "Ligado (fonte direta)" |
 | field6 | Estado Valvula/Bomba | 0/1 | Estado digital do relé de irrigação (0=Desligada, 1=Ligada). Identificador público **mantido**: o hardware passou a ser uma **bomba submersa AC** no lugar da válvula solenoide, mas o campo, o tópico (`valv_001`) e o nome da fila (`"valve"`) não mudaram |
 | field7 | Duty Iluminacao | 0-100 | Percentagem PWM (0=apagado, 100=completo) |
 | field8 | RSSI WiFi | dBm | Forca do sinal do ESP32 |
@@ -1400,7 +1489,7 @@ incluindo o atuador logico **`global`** — PAUSE/AUTO):
 | setBotoesDisabled(actuator, disabled) | Desativa/reativa os elementos `[data-atuador=...]` durante o envio (anti-duplo-clique; desde a v1.7.2 cobre tambem `global`) |
 | apiErrorMessage(payload, fallback) | Extrai `detail`/`title` (RFC 9457) com fallback legado `error` |
 | mostrarStatus(msg, tipo) | Feedback em `#ctrlStatusMsg` (classe `.warn`), auto-hide 3.5s |
-| marcarModo(actuator, modo) / marcarModoGlobal(modo) | Atualiza o label "Modo: Auto/Manual" (`modeVent`/`modeValve`/`modeLight`) e "Automatico/Pausado" (`modoGlobal`) |
+| marcarModo(actuator, modo) / marcarModoGlobal(modo) | Atualiza o label "Modo: Auto/Manual" (`modeValve`/`modeLight`) e "Automatico/Pausado" (`modoGlobal`; sem `modeVent` — ventilação estática) |
 | setLightMode(modo) | Alterna AUTO/MANUAL da iluminacao (`.is-active` nos botoes, slider desabilitado em AUTO) |
 | cicloMonitorizar() | Polling do feed (`buscarUltimo()` de `/js/sensor.js`) para a faixa ao vivo; guard se sensor.js ausente |
 | iniciarControlo() | Arranca o ciclo (chamada imediata + `setInterval` de `INTERVALO_S`), DOMContentLoaded-safe |
@@ -1448,9 +1537,10 @@ incluindo o atuador logico **`global`** — PAUSE/AUTO):
 - **Monitorizacao ao Vivo**: faixa com 4 sensores (`.live-strip`), status pill,
   ultima leitura, RSSI e estado dos atuadores (via `/js/sensor.js`, refrescada
   pelo `cicloMonitorizar()` do control.js a cada `INTERVALO_S`)
-- **Controlo de Atuadores**: cards com botoes ON/OFF/AUTO (ventilador, valvula),
+- **Controlo de Atuadores**: card estático da ventilação (fonte direta, sempre
+  ligada, sem botões) + cards com botoes ON/OFF/AUTO (bomba),
   seletor AUTO/MANUAL + slider PWM 0-100 % (iluminacao), rotulos de hardware
-  (Rele GPIO 26/27, LED WS2811), badge de modo (`.act-mode`) e mensagem de
+  (Bomba GPIO 27, LED WS2811), badge de modo (`.act-mode`) e mensagem de
   feedback (`.ctrl-status-msg`)
 
 ### 7.2 Funcoes JavaScript
@@ -1475,9 +1565,9 @@ incluindo o atuador logico **`global`** — PAUSE/AUTO):
 
 ## 8. PWA e Service Worker
 
-### 8.1 Service Worker v15 (sw.js)
+### 8.1 Service Worker v20 (sw.js)
 
-- **Cache:** `estufa-v15` (versionado — `activate` apaga versoes antigas)
+- **Cache:** `estufa-v20` (versionado — `activate` apaga versoes antigas)
 - **Pre-cache (ASSETS):** CSS modular (10 folhas, incl. control.css), scripts
   (`/script.js`, `/js/theme.js`, `/js/sensor.js`, `/js/control.js`,
   `/js/qrcode.min.js`, `/pwa.js`),
@@ -1701,17 +1791,19 @@ contrato:
   same-origin`); o envio do token `Authorization: Bearer` foi removido.
 - **Topicos MQTT (iguais nos tres caminhos):**
   `fazenda/estufa01/atuador/vent_001|valv_001|ilum_001|global_001/comando`
-  — payloads `{"command":"ON"|"OFF"|"AUTO"}` (vent/valv), `{"duty":0-100}` ou
+  — payloads `{"command":"ON"|"OFF"|"AUTO"}` (bomba), `{"duty":0-100}` ou
   `{"command":"AUTO"}` (ilum) e, no atuador logico `global_001`,
   `{"command":"PAUSE"}` / `{"command":"AUTO"}` (ver "Pausa global" abaixo).
+  `vent_001` segue subscrito por compatibilidade mas `vent_*` é rejeitado
+  (400 explicativo) e ignorado no firmware — ventilação direta na fonte,
+  sempre ligada, `field5 = 1` estático.
 - **Modo AUTO (por atuador):** a decisao fica no firmware (o backend so
   reencaminha o comando). **Bomba (irrigacao, ADR-0011):** pulsos iniciados em
   solo <= 40 %, encerrados no fim do pulso (`BOMBA_PULSO_MS`) ou em solo
   >= 70 %, com **limite diario** (`BOMBA_MAX_PULSOS_DIA`) e **watchdog**
-  (`BOMBA_MAX_ON_MS`) — nunca em histerese continua. **Ventilador:**
-  liga >= 26 °C, desliga <= 25 °C (histerese de 1 °C), com **override imediato**
-  em >= 30 °C (ignora so o tempo minimo anti-ciclagem) e **tempo minimo** de
-  60 s entre transicoes. **Luz:** segue o ciclo circadiano do firmware
+  (`BOMBA_MAX_ON_MS`) — nunca em histerese continua. **Ventilação: sem AUTO/
+  MANUAL — direta na fonte, sempre ligada, sem relé/GPIO** (legado
+  `TEMP_*`/`VENT_*`/`DHT_FALHA_VENT_MS` não decide mais). **Luz:** segue o ciclo circadiano do firmware
   (fotoperiodo, com atenuacao por luz natural medida em janela de blackout —
   apaga >= 5000 lux). A UI mostra "Modo: Auto/Manual" (atualizado no clique,
   sem ack).
@@ -1727,8 +1819,8 @@ contrato:
   - `{command:"AUTO"}` retoma o modo automatico (`STOP`/`RESUME` sao sinonimos
     aceites pelo firmware).
   - O estado vive em RAM: **um reboot do ESP32 retoma a automacao** (fail-safe).
-  - NAO confundir com o `AUTO` **por atuador** (vent/valv/luz), que devolve
-    apenas aquele atuador a automacao.
+  - NAO confundir com o `AUTO` **por atuador** (bomba/luz), que devolve
+    apenas aquele atuador a automacao (ventilação não tem AUTO — fonte direta).
 - **Sem ack:** a API confirma apenas a **aceitacao** do comando (no caminho
   direto, a confirmacao de publicacao do broker; na nuvem, a entrada na fila).
   O estado real regressa depois pelo ThingSpeak (field5-8) e e refletido nos
@@ -2190,8 +2282,24 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 
 ### 19.3 Comportamentos novos (Parte B)
 
+- **Ventilação fora do ESP (fonte direta, sempre ligada):** o cooler saiu do
+  relé (`GPIO26` liberado, `PIN_RELE_VENT` removido) e vai direto na fonte —
+  `estadoVentilador = true` estático, `field5 = 1` estático, `vent_*` ignorado
+  (MQTT e fila retornam `true` por compatibilidade). `TEMP_*`/`VENT_*`/
+  `DHT_FALHA_VENT_MS` viraram **legado documentado (não decidem)**;
+  `MANUAL_TIMEOUT`/manual só para bomba/luz. Fiação direta com fusível.
+- **Sensores (DHT22 em módulo + solo capacitivo, auditado):** DHT22 em módulo
+  no `GPIO4` (pull-up e desacoplamento próprios — sem resistor externo;
+  `GPIO4` é `ADC2_CH0` mas usado como **digital**, sem o conflito ADC2×Wi-Fi
+  do `analogRead`); leitura não-bloqueante `2 s` + retry `1 s` com força +
+  fail-safe `30 s` + ciclo de alimentação (`off 500 ms`, máx. `1/min`, adiado
+  com bomba ligada); estabilização `2 s` após energizar. Solo capacitivo no
+  `ADC1 GPIO34` (só-entrada, sem pull-up) com média de 16 amostras;
+  `VCC` de ambos pelo `GPIO23` (3V3 chaveado, ~7–10 mA somados, dentro do
+  limite); calibração medida ar ~3050 / água ~1176 (`SECO 3000`/`MOLHADO 1200`);
+  faixa válida `500–3800` (fora dela não irriga e conta offline).
 - **Manual com validade:** `MANUAL_TIMEOUT_MS` (30 min) devolve cada atuador
-  (vent, bomba, iluminação) ao AUTO. A **pausa congela** esses timers (checagem
+  (bomba, iluminação) ao AUTO. A **pausa congela** esses timers (checagem
   depois do `return` da pausa) e AUTO/RESUME os **reinicia** (senão uma pausa
   longa expiraria o manual no instante do retorno).
 - **"Ligar" manual é um pulso e conta no limite diário:** o comando manual `ON`
@@ -2205,9 +2313,9 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
   recebidos logo após `conectarLocalMQTT()` — um comando retido no broker não
   reaplica modo manual no reboot. Inclui `global_001` (um PAUSE retido congelaria
   tudo em silêncio).
-- **Fail-safe do DHT:** `DHT_FALHA_VENT_MS` (30 s) — DHT mudo no automático liga o
-  ventilador (`ventAutoLigado = true`) para a histerese desligá-lo na temperatura
-  certa quando o sensor voltar.
+- **Fail-safe do DHT (legado, não decide — ventilação em fonte direta):**
+  `DHT_FALHA_VENT_MS` (30 s) documentado mas sem efeito; a ventilação segue
+  sempre ligada independente do DHT.
 - **`TEMP_LIMITE_SUPERIOR` como override "liga imediato"**: ignora **só** o tempo
   mínimo anti-ciclagem, **nunca** o modo manual. `VENT_TEMPO_MINIMO_MS` (60 s)
   evita liga/desliga rápido na histerese de 1 °C.
@@ -2245,8 +2353,8 @@ submersa AC Durapets 3 W / 180 L/h** no mesmo relé do GPIO27:
 | `FATOR_ATENUACAO_TAU_MS` | 30000 ms | rampa da atenuação por luz ambiente |
 | `FATOR_ATENUACAO_SNAP` | 0.005 | cola no alvo quando a rampa fica perto |
 | `MANUAL_TIMEOUT_MS` | 30 min | validade do modo manual por atuador |
-| `VENT_TEMPO_MINIMO_MS` | 60000 ms | anti-ciclagem do ventilador |
-| `DHT_FALHA_VENT_MS` | 30000 ms | DHT mudo → ventilador ON (auto) |
+| `VENT_TEMPO_MINIMO_MS` | 60000 ms | legado (ventilação em fonte direta, não decide) |
+| `DHT_FALHA_VENT_MS` | 30000 ms | legado (ventilação em fonte direta, não decide) |
 | `BOMBA_PULSO_MS` | 6000 ms | duração do pulso (~0,3 L) |
 | `BOMBA_ESPERA_MS` | 5 min | espera p/ a água chegar ao sensor |
 | `BOMBA_MAX_ON_MS` | 12000 ms | teto absoluto (watchdog) |
@@ -2300,4 +2408,4 @@ nomes da fila já estão corretos). Locais a ajustar **quando/quiser**, sem urg�
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.8.2**
+**Fim do Blueprint Estufa 01 v1.9.2**

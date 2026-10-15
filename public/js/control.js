@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════
    ESTUFA 01 · control.js — controlo manual de atuadores (admin)
    POST /api/control   body: { actuator, action }
-     actuator: 'vent' | 'valve' | 'light'
+     actuator: 'valve' | 'light' (+ 'global' p/ pausa; 'vent' REJEITADO — fonte direta, sempre ligada)
      action:   'on' | 'off' | 'auto' | <0-100 (duty, só para light)
 
    O comando NÃO vai direto para a estufa: a Vercel é serverless e não
@@ -94,9 +94,7 @@ async function enviarComandoPelaFila(actuator, action) {
 function aplicarEstadoOtimista(actuator, action) {
   if (typeof atualizarAtuador !== 'function') return;         // guard: sensor.js ausente
 
-  if (actuator === 'vent' && (action === 'on' || action === 'off')) {
-    atualizarAtuador('cardVent', 'chipVent', 'lblVent', action === 'on', 'Ligado', 'Desligado');
-  } else if (actuator === 'valve' && (action === 'on' || action === 'off')) {
+  if (actuator === 'valve' && (action === 'on' || action === 'off')) {
     atualizarAtuador('cardValve', 'chipValve', 'lblValve', action === 'on', 'Aberta', 'Fechada');
   } else if (actuator === 'light') {
     const duty = Number(action);                              // 'auto' -> NaN: sem estimativa
@@ -133,7 +131,7 @@ function mostrarStatus(msg, tipo) {
   statusTimer = setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-const MODE_LABEL_ID = { vent: 'modeVent', valve: 'modeValve', light: 'modeLight' };
+const MODE_LABEL_ID = { valve: 'modeValve', light: 'modeLight' }; // vent é estático (sem Modo)
 
 function marcarModo(actuator, modo) {
   const el = document.getElementById(MODE_LABEL_ID[actuator]);
@@ -146,7 +144,7 @@ function marcarModo(actuator, modo) {
 document.querySelectorAll('.ctrl-btn.ctrl-on, .ctrl-btn.ctrl-off, .ctrl-btn.ctrl-auto')
   .forEach(btn => {
     const atuador = btn.dataset.atuador;
-    if (atuador !== 'vent' && atuador !== 'valve') return; // luz tem fluxo próprio, abaixo
+    if (atuador !== 'valve') return; // luz tem fluxo próprio, abaixo; vent é estático (sem botões)
     btn.addEventListener('click', () => {
       const acao = btn.dataset.acao; // 'on' | 'off' | 'auto'
       marcarModo(atuador, acao === 'auto' ? 'auto' : 'manual');
