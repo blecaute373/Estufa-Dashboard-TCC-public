@@ -101,9 +101,9 @@ describe('thingspeak resilience (Small)', () => {
 });
 
 describe('lib/control — contrato dos comandos (Small)', () => {
-  it('vent/valve: on/off/auto viram {command}', () => {
-    assert.deepEqual(validarComando('vent', 'on'),  { payload: { command: 'ON' } });
-    assert.deepEqual(validarComando('vent', 'off'), { payload: { command: 'OFF' } });
+  it('valve: on/off/auto viram {command} (vent rejeitado — fonte direta)', () => {
+    assert.deepEqual(validarComando('valve', 'on'),  { payload: { command: 'ON' } });
+    assert.deepEqual(validarComando('valve', 'off'), { payload: { command: 'OFF' } });
     assert.deepEqual(validarComando('valve', 'auto'), { payload: { command: 'AUTO' } });
   });
 
@@ -118,7 +118,7 @@ describe('lib/control — contrato dos comandos (Small)', () => {
 
   it('rejeita actuator desconhecido, action inválida e NaN', () => {
     assert.match(validarComando('fan', 'on').erro, /Actuator/);
-    assert.match(validarComando('vent', 'talvez').erro, /action deve ser/);
+    assert.match(validarComando('vent', 'talvez').erro, /fonte direta/);
     assert.match(validarComando('light', 'abc').erro, /numero \(duty 0-100\)/);
   });
 
@@ -155,11 +155,15 @@ describe('lib/control — contrato dos comandos (Small)', () => {
     assert.equal(normalizarDuty(true), null);
   });
 
+  it('vent é rejeitado (fonte direta, sempre ligada — sem relé)', () => {
+    for (const a of ['on', 'off', 'auto']) {
+      const r = validarComando('vent', a);
+      assert.ok(r.erro, 'vent deveria ser rejeitado');
+      assert.match(r.erro, /fonte direta/);
+    }
+  });
+
   it('montarComando junta o topico MQTT do firmware (contrato unico dos 2 caminhos)', () => {
-    assert.deepEqual(montarComando('vent', 'on'), {
-      topico: 'fazenda/estufa01/atuador/vent_001/comando',
-      payload: { command: 'ON' },
-    });
     assert.deepEqual(montarComando('valve', 'off'), {
       topico: 'fazenda/estufa01/atuador/valv_001/comando',
       payload: { command: 'OFF' },

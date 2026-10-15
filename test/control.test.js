@@ -112,7 +112,7 @@ describe('POST /api/control — enfileirar (admin)', () => {
   });
 
   it('admin → 202 queued e grava na fila', async () => {
-    const res = await post({ actuator: 'vent', action: 'on' }, `${COOKIE}=${token(true)}`);
+    const res = await post({ actuator: 'valve', action: 'on' }, `${COOKIE}=${token(true)}`);
     assert.equal(res.status, 202, '202 = enfileirado, não aplicado ainda');
     const body = await res.json();
     assert.equal(body.ok, true);
@@ -168,9 +168,17 @@ describe('GET /api/control/pending — poll do ESP32', () => {
     assert.deepEqual(body.commands, []);
   });
 
+  it('VENT_REJEITADO: POST vent on → 400 explicativo (fonte direta)', async () => {
+    const res = await post({ actuator: 'vent', action: 'on' }, `${COOKIE}=${token(true)}`);
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.match(body.detail || body.title || '', /fonte direta/i);
+    assert.equal(fila.length, 0, 'vent nunca entra na fila');
+  });
+
   it('recolhe comandos pendentes e esvazia a fila', async () => {
-    // Admin enfileira 2 comandos...
-    await post({ actuator: 'vent', action: 'on' }, `${COOKIE}=${token(true)}`);
+    // Admin enfileira 2 comandos (bomba + luz; vent é rejeitado)...
+    await post({ actuator: 'valve', action: 'on' }, `${COOKIE}=${token(true)}`);
     await post({ actuator: 'light', action: 40 }, `${COOKIE}=${token(true)}`);
     assert.equal(fila.length, 2);
 
@@ -185,7 +193,7 @@ describe('GET /api/control/pending — poll do ESP32', () => {
   });
 
   it('não devolve o mesmo comando duas vezes', async () => {
-    await post({ actuator: 'vent', action: 'on' }, `${COOKIE}=${token(true)}`);
+    await post({ actuator: 'valve', action: 'on' }, `${COOKIE}=${token(true)}`);
     assert.equal((await (await poll()).json()).count, 1);
     assert.equal(
       (await (await poll()).json()).count, 0,
@@ -211,7 +219,7 @@ describe('GET /api/control/pending — poll do ESP32', () => {
   });
 
   it('comandos expirados (>5 min) são descartados, não entregues', async () => {
-    await post({ actuator: 'vent', action: 'on' }, `${COOKIE}=${token(true)}`);
+    await post({ actuator: 'valve', action: 'on' }, `${COOKIE}=${token(true)}`);
     // Envelhece o comando como se tivesse sido enfileirado há 6 minutos.
     fila[0].expires_at = Date.now() - 60 * 1000;
 

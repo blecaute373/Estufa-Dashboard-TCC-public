@@ -269,6 +269,8 @@ function brokerDesconectar() {
 /* ── PAYLOAD (espelho de lib/control.js — o backend é a fonte de verdade para
       o caminho da fila; este espelho cobre apenas o caminho direto) ──────── */
 function brokerMontarPayload(actuator, action) {
+  // Ventilação direta na fonte (sempre ligada): sem comando a montar.
+  if (actuator === 'vent') return { erro: 'Ventilação em fonte direta (sempre ligada) — comando não aplicável.' };
   if (!BROKER_TOPICO_ID[actuator]) return { erro: 'Actuator inválido.' };
 
   if (actuator === 'global') {

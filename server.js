@@ -50,12 +50,14 @@ const AccessLog  = require('./models/AccessLog');
  * alcança a rede local.
  *
  * O ESP32 (estufa45) escuta comandos nos tópicos:
- *   fazenda/estufa01/atuador/vent_001/comando   → {command:ON|OFF|AUTO}
  *   fazenda/estufa01/atuador/valv_001/comando   → {command:ON|OFF|AUTO}
  *   fazenda/estufa01/atuador/ilum_001/comando   → {duty:0-100} ou {command:AUTO}
+ *   (vent_001/ventilação: direta na fonte, sempre ligada — 'vent' é rejeitado
+ *   com 400 explicativo; o ESP32 ignora vent_* e publica field5 = 1 estático)
  *
  * Requer POST com JSON:
- *   { actuator: 'vent'|'valve'|'light', action: 'on'|'off'|'auto'|<0-100> }
+ *   { actuator: 'valve'|'light', action: 'on'|'off'|'auto'|<0-100> }
+ *   (+ 'global' p/ pausa; 'vent' REJEITADO — fonte direta, sempre ligada)
  */
 const mqtt = require('mqtt');
 

@@ -100,8 +100,12 @@ describe('mqtt-gateway — backoff após 3 falhas seguidas (estado unavailable)'
 });
 
 describe('mqtt-gateway — contrato payload/tópico intacto', () => {
+  it('vent é rejeitado (fonte direta, sempre ligada)', () => {
+    assert.ok(gw.brokerMontarPayload('vent', 'on').erro, 'vent deveria ser rejeitado');
+    assert.match(gw.brokerMontarPayload('vent', 'off').erro, /fonte direta/);
+  });
+
   it('monta ON/OFF/AUTO e duty com clamp 0-100', () => {
-    assert.deepEqual(gw.brokerMontarPayload('vent', 'on'), { payload: { command: 'ON' } });
     assert.deepEqual(gw.brokerMontarPayload('valve', 'off'), { payload: { command: 'OFF' } });
     assert.deepEqual(gw.brokerMontarPayload('global', 'pause'), { payload: { command: 'PAUSE' } });
     assert.deepEqual(gw.brokerMontarPayload('global', 'auto'), { payload: { command: 'AUTO' } });
