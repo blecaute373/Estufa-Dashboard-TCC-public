@@ -1,6 +1,6 @@
 # 🌲 Estufa 01 — Blueprint Mestre do Projeto
 
-> **Versão:** 1.9.3 · **Data:** 15/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
+> **Versão:** 1.9.4 · **Data:** 15/10/2026 · **Repositório:** https://github.com/matheusbritogarbin-byte/Estufa-Dashboard-TCC.git
 >
 > **Fork do co-autor:** https://github.com/blecaute373/Estufa-Dashboard-TCC (privado, arquivo; sem remote local ativo)
 >
@@ -15,6 +15,23 @@
 ## Registro de Revisoes
 
 Historico completo de todos os commits do projeto, organizados por versao.
+
+### v1.9.4 (15/10/2026) - APK v1.0.3 publicado (minSdk 24) + telemetria igual no app
+
+`fix(android): build TWA voltava a falhar — androidbrowserhelper 2.7.4 exige
+      minSdk >= 24 (era 21); twa-manifest.json 21 -> 24
+      - log do run 38789015061 (tag v1.0.2): Manifest merger failed
+        (processReleaseMainManifest, BUILD FAILED); causa no fork público sem
+        secrets (keystore novo por build, assetlinks muda junto — sem problema
+        p/ sideload via QR)
+      - tag v1.0.3 no HEAD (e844a5d) -> Release v1.0.3 Latest com estufa01.apk
+        (1.144.598 B) + AAB; download anónimo latest/download validado
+      - telemetria/atuadores: dashboard + admin usam o mesmo sensor.js
+        (field1-4 sensores, field5 vent estático, field6 bomba, field7 luz,
+        field8 RSSI, INTERVALO_S 16s); TWA abre o site ao vivo — app vê igual
+      - links: dashboard https://dashboardestufaiot-omega.vercel.app · APK
+        https://github.com/blecaute373/Estufa-Dashboard-TCC-public/releases/latest/download/estufa01.apk
+test: npm run check exit 0, npm test 129/129 a passar (28 suites, 0 falhas)`
 
 ### v1.9.3 (15/10/2026) - Upload ESP32 concluído + deploy v20 no ar
 
@@ -764,7 +781,7 @@ a874402 | 09/05/2026 | Initial commit
 
 > Unica secao deste documento pensada para mudar com frequencia. Deve ser atualizada ao fim de toda sessao de trabalho relevante.
 
-- **Versao atual (v1.9.3):** Dashboard web com autenticacao, graficos ThingSpeak,
+- **Versao atual (v1.9.4):** Dashboard web com autenticacao, graficos ThingSpeak,
   **ventilação direta na fonte (sempre ligada, sem relé/GPIO26, card estático verde
   sem botões, field5 = 1 fixo, `vent` rejeitado com 400 nos 3 caminhos) + DHT22 em
   módulo no GPIO4 e solo no GPIO34 auditados (VCC no GPIO23) + controlo de bomba/luz AUTO/MANUAL no painel de admin com 3 caminhos de
@@ -2418,4 +2435,4 @@ nomes da fila já estão corretos). Locais a ajustar **quando/quiser**, sem urg�
 
 ---
 
-**Fim do Blueprint Estufa 01 v1.9.3**
+**Fim do Blueprint Estufa 01 v1.9.4**
